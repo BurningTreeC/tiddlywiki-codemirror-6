@@ -76,7 +76,6 @@ CodeMirrorEngine.prototype.setText = function(text,type) {
 Update the DomNode with the new text
 */
 CodeMirrorEngine.prototype.updateDomNodeText = function(text) {
-	console.log("setting text");
 	this.cm.dispatch(this.cm.state.update({changes: {from: 0, to: this.cm.state.doc.length, insert: text}}));
 };
 
@@ -128,7 +127,6 @@ CodeMirrorEngine.prototype.createTextOperation = function() {
 			newSelEnd: null
 		}
 		operation.selection = this.cm.state.sliceDoc(anchorPos,headPos);
-		console.log(operation.selection);
 		operations.push(operation);
 	}
 	return operations;
@@ -139,7 +137,6 @@ Execute a text operation
 */
 CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 	var self = this;
-	console.log(operations);
 	if(operations.length) {
 		var {EditorSelection} = CM["@codemirror/state"];
 		var ranges = this.cm.state.selection.ranges;

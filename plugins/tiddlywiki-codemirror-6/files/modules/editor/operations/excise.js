@@ -21,13 +21,15 @@ exports["excise"] = function(event,operation) {
 	if(operation instanceof Array) {
 		for(var i=0; i<operation.length; i++) {
 			var op = operation[i];
-			var excisionTite = event.paramObject.title ? this.wiki.generateNewTitle(event.paramObject.title) : this.wiki.generateNewTitle("New Excision");
+			console.log(event.paramObject.title);
+			var excisionTitle = event.paramObject.title && (event.paramObject.title !== "") ? this.wiki.generateNewTitle(event.paramObject.title) : this.wiki.generateNewTitle("New Excision");
+			console.log(excisionTitle);
 			this.wiki.addTiddler(new $tw.Tiddler(
 				this.wiki.getCreationFields(),
 				this.wiki.getModificationFields(),
 				{
 					title: excisionTitle,
-					text: operation.selection,
+					text: op.selection,
 					tags: event.paramObject.tagnew === "yes" ? [editTiddlerTitle] : []
 				}
 			));
