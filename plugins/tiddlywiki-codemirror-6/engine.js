@@ -76,7 +76,8 @@ CodeMirrorEngine.prototype.setText = function(text,type) {
 Update the DomNode with the new text
 */
 CodeMirrorEngine.prototype.updateDomNodeText = function(text) {
-	this.cm.state.update({changes: {from: 0, to: this.cm.state.doc.length, insert: text}});
+	console.log("setting text");
+	this.cm.dispatch(this.cm.state.update({changes: {from: 0, to: this.cm.state.doc.length, insert: text}}));
 };
 
 /*
