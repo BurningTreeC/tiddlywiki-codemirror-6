@@ -1,0 +1,6 @@
+{
+	"title": "$:/plugins/BTC/tiddlywiki-codemirror-6",
+	"name": "CodeMirror",
+	"description": "CodeMirror6 editor",
+	"list": "readme usage license"
+}
