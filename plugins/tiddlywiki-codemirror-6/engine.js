@@ -1,5 +1,5 @@
 /*\
-title: $:/plugins/tiddlywiki/codemirror/engine.js
+title: $:/plugins/BTC/tiddlywiki-codemirror-6/engine.js
 type: application/javascript
 module-type: library
 
@@ -11,15 +11,10 @@ Text editor engine based on a CodeMirror instance
 /*jslint node: true, browser: true */
 /*global $tw: false */
 "use strict";
-
-var CODEMIRROR_OPTIONS = "$:/config/CodeMirror",
-HEIGHT_VALUE_TITLE = "$:/config/TextEditor/EditorHeight/Height",
-CONFIG_FILTER = "[all[shadows+tiddlers]prefix[$:/config/codemirror/]]"
 	
 // Install CodeMirror
 if($tw.browser && !window.CM) {
-
-	window.CM = require("$:/plugins/BTC/tiddlywiki-codemirror-6/lib/codemirror.js");
+	require("$:/plugins/BTC/tiddlywiki-codemirror-6/lib/codemirror.js");
 }
 
 function CodeMirrorEngine(options) {
@@ -40,10 +35,30 @@ function CodeMirrorEngine(options) {
 	this.parentNode.insertBefore(this.domNode,this.nextSibling);
 	this.widget.domNodes.push(this.domNode);
 
-	var {basicSetup,EditorView} = CM["codemirror"];
+	var {minimalSetup,basicSetup} = CM["codemirror"];
+	var {EditorView, keymap} = CM["@codemirror/view"];
 	var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
+	var {defaultKeymap,indentWithTab} = CM["@codemirror/commands"];
 
-	this.cm = new EditorView({doc: options.value,extensions:[basicSetup,javascript(),javascriptLanguage.data.of({autocomplete:scopeCompletionSource(globalThis)})],parent:this.domNode});
+	var {SelectionRange} = CM["@codemirror/state"];
+
+	this.selectionRange = SelectionRange;
+
+	this.cm = new EditorView({
+		doc: options.value,
+		extensions: [
+			basicSetup,
+			keymap.of([indentWithTab]), // ,defaultKeymap
+			EditorView.lineWrapping,
+			EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
+			EditorView.updateListener.of(function(v) {
+				if(v.docChanged) {
+					self.widget.saveChanges(self.cm.state.doc.toString());
+				}
+			})
+		],
+		parent:this.domNode
+	});
 }
 
 /*
@@ -51,8 +66,8 @@ Set the text of the engine if it doesn't currently have focus
 */
 CodeMirrorEngine.prototype.setText = function(text,type) {
 	var self = this;
-	self.cm.setOption("mode",type);
-	if(!this.cm.hasFocus()) {
+	//self.cm.setOption("mode",type);
+	if(!this.cm.hasFocus) {
 		this.updateDomNodeText(text);
 	}
 };
@@ -61,14 +76,14 @@ CodeMirrorEngine.prototype.setText = function(text,type) {
 Update the DomNode with the new text
 */
 CodeMirrorEngine.prototype.updateDomNodeText = function(text) {
-	this.cm.setValue(text);
+	this.cm.state.update({changes: {from: 0, to: this.cm.state.doc.length, insert: text}});
 };
 
 /*
 Get the text of the engine
 */
 CodeMirrorEngine.prototype.getText = function() {
-	return this.cm.getValue();
+	return this.cm.state.doc.toString();
 };
 
 /*
@@ -77,11 +92,11 @@ Fix the height of textarea to fit content
 CodeMirrorEngine.prototype.fixHeight = function() {
 	if(this.widget.editAutoHeight) {
 		// Resize to fit
-		this.cm.setSize(null,null);
+		//this.cm.setSize(null,null);
 	} else {
-		var fixedHeight = parseInt(this.widget.wiki.getTiddlerText(HEIGHT_VALUE_TITLE,"400px"),10);
-		fixedHeight = Math.max(fixedHeight,20);
-		this.cm.setSize(null,fixedHeight);
+		//var fixedHeight = parseInt(this.widget.wiki.getTiddlerText(HEIGHT_VALUE_TITLE,"400px"),10);
+		//fixedHeight = Math.max(fixedHeight,20);
+		//this.cm.setSize(null,fixedHeight);
 	}
 };
 
@@ -96,22 +111,20 @@ CodeMirrorEngine.prototype.focus  = function() {
 Create a blank structure representing a text operation
 */
 CodeMirrorEngine.prototype.createTextOperation = function() {
-	var selections = this.cm.listSelections();
-	if(selections.length > 0) {
-		var anchorPos = this.cm.indexFromPos(selections[0].anchor),
-		headPos = this.cm.indexFromPos(selections[0].head);
-	}
+	var selections = this.cm.state.selection.ranges;
+	var anchorPos = selections[0].from,
+		headPos = selections[0].to;
 	var operation = {
-		text: this.cm.getValue(),
-		selStart: Math.min(anchorPos,headPos),
-		selEnd: Math.max(anchorPos,headPos),
+		text: this.cm.state.doc.toString(),
+		selStart: anchorPos,
+		selEnd: headPos,
 		cutStart: null,
 		cutEnd: null,
 		replacement: null,
 		newSelStart: null,
 		newSelEnd: null
-	};
-	operation.selection = operation.text.substring(operation.selStart,operation.selEnd);
+	}
+	operation.selection = this.cm.state.sliceDoc(anchorPos,headPos);
 	return operation;
 };
 
@@ -119,15 +132,18 @@ CodeMirrorEngine.prototype.createTextOperation = function() {
 Execute a text operation
 */
 CodeMirrorEngine.prototype.executeTextOperation = function(operation) {
-	// Perform the required changes to the text area and the underlying tiddler
-	var newText = operation.text;
-	if(operation.replacement !== null) {
-		this.cm.replaceRange(operation.replacement,this.cm.posFromIndex(operation.cutStart),this.cm.posFromIndex(operation.cutEnd));
-		this.cm.setSelection(this.cm.posFromIndex(operation.newSelStart),this.cm.posFromIndex(operation.newSelEnd));
-		newText = operation.text.substring(0,operation.cutStart) + operation.replacement + operation.text.substring(operation.cutEnd);
-	}
+	var self = this;
+	var {EditorSelection} = CM["@codemirror/state"];
+	this.cm.dispatch(this.cm.state.changeByRange(function(range) {
+		var editorChanges = [{from: operation.cutStart, to: operation.cutEnd, insert: operation.replacement}];
+		var selectionRange = EditorSelection.range(operation.newSelStart,operation.newSelEnd);
+		return {
+			changes: editorChanges,
+			range: selectionRange
+		}
+	}));
 	this.cm.focus();
-	return newText;
+	return this.cm.state.doc.toString();
 };
 
 exports.CodeMirrorEngine = $tw.browser ? CodeMirrorEngine : require("$:/core/modules/editor/engines/simple.js").SimpleEngine;
