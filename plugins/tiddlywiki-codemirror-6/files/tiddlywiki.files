@@ -7,6 +7,13 @@
 				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/lib/codemirror.js",
 				"module-type": "library"
 			}
+		},{
+			"file": "modules/editor/operations/replace-selection.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/core/modules/editor/operations/text/replace-selection.js",
+				"module-type": "texteditoroperation"
+			}
 		}
 	]
 }

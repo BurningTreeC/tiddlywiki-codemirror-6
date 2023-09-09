@@ -112,31 +112,43 @@ Create a blank structure representing a text operation
 */
 CodeMirrorEngine.prototype.createTextOperation = function() {
 	var selections = this.cm.state.selection.ranges;
-	var anchorPos = selections[0].from,
-		headPos = selections[0].to;
-	var operation = {
-		text: this.cm.state.doc.toString(),
-		selStart: anchorPos,
-		selEnd: headPos,
-		cutStart: null,
-		cutEnd: null,
-		replacement: null,
-		newSelStart: null,
-		newSelEnd: null
+	var operations = [];
+	for(var i=0; i<selections.length; i++) {
+		var anchorPos = selections[i].from,
+			headPos = selections[i].to;
+		var operation = {
+			text: this.cm.state.doc.toString(),
+			selStart: anchorPos,
+			selEnd: headPos,
+			cutStart: null,
+			cutEnd: null,
+			replacement: null,
+			newSelStart: null,
+			newSelEnd: null
+		}
+		operation.selection = this.cm.state.sliceDoc(anchorPos,headPos);
+		operations.push(operation);
 	}
-	operation.selection = this.cm.state.sliceDoc(anchorPos,headPos);
-	return operation;
+	return operations;
 };
 
 /*
 Execute a text operation
 */
-CodeMirrorEngine.prototype.executeTextOperation = function(operation) {
+CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 	var self = this;
+	console.log(operations);
 	var {EditorSelection} = CM["@codemirror/state"];
+	var ranges = this.cm.state.selection.ranges;
 	this.cm.dispatch(this.cm.state.changeByRange(function(range) {
-		var editorChanges = [{from: operation.cutStart, to: operation.cutEnd, insert: operation.replacement}];
-		var selectionRange = EditorSelection.range(operation.newSelStart,operation.newSelEnd);
+		var index;
+		for(var i=0; i<ranges.length; i++) {
+			if(ranges[i] === range) {
+				index = i;
+			}
+		}
+		var editorChanges = [{from: operations[index].cutStart, to: operations[index].cutEnd, insert: operations[index].replacement}];
+		var selectionRange = EditorSelection.range(operations[index].newSelStart,operations[index].newSelEnd);
 		return {
 			changes: editorChanges,
 			range: selectionRange
