@@ -127,6 +127,7 @@ CodeMirrorEngine.prototype.createTextOperation = function() {
 			newSelEnd: null
 		}
 		operation.selection = this.cm.state.sliceDoc(anchorPos,headPos);
+		console.log(operation.selection);
 		operations.push(operation);
 	}
 	return operations;
@@ -138,22 +139,24 @@ Execute a text operation
 CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 	var self = this;
 	console.log(operations);
-	var {EditorSelection} = CM["@codemirror/state"];
-	var ranges = this.cm.state.selection.ranges;
-	this.cm.dispatch(this.cm.state.changeByRange(function(range) {
-		var index;
-		for(var i=0; i<ranges.length; i++) {
-			if(ranges[i] === range) {
-				index = i;
+	if(operations.length) {
+		var {EditorSelection} = CM["@codemirror/state"];
+		var ranges = this.cm.state.selection.ranges;
+		this.cm.dispatch(this.cm.state.changeByRange(function(range) {
+			var index;
+			for(var i=0; i<ranges.length; i++) {
+				if(ranges[i] === range) {
+					index = i;
+				}
 			}
-		}
-		var editorChanges = [{from: operations[index].cutStart, to: operations[index].cutEnd, insert: operations[index].replacement}];
-		var selectionRange = EditorSelection.range(operations[index].newSelStart,operations[index].newSelEnd);
-		return {
-			changes: editorChanges,
-			range: selectionRange
-		}
-	}));
+			var editorChanges = [{from: operations[index].cutStart, to: operations[index].cutEnd, insert: operations[index].replacement}];
+			var selectionRange = EditorSelection.range(operations[index].newSelStart,operations[index].newSelEnd);
+			return {
+				changes: editorChanges,
+				range: selectionRange
+			}
+		}));
+	}
 	this.cm.focus();
 	return this.cm.state.doc.toString();
 };

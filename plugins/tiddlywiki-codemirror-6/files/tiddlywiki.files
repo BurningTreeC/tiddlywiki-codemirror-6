@@ -8,10 +8,66 @@
 				"module-type": "library"
 			}
 		},{
+			"file": "modules/editor/operations/excise.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/core/modules/editor/operations/text/excise.js",
+				"module-type": "texteditoroperation"
+			}
+		},{
+			"file": "modules/editor/operations/insert-text.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/core/modules/editor/operations/text/insert-text.js",
+				"module-type": "texteditoroperation"
+			}
+		},{
+			"file": "modules/editor/operations/make-link.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/core/modules/editor/operations/text/make-link.js",
+				"module-type": "texteditoroperation"
+			}
+		},{
+			"file": "modules/editor/operations/prefix-lines.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/core/modules/editor/operations/text/prefix-lines.js",
+				"module-type": "texteditoroperation"
+			}
+		},{
+			"file": "modules/editor/operations/replace-all.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/core/modules/editor/operations/text/replace-all.js",
+				"module-type": "texteditoroperation"
+			}
+		},{
 			"file": "modules/editor/operations/replace-selection.js",
 			"fields": {
 				"type": "application/javascript",
 				"title": "$:/core/modules/editor/operations/text/replace-selection.js",
+				"module-type": "texteditoroperation"
+			}
+		},{
+			"file": "modules/editor/operations/save-selection.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/core/modules/editor/operations/text/save-selection.js",
+				"module-type": "texteditoroperation"
+			}
+		},{
+			"file": "modules/editor/operations/wrap-lines.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/core/modules/editor/operations/text/wrap-lines.js",
+				"module-type": "texteditoroperation"
+			}
+		},{
+			"file": "modules/editor/operations/wrap-selection.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/core/modules/editor/operations/text/wrap-selection.js",
 				"module-type": "texteditoroperation"
 			}
 		}
