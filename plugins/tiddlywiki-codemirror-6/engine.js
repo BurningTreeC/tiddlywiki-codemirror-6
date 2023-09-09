@@ -55,7 +55,29 @@ function CodeMirrorEngine(options) {
 				if(v.docChanged) {
 					self.widget.saveChanges(self.cm.state.doc.toString());
 				}
-			})
+			}),
+			EditorView.domEventHandlers({
+    			drop(event,view) {
+    				console.log("DROP");
+    			},
+    			paste(event,view) {
+    				console.log("PASTE");
+    			},
+    			keydown(event,view) {
+    				console.log("KEYDOWN");
+					if ($tw.keyboardManager.handleKeydownEvent(event,{onlyPriority: true})) {
+						return true;
+					}
+					return self.widget.handleKeydownEvent.call(self.widget,event);
+    			},
+    			focus(event,view) {
+    				console.log("FOCUS");
+    				if(self.widget.editCancelPopups) {
+    					$tw.popup.cancel(0);
+    				}
+    				return false;
+    			}
+  			})
 		],
 		parent:this.domNode
 	});
