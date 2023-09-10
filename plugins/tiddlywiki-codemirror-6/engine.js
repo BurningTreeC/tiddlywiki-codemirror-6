@@ -37,17 +37,17 @@ function CodeMirrorEngine(options) {
 	var {minimalSetup,basicSetup} = CM["codemirror"];
 	var {EditorView, keymap} = CM["@codemirror/view"];
 	var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
-	var {defaultKeymap,indentWithTab} = CM["@codemirror/commands"];
+	var {defaultKeymap,standardKeymap,indentWithTab} = CM["@codemirror/commands"];
 
-	var {SelectionRange} = CM["@codemirror/state"];
-
-	this.selectionRange = SelectionRange;
+	console.log(standardKeymap);
 
 	this.cm = new EditorView({
 		doc: options.value,
 		extensions: [
 			basicSetup,
-			keymap.of([indentWithTab]), // ,defaultKeymap
+			keymap.of([
+				indentWithTab
+			]), // ,defaultKeymap
 			EditorView.lineWrapping,
 			EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
 			EditorView.perLineTextDirection.of(true),
@@ -64,33 +64,7 @@ function CodeMirrorEngine(options) {
 					console.log("PASTE");
 				},
 				keydown(event,view) {
-					console.log("KEYDOWN");
-					if($tw.keyboardManager.handleKeydownEvent(event,{onlyPriority: true})) {
-						return true;
-					}
-					var widget = self.widget;
-					var keyboardWidgets = [];
-					while(widget) {
-						if(widget.parseTreeNode.type === "keyboard") {
-							keyboardWidgets.push(widget);
-						}
-						widget = widget.parentWidget;
-					}
-					if(keyboardWidgets.length > 0) {
-						var handled;
-						for(var i=0; i<keyboardWidgets.length; i++) {
-							var keyboardWidget = keyboardWidgets[i];
-							var keyInfoArray = keyboardWidget.keyInfoArray;
-							if($tw.keyboardManager.checkKeyDescriptors(event,keyInfoArray)) {
-								handled = true;
-							}
-						}
-						if(handled) {
-							console.log("HANDLED");
-							return true;
-						}
-					}
-					return self.widget.handleKeydownEvent.call(self.widget,event);
+					return self.handleKeydownEvent(event,view);
 				},
 				focus(event,view) {
 					console.log("FOCUS");
@@ -98,12 +72,56 @@ function CodeMirrorEngine(options) {
 						$tw.popup.cancel(0);
 					}
 					return false;
+				},
+				blur(event,view) {
+					console.log("BLUR");
+
 				}
 			})
 		],
 		parent:this.domNode
 	});
-}
+};
+
+CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
+	console.log("KEYDOWN");
+	if($tw.keyboardManager.handleKeydownEvent(event,{onlyPriority: true})) {
+		return true;
+	}
+	if(event.ctrlKey && (event.which === 13)) {
+		console.log("ctrl-enter");
+	}
+	if(event.ctrlKey && (event.which === 17)) {
+		console.log(event);
+		console.log("CTRL-ENTER");
+	}
+	if(event.which === 13) {
+		console.log("ENTER");
+	}
+	var widget = this.widget;
+	var keyboardWidgets = [];
+	while(widget) {
+		if(widget.parseTreeNode.type === "keyboard") {
+			keyboardWidgets.push(widget);
+		}
+		widget = widget.parentWidget;
+	}
+	if(keyboardWidgets.length > 0) {
+		var handled;
+		for(var i=0; i<keyboardWidgets.length; i++) {
+			var keyboardWidget = keyboardWidgets[i];
+			var keyInfoArray = keyboardWidget.keyInfoArray;
+			if($tw.keyboardManager.checkKeyDescriptors(event,keyInfoArray)) {
+				handled = true;
+			}
+		}
+		if(handled) {
+			console.log("HANDLED");
+			return true;
+		}
+	}
+	return this.widget.handleKeydownEvent.call(this.widget,event);
+};
 
 /*
 Set the text of the engine if it doesn't currently have focus
@@ -120,7 +138,17 @@ CodeMirrorEngine.prototype.setText = function(text,type) {
 Update the DomNode with the new text
 */
 CodeMirrorEngine.prototype.updateDomNodeText = function(text) {
-	this.cm.dispatch(this.cm.state.update({changes: {from: 0, to: this.cm.state.doc.length, insert: text}}));
+	var self = this;
+	var selections = this.cm.state.selection;
+	this.cm.dispatch(this.cm.state.update({
+		changes: {
+			from: 0,
+			to: this.cm.state.doc.length,
+			insert: text
+		},
+		selection: selections,
+		docChanged: true
+	}));
 };
 
 /*
@@ -155,6 +183,7 @@ CodeMirrorEngine.prototype.focus  = function() {
 Create a blank structure representing a text operation
 */
 CodeMirrorEngine.prototype.createTextOperation = function() {
+	this.isOngoingTextOperation = true;
 	var selections = this.cm.state.selection.ranges;
 	var operations = [];
 	for(var i=0; i<selections.length; i++) {
