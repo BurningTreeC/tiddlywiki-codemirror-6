@@ -18,7 +18,6 @@ if($tw.browser && !window.CM) {
 }
 
 function CodeMirrorEngine(options) {
-
 	// Save our options
 	var self = this;
 	options = options || {};
@@ -51,33 +50,56 @@ function CodeMirrorEngine(options) {
 			keymap.of([indentWithTab]), // ,defaultKeymap
 			EditorView.lineWrapping,
 			EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
+			EditorView.perLineTextDirection.of(true),
 			EditorView.updateListener.of(function(v) {
 				if(v.docChanged) {
 					self.widget.saveChanges(self.cm.state.doc.toString());
 				}
 			}),
 			EditorView.domEventHandlers({
-    			drop(event,view) {
-    				console.log("DROP");
-    			},
-    			paste(event,view) {
-    				console.log("PASTE");
-    			},
-    			keydown(event,view) {
-    				console.log("KEYDOWN");
-					if ($tw.keyboardManager.handleKeydownEvent(event,{onlyPriority: true})) {
+				drop(event,view) {
+					console.log("DROP");
+				},
+				paste(event,view) {
+					console.log("PASTE");
+				},
+				keydown(event,view) {
+					console.log("KEYDOWN");
+					if($tw.keyboardManager.handleKeydownEvent(event,{onlyPriority: true})) {
 						return true;
 					}
+					var widget = self.widget;
+					var keyboardWidgets = [];
+					while(widget) {
+						if(widget.parseTreeNode.type === "keyboard") {
+							keyboardWidgets.push(widget);
+						}
+						widget = widget.parentWidget;
+					}
+					if(keyboardWidgets.length > 0) {
+						var handled;
+						for(var i=0; i<keyboardWidgets.length; i++) {
+							var keyboardWidget = keyboardWidgets[i];
+							var keyInfoArray = keyboardWidget.keyInfoArray;
+							if($tw.keyboardManager.checkKeyDescriptors(event,keyInfoArray)) {
+								handled = true;
+							}
+						}
+						if(handled) {
+							console.log("HANDLED");
+							return true;
+						}
+					}
 					return self.widget.handleKeydownEvent.call(self.widget,event);
-    			},
-    			focus(event,view) {
-    				console.log("FOCUS");
-    				if(self.widget.editCancelPopups) {
-    					$tw.popup.cancel(0);
-    				}
-    				return false;
-    			}
-  			})
+				},
+				focus(event,view) {
+					console.log("FOCUS");
+					if(self.widget.editCancelPopups) {
+						$tw.popup.cancel(0);
+					}
+					return false;
+				}
+			})
 		],
 		parent:this.domNode
 	});

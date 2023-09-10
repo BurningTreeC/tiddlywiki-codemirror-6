@@ -8,3 +8,11 @@ tags: $:/tags/Stylesheet
 }
 
 </$list>
+
+<$list filter="[{$:/config/codemirror-6/rtl}match[yes]]" variable="ignore">
+
+.cm-editor {
+	direction: rtl;
+}
+
+</$list>
