@@ -36,15 +36,86 @@ function CodeMirrorEngine(options) {
 
 	var {minimalSetup,basicSetup} = CM["codemirror"];
 	var {EditorView, keymap} = CM["@codemirror/view"];
-	var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
+	
 	var {defaultKeymap,standardKeymap,indentWithTab} = CM["@codemirror/commands"];
+	var {language} = CM["@codemirror/language"];
 
-	console.log(standardKeymap);
+	var editorOptions = {
+		doc: options.value,
+		parent: this.domNode,
+		extensions: [
+			basicSetup,
+			keymap.of([
+				indentWithTab
+			]),
+			EditorView.lineWrapping,
+			EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
+			EditorView.perLineTextDirection.of(true),
+			EditorView.updateListener.of(function(v) {
+				if(v.docChanged) {
+					self.widget.saveChanges(self.cm.state.doc.toString());
+				}
+			}),
+			EditorView.domEventHandlers({
+				drop(event,view) {
+					return self.handleDropEvent(event,view);
+				},
+				paste(event,view) {
+					console.log("PASTE");
+				},
+				keydown(event,view) {
+					return self.handleKeydownEvent(event,view);
+				},
+				focus(event,view) {
+					console.log("FOCUS");
+					if(self.widget.editCancelPopups) {
+						$tw.popup.cancel(0);
+					}
+					return false;
+				},
+				blur(event,view) {
+					console.log("BLUR");
 
-	this.cm = new EditorView({
+				}
+			})			
+		]
+	};
+
+	var mode = this.widget.getEditInfo().type;
+	switch (mode) {
+		case ("text/vnd.tiddlywiki" || "text/html"):
+			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
+			editorOptions.extensions.push(html({selfClosingTags: true}));
+			break;
+		case "application/javascript":
+			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
+			editorOptions.extensions.push(javascript());
+			editorOptions.extensions.push(
+				javascriptLanguage.data.of({
+					autocomplete: scopeCompletionSource(globalThis)//self.domNode.ownerDocument.defaultView)
+				})
+			);
+			break;
+		case "text/css":
+			var {css,cssLanguage} = CM["@codemirror/lang-css"];
+			console.log(css);
+			editorOptions.extensions.push(css());
+			break;
+		default:
+			break;
+	}
+
+	this.cm = new EditorView(editorOptions);
+
+/*	this.cm = new EditorView({
 		doc: options.value,
 		extensions: [
 			basicSetup,
+			html({selfClosingTags: true}),
+			javascript(),
+			javascriptLanguage.data.of({
+				autocomplete: scopeCompletionSource(globalThis)//self.domNode.ownerDocument.defaultView)
+			}),
 			keymap.of([
 				indentWithTab
 			]), // ,defaultKeymap
@@ -58,7 +129,7 @@ function CodeMirrorEngine(options) {
 			}),
 			EditorView.domEventHandlers({
 				drop(event,view) {
-					console.log("DROP");
+					return self.handleDropEvent(event,view);
 				},
 				paste(event,view) {
 					console.log("PASTE");
@@ -80,23 +151,18 @@ function CodeMirrorEngine(options) {
 			})
 		],
 		parent:this.domNode
-	});
+	});*/
+};
+
+CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {
+	console.log("DROP");
+	return false;
 };
 
 CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 	console.log("KEYDOWN");
 	if($tw.keyboardManager.handleKeydownEvent(event,{onlyPriority: true})) {
 		return true;
-	}
-	if(event.ctrlKey && (event.which === 13)) {
-		console.log("ctrl-enter");
-	}
-	if(event.ctrlKey && (event.which === 17)) {
-		console.log(event);
-		console.log("CTRL-ENTER");
-	}
-	if(event.which === 13) {
-		console.log("ENTER");
 	}
 	var widget = this.widget;
 	var keyboardWidgets = [];
@@ -143,7 +209,7 @@ CodeMirrorEngine.prototype.updateDomNodeText = function(text) {
 	this.cm.dispatch(this.cm.state.update({
 		changes: {
 			from: 0,
-			to: this.cm.state.doc.length,
+			to: self.cm.state.doc.length,
 			insert: text
 		},
 		selection: selections,
