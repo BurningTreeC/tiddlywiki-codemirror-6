@@ -34,6 +34,8 @@ function CodeMirrorEngine(options) {
 	this.parentNode.insertBefore(this.domNode,this.nextSibling);
 	this.widget.domNodes.push(this.domNode);
 
+	console.log("STARTING NEW");
+
 	var {minimalSetup,basicSetup} = CM["codemirror"];
 	var {EditorView, keymap} = CM["@codemirror/view"];
 	
@@ -62,6 +64,7 @@ function CodeMirrorEngine(options) {
 				},
 				paste(event,view) {
 					console.log("PASTE");
+					return true;
 				},
 				keydown(event,view) {
 					return self.handleKeydownEvent(event,view);
@@ -90,68 +93,21 @@ function CodeMirrorEngine(options) {
 		case "application/javascript":
 			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
 			editorOptions.extensions.push(javascript());
-			editorOptions.extensions.push(
+			/*editorOptions.extensions.push(
 				javascriptLanguage.data.of({
 					autocomplete: scopeCompletionSource(globalThis)//self.domNode.ownerDocument.defaultView)
 				})
-			);
+			);*/
 			break;
 		case "text/css":
 			var {css,cssLanguage} = CM["@codemirror/lang-css"];
-			console.log(css);
 			editorOptions.extensions.push(css());
 			break;
 		default:
 			break;
-	}
+	};
 
 	this.cm = new EditorView(editorOptions);
-
-/*	this.cm = new EditorView({
-		doc: options.value,
-		extensions: [
-			basicSetup,
-			html({selfClosingTags: true}),
-			javascript(),
-			javascriptLanguage.data.of({
-				autocomplete: scopeCompletionSource(globalThis)//self.domNode.ownerDocument.defaultView)
-			}),
-			keymap.of([
-				indentWithTab
-			]), // ,defaultKeymap
-			EditorView.lineWrapping,
-			EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
-			EditorView.perLineTextDirection.of(true),
-			EditorView.updateListener.of(function(v) {
-				if(v.docChanged) {
-					self.widget.saveChanges(self.cm.state.doc.toString());
-				}
-			}),
-			EditorView.domEventHandlers({
-				drop(event,view) {
-					return self.handleDropEvent(event,view);
-				},
-				paste(event,view) {
-					console.log("PASTE");
-				},
-				keydown(event,view) {
-					return self.handleKeydownEvent(event,view);
-				},
-				focus(event,view) {
-					console.log("FOCUS");
-					if(self.widget.editCancelPopups) {
-						$tw.popup.cancel(0);
-					}
-					return false;
-				},
-				blur(event,view) {
-					console.log("BLUR");
-
-				}
-			})
-		],
-		parent:this.domNode
-	});*/
 };
 
 CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {
@@ -160,7 +116,6 @@ CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {
 };
 
 CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
-	console.log("KEYDOWN");
 	if($tw.keyboardManager.handleKeydownEvent(event,{onlyPriority: true})) {
 		return true;
 	}
@@ -193,11 +148,34 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 Set the text of the engine if it doesn't currently have focus
 */
 CodeMirrorEngine.prototype.setText = function(text,type) {
-	var self = this;
-	//self.cm.setOption("mode",type);
+	console.log(type);
+	var {Compartment} = CM["@codemirror/state"];
+	var languageCompartment = new Compartment();
 	if(!this.cm.hasFocus) {
 		this.updateDomNodeText(text);
 	}
+	switch (type) {
+		case ("text/vnd.tiddlywiki" || "text/html"):
+			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
+			this.cm.dispatch({
+				effects: languageCompartment.reconfigure(html({selfClosingTags: true}))
+			});
+			break;
+		case "application/javascript":
+			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
+			this.cm.dispatch({
+				effects: languageCompartment.reconfigure(javascript())
+			});
+			break;
+		case "text/css":
+			var {css,cssLanguage} = CM["@codemirror/lang-css"];
+			this.cm.dispatch({
+				effects: languageCompartment.reconfigure(css())
+			});
+			break;
+		default:
+			break;
+	};
 };
 
 /*
