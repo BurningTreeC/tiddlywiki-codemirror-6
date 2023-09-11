@@ -84,6 +84,13 @@
 				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/subclasses/editor/edit-text.js",
 				"module-type": "widget-subclass"
 			}
+		},{
+			"file": "modules/subclasses/dropzone.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/subclasses/dropzone.js",
+				"module-type": "widget-subclass"
+			}
 		}
 	]
 }

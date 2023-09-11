@@ -165,35 +165,33 @@ function CodeMirrorEngine(options) {
 				drop(event,view) {
 					return self.handleDropEvent(event,view);
 				},
-				drag(event,view) {
-					if(self.widget.isFileDropEnabled && $tw.utils.dragEventContainsFiles(event)) {
-						event.preventDefault();
-						event.stopPropagation();
-						return false;
-					}
+				dragstart(event,view) {
 					return false;
 				},
 				dragenter(event,view) {
 					console.log("dragenter");
-					if(self.widget.isFileDropEnabled && $tw.utils.dragEventContainsFiles(event)) {
+					if(self.widget.isFileDropEnabled && ($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length)) {
+						console.log("preventing default dragenter");
 						event.preventDefault();
-						return false;
+						return true;
 					}
 					return false;
 				},
 				dragover(event,view) {
 					console.log("dragover");
-					if(self.widget.isFileDropEnabled && $tw.utils.dragEventContainsFiles(event)) {
+					if(self.widget.isFileDropEnabled && ($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length)) {
+						console.log("preventing default dragover");
 						event.preventDefault();
-						return false;
+						return true;
 					}
 					return false;
 				},
 				dragleave(event,view) {
 					console.log("dragleave");
 					if(self.widget.isFileDropEnabled) {
+						console.log("preventing default dragleave");
 						event.preventDefault();
-						return false;
+						return true;
 					}
 					return false;
 				},
@@ -307,14 +305,9 @@ CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {
 		event.stopPropagation();
 		return false;
 	}
-	// Detect if Chrome has added a pseudo File object to the dataTransfer
-	if(!$tw.utils.dragEventContainsFiles(event) && event.dataTransfer.files.length) {
+	if($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length) {
 		var dropCursorPos = view.posAtCoords({x: event.clientX, y: event.clientY},true);
 		view.dispatch({selection: {anchor: dropCursorPos, head: dropCursorPos}});
-		event.preventDefault();
-		return true;
-	} else if($tw.utils.dragEventContainsFiles(event)) {
-		console.log("GOTTCHA!");
 		event.preventDefault();
 		return true;
 	}

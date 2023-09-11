@@ -20,3 +20,10 @@ tags: $:/tags/Stylesheet
 }
 
 </$list>
+
+@media(max-width:800px) {
+	.tc-editor-toolbar button.tc-btn-invisible:not(.tc-text-editor-toolbar-item-adjunct) {
+		border-radius: 0px;
+		padding: 6px;
+	}
+}
