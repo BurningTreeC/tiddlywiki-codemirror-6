@@ -19,7 +19,7 @@ exports["make-link"] = function(event,operation) {
 			if(op.selection) {
 				op.replacement = "[[" + op.selection + "|" + event.paramObject.text + "]]";
 				op.cutStart = operation[i].selStart;
-				operation.cutEnd = operation[i].selEnd;				
+				op.cutEnd = operation[i].selEnd;				
 			} else {
 				op.replacement = "[[" + event.paramObject.text + "]]";
 				op.cutStart = operation[i].selStart;
