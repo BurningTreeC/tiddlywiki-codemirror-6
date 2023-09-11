@@ -27,7 +27,7 @@ exports.prototype.execute = function() {
 
 exports.prototype.refresh = function(changedTiddlers) {
 	var changedAttributes = this.computeAttributes();
-	if(changedAttributes.type || changedTiddlers["$:/config/codemirror-6/indentWithTab"]) {
+	if(changedAttributes.type) {
 		this.refreshSelf();
 		return true;
 	}
