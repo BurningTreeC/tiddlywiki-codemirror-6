@@ -35,16 +35,17 @@ function CodeMirrorEngine(options) {
 	this.widget.domNodes.push(this.domNode);
 
 	var {minimalSetup,basicSetup} = CM["codemirror"];
-	var {EditorView,keymap} = CM["@codemirror/view"];
-	
-	var {defaultKeymap,standardKeymap,indentWithTab} = CM["@codemirror/commands"];
-	var {language,indentUnit} = CM["@codemirror/language"];
-
-	var {EditorState,EditorSelection,Prec} = CM["@codemirror/state"];
-
+	var {EditorView,dropCursor,keymap,highlightSpecialChars,drawSelection,highlightActiveLine,rectangularSelection,crosshairCursor,lineNumbers,highlightActiveLineGutter} = CM["@codemirror/view"];
+	var {defaultKeymap,standardKeymap,indentWithTab,history,historyKeymap} = CM["@codemirror/commands"];
+	var {language,indentUnit,defaultHighlightStyle,syntaxHighlighting,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
+	var {Extension,EditorState,EditorSelection,Prec} = CM["@codemirror/state"];
+	var {searchKeymap,highlightSelectionMatches} = CM["@codemirror/search"];
+	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap} = CM["@codemirror/autocomplete"];
+	var {lintKeymap} = CM["@codemirror/lint"];
 	var {oneDark} = CM["@codemirror/theme-one-dark"];
 
 	this.editorSelection = EditorSelection;
+	this.dropCursor = dropCursor;
 
 	var themeSettings = {
 		background: '#fef7e5',
@@ -157,14 +158,54 @@ function CodeMirrorEngine(options) {
 		doc: options.value,
 		parent: this.domNode,
 		extensions: [
+			dropCursor(),
 			//Prec.high(oneDark),
 			//Prec.high(syntaxHighlighting(highlightStyle)),
 			Prec.high(EditorView.domEventHandlers({
 				drop(event,view) {
 					return self.handleDropEvent(event,view);
 				},
+				drag(event,view) {
+					if(self.widget.isFileDropEnabled && $tw.utils.dragEventContainsFiles(event)) {
+						event.preventDefault();
+						event.stopPropagation();
+						return false;
+					}
+					return false;
+				},
+				dragenter(event,view) {
+					console.log("dragenter");
+					if(self.widget.isFileDropEnabled && $tw.utils.dragEventContainsFiles(event)) {
+						event.preventDefault();
+						return false;
+					}
+					return false;
+				},
+				dragover(event,view) {
+					console.log("dragover");
+					if(self.widget.isFileDropEnabled && $tw.utils.dragEventContainsFiles(event)) {
+						event.preventDefault();
+						return false;
+					}
+					return false;
+				},
+				dragleave(event,view) {
+					console.log("dragleave");
+					if(self.widget.isFileDropEnabled) {
+						event.preventDefault();
+						return false;
+					}
+					return false;
+				},
 				paste(event,view) {
 					console.log("PASTE");
+					if(self.widget.isFileDropEnabled) {
+						event["twEditor"] = true;
+						self.widget.handlePasteEvent.call(self.widget,event);
+						return true;
+					} else {
+						event["twEditor"] = true;
+					}
 					return false;
 				},
 				keydown(event,view) {
@@ -182,7 +223,32 @@ function CodeMirrorEngine(options) {
 					return false;
 				}
 			})),
-			basicSetup,
+			//basicSetup,
+			lineNumbers(),
+			highlightActiveLineGutter(),
+			highlightSpecialChars(),
+			history(),
+			foldGutter(),
+			drawSelection(),
+			EditorState.allowMultipleSelections.of(true),
+			indentOnInput(),
+			syntaxHighlighting(defaultHighlightStyle, {fallback: true}),
+			bracketMatching(),
+			closeBrackets(),
+			autocompletion(),
+			rectangularSelection(),
+			crosshairCursor(),
+			highlightActiveLine(),
+			highlightSelectionMatches(),
+			keymap.of([
+				...closeBracketsKeymap,
+				...defaultKeymap,
+				...searchKeymap,
+				...historyKeymap,
+				...foldKeymap,
+				...completionKeymap,
+				...lintKeymap
+			]),
 			EditorView.lineWrapping,
 			EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
 			EditorView.perLineTextDirection.of(true),
@@ -232,13 +298,31 @@ function CodeMirrorEngine(options) {
 		default:
 			break;
 	};
-
 	this.cm = new EditorView(editorOptions);
 };
 
 CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {
 	console.log("DROP");
+	if(!this.widget.isFileDropEnabled) {
+		event.stopPropagation();
+		return false;
+	}
+	// Detect if Chrome has added a pseudo File object to the dataTransfer
+	if(!$tw.utils.dragEventContainsFiles(event) && event.dataTransfer.files.length) {
+		var dropCursorPos = view.posAtCoords({x: event.clientX, y: event.clientY},true);
+		view.dispatch({selection: {anchor: dropCursorPos, head: dropCursorPos}});
+		event.preventDefault();
+		return true;
+	} else if($tw.utils.dragEventContainsFiles(event)) {
+		console.log("GOTTCHA!");
+		event.preventDefault();
+		return true;
+	}
 	return false;
+};
+
+CodeMirrorEngine.prototype.handleDragEnterEvent = function(event) {
+
 };
 
 CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
@@ -274,7 +358,6 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 Set the text of the engine if it doesn't currently have focus
 */
 CodeMirrorEngine.prototype.setText = function(text,type) {
-	console.log(type);
 	//var {Compartment} = CM["@codemirror/state"];
 	//var languageCompartment = new Compartment();
 	if(!this.cm.hasFocus) {
@@ -353,7 +436,7 @@ CodeMirrorEngine.prototype.focus  = function() {
 Create a blank structure representing a text operation
 */
 CodeMirrorEngine.prototype.createTextOperation = function() {
-	this.isOngoingTextOperation = true;
+	this.cm.focus();
 	var selections = this.cm.state.selection.ranges;
 	var operations = [];
 	for(var i=0; i<selections.length; i++) {
