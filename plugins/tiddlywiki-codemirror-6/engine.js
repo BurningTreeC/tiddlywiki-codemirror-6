@@ -54,7 +54,7 @@ function CodeMirrorEngine(options) {
 				},
 				paste(event,view) {
 					console.log("PASTE");
-					return true;
+					return false;
 				},
 				keydown(event,view) {
 					return self.handleKeydownEvent(event,view);
@@ -68,7 +68,7 @@ function CodeMirrorEngine(options) {
 				},
 				blur(event,view) {
 					console.log("BLUR");
-
+					return false;
 				}
 			})),
 			basicSetup,
@@ -100,6 +100,10 @@ function CodeMirrorEngine(options) {
 					autocomplete: scopeCompletionSource(globalThis)//self.domNode.ownerDocument.defaultView)
 				})
 			);*/
+			break;
+		case "application/json":
+			var {json,jsonLanguage} = CM["@codemirror/lang-json"];
+			editorOptions.extensions.push(json());
 			break;
 		case "text/css":
 			var {css,cssLanguage} = CM["@codemirror/lang-css"];

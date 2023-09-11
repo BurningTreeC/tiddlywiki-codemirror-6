@@ -70,6 +70,20 @@
 				"title": "$:/core/modules/editor/operations/text/wrap-selection.js",
 				"module-type": "texteditoroperation"
 			}
+		},{
+			"file": "modules/subclasses/editor/edit.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/subclasses/editor/edit.js",
+				"module-type": "widget-subclass"
+			}
+		},{
+			"file": "modules/subclasses/editor/factory.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/subclasses/editor/edit-text.js",
+				"module-type": "widget-subclass"
+			}
 		}
 	]
 }
