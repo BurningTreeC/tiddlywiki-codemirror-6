@@ -72,9 +72,6 @@ function CodeMirrorEngine(options) {
 				}
 			})),
 			basicSetup,
-			keymap.of([
-				indentWithTab
-			]),
 			EditorView.lineWrapping,
 			EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
 			EditorView.perLineTextDirection.of(true),
@@ -84,6 +81,14 @@ function CodeMirrorEngine(options) {
 				}
 			}),
 		]
+	};
+
+	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes") {
+		editorOptions.extensions.push(
+			keymap.of([
+				indentWithTab
+			])
+		);
 	};
 
 	var mode = this.widget.getEditInfo().type;
