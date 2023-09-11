@@ -26,6 +26,11 @@ exports.prototype.execute = function() {
 };
 
 exports.prototype.refresh = function(changedTiddlers) {
+	var changedAttributes = this.computeAttributes();
+	if(changedAttributes.type || changedTiddlers["$:/config/codemirror-6/indentWithTab"]) {
+		this.refreshSelf();
+		return true;
+	}
 	// Call the base class handleChangeEvent function
 	Object.getPrototypeOf(Object.getPrototypeOf(this)).refresh.call(this,changedTiddlers);
 };

@@ -78,7 +78,7 @@
 				"module-type": "widget-subclass"
 			}
 		},{
-			"file": "modules/subclasses/editor/factory.js",
+			"file": "modules/subclasses/editor/edit-text.js",
 			"fields": {
 				"type": "application/javascript",
 				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/subclasses/editor/edit-text.js",
