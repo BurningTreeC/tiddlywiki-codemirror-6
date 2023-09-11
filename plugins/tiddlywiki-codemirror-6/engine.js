@@ -95,6 +95,7 @@ function CodeMirrorEngine(options) {
 	switch (mode) {
 		case ("text/vnd.tiddlywiki" || "text/html"):
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
+			var {Tag} = CM["@lezer/highlight"];
 			editorOptions.extensions.push(html({selfClosingTags: true}));
 			break;
 		case "application/javascript":
