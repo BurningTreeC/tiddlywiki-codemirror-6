@@ -225,6 +225,10 @@ function CodeMirrorEngine(options) {
 			var {css,cssLanguage} = CM["@codemirror/lang-css"];
 			editorOptions.extensions.push(css());
 			break;
+		case ("text/markdown" || "text/x-markdown"):
+			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
+			editorOptions.extensions.push(markdown());
+			break;
 		default:
 			break;
 	};
