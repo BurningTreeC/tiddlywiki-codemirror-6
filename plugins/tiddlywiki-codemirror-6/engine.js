@@ -35,19 +35,130 @@ function CodeMirrorEngine(options) {
 	this.widget.domNodes.push(this.domNode);
 
 	var {minimalSetup,basicSetup} = CM["codemirror"];
-	var {EditorView, keymap} = CM["@codemirror/view"];
+	var {EditorView,keymap} = CM["@codemirror/view"];
 	
 	var {defaultKeymap,standardKeymap,indentWithTab} = CM["@codemirror/commands"];
-	var {language} = CM["@codemirror/language"];
+	var {language,indentUnit} = CM["@codemirror/language"];
 
-	var {EditorSelection,Prec} = CM["@codemirror/state"];
+	var {EditorState,EditorSelection,Prec} = CM["@codemirror/state"];
+
+	var {oneDark} = CM["@codemirror/theme-one-dark"];
 
 	this.editorSelection = EditorSelection;
+
+	var themeSettings = {
+		background: '#fef7e5',
+		foreground: '#586E75',
+		caret: '#000000',
+		selection: '#073642',
+		gutterBackground: '#fef7e5',
+		gutterForeground: '#586E7580',
+		lineHighlight: '#EEE8D5',
+	};
+
+	var solarizedLightTheme = EditorView.theme({
+		"&": {
+				backgroundColor: themeSettings.background,
+				color: themeSettings.foreground
+		},
+		'.cm-content': {
+				caretColor: themeSettings.caret,
+		},
+		'.cm-cursor, .cm-dropCursor': {
+				borderLeftColor: themeSettings.caret,
+		},
+		'&.cm-focused .cm-selectionBackgroundm .cm-selectionBackground, .cm-content ::selection':
+				{
+				backgroundColor: themeSettings.selection,
+		},
+		'.cm-activeLine': {
+				backgroundColor: themeSettings.lineHighlight,
+		},
+		'.cm-gutters': {
+				backgroundColor: themeSettings.gutterBackground,
+				color: themeSettings.gutterForeground,
+		},
+		'.cm-activeLineGutter': {
+				backgroundColor: themeSettings.lineHighlight,
+		}
+	},
+	{
+		dark: false
+	});
+
+	var {tags} = CM["@lezer/highlight"];
+
+	var solarizedLightStyles = [
+		{
+			tag: tags.comment,
+			color: '#93A1A1',
+		},
+		{
+			tag: tags.string,
+			color: '#2AA198',
+		},
+		{
+			tag: tags.regexp,
+			color: '#D30102',
+		},
+		{
+			tag: tags.number,
+			color: '#D33682',
+		},
+		{
+			tag: tags.variableName,
+			color: '#268BD2',
+		},
+		{
+			tag: [tags.keyword, tags.operator, tags.punctuation],
+			color: '#859900',
+		},
+		{
+			tag: [tags.definitionKeyword, tags.modifier],
+			color: '#073642',
+			fontWeight: 'bold',
+		},
+		{
+			tag: [tags.className, tags.self, tags.definition(tags.propertyName)],
+			color: '#268BD2',
+		},
+		{
+			tag: tags.function(tags.variableName),
+			color: '#268BD2',
+		},
+		{
+			tag: [tags.bool, tags.null],
+			color: '#B58900',
+		},
+		{
+			tag: tags.tagName,
+			color: '#268BD2',
+			fontWeight: 'bold',
+		},
+		{
+			tag: tags.angleBracket,
+			color: '#93A1A1',
+		},
+		{
+			tag: tags.attributeName,
+			color: '#93A1A1',
+		},
+		{
+			tag: tags.typeName,
+			color: '#859900',
+		}
+	];
+
+	var {HighlightStyle,TagStyle,syntaxHighlighting} = CM["@codemirror/language"];
+
+	var highlightStyle = HighlightStyle.define(solarizedLightStyles);
 
 	var editorOptions = {
 		doc: options.value,
 		parent: this.domNode,
 		extensions: [
+			//Prec.high(oneDark),
+			//Prec.high(syntaxHighlighting(highlightStyle)),
 			Prec.high(EditorView.domEventHandlers({
 				drop(event,view) {
 					return self.handleDropEvent(event,view);
@@ -95,7 +206,6 @@ function CodeMirrorEngine(options) {
 	switch (mode) {
 		case ("text/vnd.tiddlywiki" || "text/html"):
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
-			var {Tag} = CM["@lezer/highlight"];
 			editorOptions.extensions.push(html({selfClosingTags: true}));
 			break;
 		case "application/javascript":

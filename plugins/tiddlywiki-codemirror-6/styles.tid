@@ -1,6 +1,10 @@
 title: $:/plugins/BTC/tiddlywiki-codemirror-6/styles
 tags: $:/tags/Stylesheet
 
+.cm-editor {
+	font-size: {{$:/config/codemirror-6/fontsize}};
+}
+
 <$list filter="[{$:/config/TextEditor/EditorHeight/Mode}match[fixed]]" variable="ignore">
 
 .cm-editor {
