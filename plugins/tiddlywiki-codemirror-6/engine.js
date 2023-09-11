@@ -34,31 +34,21 @@ function CodeMirrorEngine(options) {
 	this.parentNode.insertBefore(this.domNode,this.nextSibling);
 	this.widget.domNodes.push(this.domNode);
 
-	console.log("STARTING NEW");
-
 	var {minimalSetup,basicSetup} = CM["codemirror"];
 	var {EditorView, keymap} = CM["@codemirror/view"];
 	
 	var {defaultKeymap,standardKeymap,indentWithTab} = CM["@codemirror/commands"];
 	var {language} = CM["@codemirror/language"];
 
+	var {EditorSelection,Prec} = CM["@codemirror/state"];
+
+	this.editorSelection = EditorSelection;
+
 	var editorOptions = {
 		doc: options.value,
 		parent: this.domNode,
 		extensions: [
-			basicSetup,
-			keymap.of([
-				indentWithTab
-			]),
-			EditorView.lineWrapping,
-			EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
-			EditorView.perLineTextDirection.of(true),
-			EditorView.updateListener.of(function(v) {
-				if(v.docChanged) {
-					self.widget.saveChanges(self.cm.state.doc.toString());
-				}
-			}),
-			EditorView.domEventHandlers({
+			Prec.high(EditorView.domEventHandlers({
 				drop(event,view) {
 					return self.handleDropEvent(event,view);
 				},
@@ -80,7 +70,19 @@ function CodeMirrorEngine(options) {
 					console.log("BLUR");
 
 				}
-			})			
+			})),
+			basicSetup,
+			keymap.of([
+				indentWithTab
+			]),
+			EditorView.lineWrapping,
+			EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
+			EditorView.perLineTextDirection.of(true),
+			EditorView.updateListener.of(function(v) {
+				if(v.docChanged) {
+					self.widget.saveChanges(self.cm.state.doc.toString());
+				}
+			}),
 		]
 	};
 
@@ -149,12 +151,12 @@ Set the text of the engine if it doesn't currently have focus
 */
 CodeMirrorEngine.prototype.setText = function(text,type) {
 	console.log(type);
-	var {Compartment} = CM["@codemirror/state"];
-	var languageCompartment = new Compartment();
+	//var {Compartment} = CM["@codemirror/state"];
+	//var languageCompartment = new Compartment();
 	if(!this.cm.hasFocus) {
 		this.updateDomNodeText(text);
 	}
-	switch (type) {
+/*	switch (type) {
 		case ("text/vnd.tiddlywiki" || "text/html"):
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
 			this.cm.dispatch({
@@ -175,7 +177,7 @@ CodeMirrorEngine.prototype.setText = function(text,type) {
 			break;
 		default:
 			break;
-	};
+	};*/
 };
 
 /*
@@ -255,7 +257,6 @@ Execute a text operation
 CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 	var self = this;
 	if(operations.length) {
-		var {EditorSelection} = CM["@codemirror/state"];
 		var ranges = this.cm.state.selection.ranges;
 		this.cm.dispatch(this.cm.state.changeByRange(function(range) {
 			var index;
@@ -265,7 +266,7 @@ CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 				}
 			}
 			var editorChanges = [{from: operations[index].cutStart, to: operations[index].cutEnd, insert: operations[index].replacement}];
-			var selectionRange = EditorSelection.range(operations[index].newSelStart,operations[index].newSelEnd);
+			var selectionRange = self.editorSelection.range(operations[index].newSelStart,operations[index].newSelEnd);
 			return {
 				changes: editorChanges,
 				range: selectionRange
