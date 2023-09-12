@@ -764,7 +764,6 @@ Execute a text operation
 */
 CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 	var self = this;
-	console.log(operations);
 	if(operations.type === "undo") {
 		this.undo(this.cm);
 	} else if(operations.type === "redo") {
