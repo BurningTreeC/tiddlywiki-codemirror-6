@@ -434,7 +434,13 @@ function CodeMirrorEngine(options) {
 		editorOptions.extensions.push(highlightActiveLineGutter());
 	};
 
+	var cmIndentUnit = "	";
+	editorOptions.extensions.push(indentUnit.of(cmIndentUnit));
+
 	var mode = this.widget.editType;
+	if(mode === "") {
+		mode = "text/vnd.tiddlywiki";
+	}
 	switch(mode) {
 		case ("text/vnd.tiddlywiki" || "text/html"):
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
