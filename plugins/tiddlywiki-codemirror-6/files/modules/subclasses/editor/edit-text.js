@@ -37,7 +37,8 @@ exports.prototype.handlePasteEvent = function(event) {
 
 exports.prototype.refresh = function(changedTiddlers) {
 	var changedAttributes = this.computeAttributes();
-	if(changedAttributes.type) {
+	if(changedAttributes.type || changedTiddlers["$:/config/codemirror-6/indentWithTab"]) {
+		console.log("REFRESHING SELF");
 		this.refreshSelf();
 		return true;
 	}

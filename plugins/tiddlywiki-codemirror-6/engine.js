@@ -36,7 +36,7 @@ function CodeMirrorEngine(options) {
 
 	var {minimalSetup,basicSetup} = CM["codemirror"];
 	var {EditorView,dropCursor,keymap,highlightSpecialChars,drawSelection,highlightActiveLine,rectangularSelection,crosshairCursor,lineNumbers,highlightActiveLineGutter} = CM["@codemirror/view"];
-	var {defaultKeymap,standardKeymap,indentWithTab,history,historyKeymap} = CM["@codemirror/commands"];
+	var {defaultKeymap,standardKeymap,indentWithTab,history,historyKeymap,undo,redo} = CM["@codemirror/commands"];
 	var {language,indentUnit,defaultHighlightStyle,syntaxHighlighting,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
 	var {Extension,EditorState,EditorSelection,Prec} = CM["@codemirror/state"];
 	var {searchKeymap,highlightSelectionMatches} = CM["@codemirror/search"];
@@ -46,6 +46,8 @@ function CodeMirrorEngine(options) {
 
 	this.editorSelection = EditorSelection;
 	this.dropCursor = dropCursor;
+	this.undo = undo;
+	this.redo = redo;
 
 	var themeSettings = {
 		background: '#fef7e5',
@@ -56,6 +58,8 @@ function CodeMirrorEngine(options) {
 		gutterForeground: '#586E7580',
 		lineHighlight: '#EEE8D5',
 	};
+
+	console.log("DRAWING NEW");
 
 	var solarizedLightTheme = EditorView.theme({
 		"&": {
@@ -238,7 +242,7 @@ function CodeMirrorEngine(options) {
 			lineNumbers(),
 			highlightActiveLineGutter(),
 			highlightSpecialChars(),
-			history(),
+			history(),//{newGroupDelay: 0, joinToEvent: function() { return false; }}),
 			foldGutter(),
 			drawSelection(),
 			EditorState.allowMultipleSelections.of(true),
@@ -479,7 +483,12 @@ Execute a text operation
 */
 CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 	var self = this;
-	if(operations.length) {
+	console.log(operations);
+	if(operations.type === "undo") {
+		this.undo(this.cm);
+	} else if(operations.type === "redo") {
+		this.redo(this.cm);
+	} else if(operations && operations.length) {
 		var ranges = this.cm.state.selection.ranges;
 		this.cm.dispatch(this.cm.state.changeByRange(function(range) {
 			var index;

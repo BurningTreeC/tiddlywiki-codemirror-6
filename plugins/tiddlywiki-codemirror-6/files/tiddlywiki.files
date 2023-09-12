@@ -71,6 +71,20 @@
 				"module-type": "texteditoroperation"
 			}
 		},{
+			"file": "modules/editor/operations/undo.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/editor/operations/text/undo.js",
+				"module-type": "texteditoroperation"
+			}
+		},{
+			"file": "modules/editor/operations/redo.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/editor/operations/text/redo.js",
+				"module-type": "texteditoroperation"
+			}
+		},{
 			"file": "modules/subclasses/editor/edit.js",
 			"fields": {
 				"type": "application/javascript",
