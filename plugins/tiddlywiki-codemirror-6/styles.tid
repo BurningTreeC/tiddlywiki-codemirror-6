@@ -3,6 +3,7 @@ tags: $:/tags/Stylesheet
 
 .cm-editor {
 	font-size: {{$:/config/codemirror-6/fontsize}};
+	color-scheme: {{{ [[$:/palette]get[text]!is[blank]] ~[[$:/palettes/vanilla]] +[get[color-scheme]] ~light }}};
 }
 
 .cm-scroller {

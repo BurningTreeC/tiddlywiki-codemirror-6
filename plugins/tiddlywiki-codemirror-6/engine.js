@@ -51,45 +51,73 @@ function CodeMirrorEngine(options) {
 
 	// Solarized light theme adapted from: https://github.com/craftzdog/cm6-themes/blob/main/packages/solarized-light/src/index.ts
 
-	var base00 = "#657b83",
-		base01 = "#586e75",
-		base02 = "#073642",
-		base03 = "#002b36",
-		base0 = "#839496",
-		base1 = "#93a1a1",
-		base2 = "#eee8d5",
-		base3 = "#fdf6e3",
-		base_red = "#dc322f",
-		base_orange = "#cb4b16",
-		base_yellow = "#b58900",
-		base_green = "#859900",
-		base_cyan = "#2aa198",
-		base_blue = "#268bd2",
-		base_violet = "#6c71c4",
-		base_magenta = "#d33682";
+	var slbase00 = "#657b83",
+		slbase01 = "#586e75",
+		slbase02 = "#073642",
+		slbase03 = "#002b36",
+		slbase0 = "#839496",
+		slbase1 = "#93a1a1",
+		slbase2 = "#eee8d5",
+		slbase3 = "#fdf6e3",
+		slbase_red = "#dc322f",
+		slbase_orange = "#cb4b16",
+		slbase_yellow = "#b58900",
+		slbase_green = "#859900",
+		slbase_cyan = "#2aa198",
+		slbase_blue = "#268bd2",
+		slbase_violet = "#6c71c4",
+		slbase_magenta = "#d33682";
 
-	var invalid = "#d30102";
-	var darkBackground = "#dfd9c8";
-	var highlightBackground = darkBackground;
-	var background = base3;
-	var tooltipBackground = base01;
-	var selection = darkBackground;
-	var cursor = base01;
+	var slinvalid = "#d30102";
+	var sldarkBackground = "#dfd9c8";
+	var slhighlightBackground = sldarkBackground;
+	var slbackground = slbase3;
+	var sltooltipBackground = slbase01;
+	var slselection = sldarkBackground;
+	var slcursor = slbase01;
 
-	var solarizedLightTheme = EditorView.theme(
+	// Solarized dark theme adapted from: https://github.com/craftzdog/cm6-themes/blob/main/packages/solarized-dark/src/index.ts
+
+	var sdbase00 = "#002b36",
+		sdbase01 = "#073642",
+		sdbase02 = "#586e75",
+		sdbase03 = "#657b83",
+		sdbase04 = "#839496",
+		sdbase05 = "#93a1a1",
+		sdbase06 = "#eee8d5",
+		sdbase07 = "#fdf6e3",
+		sdbase_red = "#dc322f",
+		sdbase_orange = "#cb4b16",
+		sdbase_yellow = "#b58900",
+		sdbase_green = "#859900",
+		sdbase_cyan = "#2aa198",
+		sdbase_blue = "#268bd2",
+		sdbase_violet = "#6c71c4",
+		sdbase_magenta = "#d33682";
+
+	var sdinvalid = "#d30102";
+	var sdstone = sdbase04;
+	var sddarkBackground = "#00252f";
+	var sdhighlightBackground = "#173541";
+	var sdbackground = sdbase00;
+	var sdtooltipBackground = sdbase01;
+	var sdselection = "#173541";
+	var sdcursor = sdbase04;
+
+	this.solarizedLightTheme = EditorView.theme(
 	{
 		"&": {
-			color: base00,
-			backgroundColor: background
+			color: slbase00,
+			//backgroundColor: slbackground
 		},
 
 		".cm-content": {
-			caretColor: cursor
+			caretColor: slcursor
 		},
 
-		".cm-cursor, .cm-dropCursor": { borderLeftColor: cursor },
-		"&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": { backgroundColor: selection },
-		".cm-panels": { backgroundColor: darkBackground, color: base03 },
+		".cm-cursor, .cm-dropCursor": { borderLeftColor: slcursor },
+		"&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": { backgroundColor: slselection },
+		".cm-panels": { backgroundColor: sldarkBackground, color: slbase03 },
 		".cm-panels.cm-panels-top": { borderBottom: "2px solid black" },
 		".cm-panels.cm-panels-bottom": { borderTop: "2px solid black" },
 
@@ -101,21 +129,21 @@ function CodeMirrorEngine(options) {
 			backgroundColor: "#6199ff2f"
 		},
 
-		".cm-activeLine": { backgroundColor: highlightBackground },
+		".cm-activeLine": { backgroundColor: slhighlightBackground },
 		".cm-selectionMatch": { backgroundColor: "#aafe661a" },
 
 		"&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
-			outline: `1px solid ${base1}`
+			outline: `1px solid ${slbase1}`
 		},
 
 		".cm-gutters": {
-			backgroundColor: "#00000010",
-			color: base00,
+			//backgroundColor: "#00000010",
+			color: slbase00,
 			border: "none"
 		},
 
 		".cm-activeLineGutter": {
-			backgroundColor: highlightBackground
+			backgroundColor: slhighlightBackground
 		},
 
 		".cm-foldPlaceholder": {
@@ -126,121 +154,288 @@ function CodeMirrorEngine(options) {
 
 		".cm-tooltip": {
 			border: "none",
-			backgroundColor: tooltipBackground
+			backgroundColor: sltooltipBackground
 		},
 		".cm-tooltip .cm-tooltip-arrow:before": {
 			borderTopColor: "transparent",
 			borderBottomColor: "transparent"
 		},
 		".cm-tooltip .cm-tooltip-arrow:after": {
-			borderTopColor: tooltipBackground,
-			borderBottomColor: tooltipBackground
+			borderTopColor: sltooltipBackground,
+			borderBottomColor: sltooltipBackground
 		},
 		".cm-tooltip-autocomplete": {
 			"& > ul > li[aria-selected]": {
-				backgroundColor: highlightBackground,
-				color: base03
+				backgroundColor: slhighlightBackground,
+				color: slbase03
 			}
 		}
 	},
 	{ dark: false });
 
+	this.solarizedDarkTheme = EditorView.theme(
+	{
+		"&": {
+			color: sdbase05,
+			//backgroundColor: sdbackground
+		},
+
+		".cm-content": {
+			caretColor: sdcursor
+		},
+
+		".cm-cursor, .cm-dropCursor": { borderLeftColor: sdcursor },
+		"&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": { backgroundColor: sdselection },
+
+		".cm-panels": { backgroundColor: sddarkBackground, color: sdbase03 },
+		".cm-panels.cm-panels-top": { borderBottom: "2px solid black" },
+		".cm-panels.cm-panels-bottom": { borderTop: "2px solid black" },
+
+		".cm-searchMatch": {
+			backgroundColor: "#72a1ff59",
+			outline: "1px solid #457dff"
+		},
+		".cm-searchMatch.cm-searchMatch-selected": {
+			backgroundColor: "#6199ff2f"
+		},
+
+		".cm-activeLine": { backgroundColor: sdhighlightBackground },
+		".cm-selectionMatch": { backgroundColor: "#aafe661a" },
+
+		"&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
+			outline: `1px solid ${sdbase06}`
+		},
+
+		".cm-gutters": {
+			//backgroundColor: sddarkBackground,
+			color: sdstone,
+			border: "none"
+		},
+
+		".cm-activeLineGutter": {
+			backgroundColor: sdhighlightBackground
+		},
+
+		".cm-foldPlaceholder": {
+			backgroundColor: "transparent",
+			border: "none",
+			color: "#ddd"
+		},
+
+		".cm-tooltip": {
+			border: "none",
+			backgroundColor: sdtooltipBackground
+		},
+		".cm-tooltip .cm-tooltip-arrow:before": {
+			borderTopColor: "transparent",
+			borderBottomColor: "transparent"
+		},
+		".cm-tooltip .cm-tooltip-arrow:after": {
+			borderTopColor: sdtooltipBackground,
+			borderBottomColor: sdtooltipBackground
+		},
+		".cm-tooltip-autocomplete": {
+			"& > ul > li[aria-selected]": {
+				backgroundColor: sdhighlightBackground,
+				color: sdbase03
+			}
+		}
+	},
+	{ dark: true });
+
 	var {tags} = CM["@lezer/highlight"];
 	var {HighlightStyle,TagStyle,syntaxHighlighting} = CM["@codemirror/language"];
 
-	var solarizedLightHighlightStyle = HighlightStyle.define([
-		{ tag: tags.keyword, color: base_green },
+	this.solarizedLightHighlightStyle = HighlightStyle.define([
+		{ tag: tags.keyword, color: slbase_green },
 		{
 			tag: [tags.name, tags.deleted, tags.character, tags.propertyName, tags.macroName],
-			color: base_cyan
+			color: slbase_cyan
 		},
-		{ tag: [tags.variableName], color: base_blue },
-		{ tag: [tags.function(tags.variableName)], color: base_blue },
-		{ tag: [tags.labelName], color: base_magenta },
+		{ tag: [tags.variableName], color: slbase_blue },
+		{ tag: [tags.function(tags.variableName)], color: slbase_blue },
+		{ tag: [tags.labelName], color: slbase_magenta },
 		{
 			tag: [tags.color, tags.constant(tags.name), tags.standard(tags.name)],
-			color: base_yellow
+			color: slbase_yellow
 		},
-		{ tag: [tags.definition(tags.name), tags.separator], color: base_cyan },
-		{ tag: [tags.brace], color: base_magenta },
+		{ tag: [tags.definition(tags.name), tags.separator], color: slbase_cyan },
+		{ tag: [tags.brace], color: slbase_magenta },
 		{
 			tag: [tags.annotation],
-			color: invalid
+			color: slinvalid
 		},
 		{
 			tag: [tags.number, tags.changed, tags.annotation, tags.modifier, tags.self, tags.namespace],
-			color: base_magenta
+			color: slbase_magenta
 		},
 		{
 			tag: [tags.typeName, tags.className],
-			color: base_orange
+			color: slbase_orange
 		},
 		{
 			tag: [tags.operator, tags.operatorKeyword],
-			color: base_violet
+			color: slbase_violet
 		},
 		{
 			tag: [tags.tagName],
-			color: base_blue
+			color: slbase_blue
 		},
 		{
 			tag: [tags.squareBracket],
-			color: base_red
+			color: slbase_red
 		},
 		{
 			tag: [tags.angleBracket],
-			color: base02
+			color: slbase02
 		},
 		{
 			tag: [tags.attributeName],
-			color: base1
+			color: slbase1
 		},
 		{
 			tag: [tags.regexp],
-			color: invalid
+			color: slinvalid
 		},
 		{
 			tag: [tags.quote],
-			color: base_green
+			color: slbase_green
 		},
-		{ tag: [tags.string], color: base_yellow },
+		{ tag: [tags.string], color: slbase_yellow },
 		{
 			tag: tags.link,
-			color: base_cyan,
+			color: slbase_cyan,
 			textDecoration: 'underline',
 			textUnderlinePosition: 'under'
 		},
 		{
 			tag: [tags.url, tags.escape, tags.special(tags.string)],
-			color: base_yellow
+			color: slbase_yellow
 		},
-		{ tag: [tags.meta], color: base_red },
-		{ tag: [tags.comment], color: base02, fontStyle: 'italic' },
-		{ tag: tags.strong, fontWeight: 'bold', color: base01 },
-		{ tag: tags.emphasis, fontStyle: 'italic', color: base_green },
+		{ tag: [tags.meta], color: slbase_red },
+		{ tag: [tags.comment], color: slbase02, fontStyle: 'italic' },
+		{ tag: tags.strong, fontWeight: 'bold', color: slbase01 },
+		{ tag: tags.emphasis, fontStyle: 'italic', color: slbase_green },
 		{ tag: tags.strikethrough, textDecoration: 'line-through' },
-		{ tag: tags.heading, fontWeight: 'bold', color: base_yellow },
-		{ tag: tags.heading1, fontWeight: 'bold', color: base03 },
+		{ tag: tags.heading, fontWeight: 'bold', color: slbase_yellow },
+		{ tag: tags.heading1, fontWeight: 'bold', color: slbase03 },
 		{
 			tag: [tags.heading2, tags.heading3, tags.heading4],
 			fontWeight: 'bold',
-			color: base03
+			color: slbase03
 		},
 		{
 			tag: [tags.heading5, tags.heading6],
-			color: base03
+			color: slbase03
 		},
-		{ tag: [tags.atom, tags.bool, tags.special(tags.variableName)], color: base_magenta },
+		{ tag: [tags.atom, tags.bool, tags.special(tags.variableName)], color: slbase_magenta },
 		{
 			tag: [tags.processingInstruction, tags.inserted, tags.contentSeparator],
-			color: base_red
+			color: slbase_red
 		},
 		{
 			tag: [tags.contentSeparator],
-			color: base_yellow
+			color: slbase_yellow
 		},
-		{ tag: tags.invalid, color: base02, borderBottom: `1px dotted ${base_red}` }
+		{ tag: tags.invalid, color: slbase02, borderBottom: `1px dotted ${slbase_red}` }
 	]);
+
+	this.solarizedDarkHighlightStyle = HighlightStyle.define([
+		{ tag: tags.keyword, color: sdbase_green },
+		{
+			tag: [tags.name, tags.deleted, tags.character, tags.propertyName, tags.macroName],
+			color: sdbase_cyan
+		},
+		{ tag: [tags.variableName], color: sdbase05 },
+		{ tag: [tags.function(tags.variableName)], color: sdbase_blue },
+		{ tag: [tags.labelName], color: sdbase_magenta },
+		{
+			tag: [tags.color, tags.constant(tags.name), tags.standard(tags.name)],
+			color: sdbase_yellow
+		},
+		{ tag: [tags.definition(tags.name), tags.separator], color: sdbase_cyan },
+		{ tag: [tags.brace], color: sdbase_magenta },
+		{
+			tag: [tags.annotation],
+			color: sdinvalid
+		},
+		{
+			tag: [tags.number, tags.changed, tags.annotation, tags.modifier, tags.self, tags.namespace],
+			color: sdbase_magenta
+		},
+		{
+			tag: [tags.typeName, tags.className],
+			color: sdbase_orange
+		},
+		{
+			tag: [tags.operator, tags.operatorKeyword],
+			color: sdbase_violet
+		},
+		{
+			tag: [tags.tagName],
+			color: sdbase_blue
+		},
+		{
+			tag: [tags.squareBracket],
+			color: sdbase_red
+		},
+		{
+			tag: [tags.angleBracket],
+			color: sdbase02
+		},
+		{
+			tag: [tags.attributeName],
+			color: sdbase05
+		},
+		{
+			tag: [tags.regexp],
+			color: sdinvalid
+		},
+		{
+			tag: [tags.quote],
+			color: sdbase_green
+		},
+		{ tag: [tags.string], color: sdbase_yellow },
+		{
+			tag: tags.link,
+			color: sdbase_cyan,
+			textDecoration: "underline",
+			textUnderlinePosition: "under"
+		},
+		{
+			tag: [tags.url, tags.escape, tags.special(tags.string)],
+			color: sdbase_yellow
+		},
+		{ tag: [tags.meta], color: sdbase_red },
+		{ tag: [tags.comment], color: sdbase02, fontStyle: "italic" },
+		{ tag: tags.strong, fontWeight: "bold", color: sdbase06 },
+		{ tag: tags.emphasis, fontStyle: "italic", color: sdbase_green },
+		{ tag: tags.strikethrough, textDecoration: "line-through" },
+		{ tag: tags.heading, fontWeight: "bold", color: sdbase_yellow },
+		{ tag: tags.heading1, fontWeight: "bold", color: sdbase07 },
+		{
+			tag: [tags.heading2, tags.heading3, tags.heading4],
+			fontWeight: "bold",
+			color: sdbase06
+		},
+		{
+			tag: [tags.heading5, tags.heading6],
+			color: sdbase06
+		},
+		{ tag: [tags.atom, tags.bool, tags.special(tags.variableName)], color: sdbase_magenta },
+		{
+			tag: [tags.processingInstruction, tags.inserted, tags.contentSeparator],
+			color: sdbase_red
+		},
+		{
+			tag: [tags.contentSeparator],
+			color: sdbase_yellow
+		},
+		{ tag: tags.invalid, color: sdbase02, borderBottom: `1px dotted ${sdbase_red}` }
+	]);
+
+	var solarizedTheme = this.widget.wiki.getTiddler(this.widget.wiki.getTiddlerText("$:/palette")).fields["color-scheme"] === "light" ? this.solarizedLightTheme : this.solarizedDarkTheme;
+	var solarizedHighlightStyle = this.widget.wiki.getTiddler(this.widget.wiki.getTiddlerText("$:/palette")).fields["color-scheme"] === "light" ? this.solarizedLightHighlightStyle : this.solarizedDarkHighlightStyle;
 
 	var editorOptions = {
 		doc: options.value,
@@ -249,8 +444,8 @@ function CodeMirrorEngine(options) {
 			dropCursor(),
 			//Prec.high(oneDark),
 			//Prec.high(syntaxHighlighting(highlightStyle)),
-			//solarizedLightTheme,
-			//syntaxHighlighting(solarizedLightHighlightStyle),
+			solarizedTheme,
+			syntaxHighlighting(solarizedHighlightStyle),
 			Prec.high(EditorView.domEventHandlers({
 				drop(event,view) {
 					self.dragCancel = false;
