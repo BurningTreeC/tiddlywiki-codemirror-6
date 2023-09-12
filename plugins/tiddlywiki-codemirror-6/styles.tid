@@ -30,9 +30,9 @@ tags: $:/tags/Stylesheet
 		border-radius: 0px;
 		padding: 6px;
 	}
-	.tc-editor-toolbar {
+<!--	.tc-editor-toolbar {
 		position: sticky;
 		top: 0;
 		z-index: 1000;
-	}
+	}-->
 }
