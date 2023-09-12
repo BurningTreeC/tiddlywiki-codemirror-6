@@ -12,7 +12,7 @@ Widget base class
 /*global $tw: false */
 "use strict";
 
-exports.baseClass = "edit-text";
+exports.baseClass = "edit-codemirror-6";
 
 exports.constructor = function(parseTreeNode,options) {
 	this.initialise(parseTreeNode,options);
@@ -37,8 +37,7 @@ exports.prototype.handlePasteEvent = function(event) {
 
 exports.prototype.refresh = function(changedTiddlers) {
 	var changedAttributes = this.computeAttributes();
-	if(changedAttributes.type || changedTiddlers["$:/config/codemirror-6/indentWithTab"]) {
-		console.log("REFRESHING SELF");
+	if(changedAttributes.type || changedTiddlers["$:/config/codemirror-6/indentWithTab"] || changedTiddlers["$:/config/codemirror-6/lineNumbers"]) {
 		this.refreshSelf();
 		return true;
 	}

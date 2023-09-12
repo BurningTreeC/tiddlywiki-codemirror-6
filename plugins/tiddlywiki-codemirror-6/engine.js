@@ -38,14 +38,16 @@ function CodeMirrorEngine(options) {
 	var {EditorView,dropCursor,keymap,highlightSpecialChars,drawSelection,highlightActiveLine,rectangularSelection,crosshairCursor,lineNumbers,highlightActiveLineGutter} = CM["@codemirror/view"];
 	var {defaultKeymap,standardKeymap,indentWithTab,history,historyKeymap,undo,redo} = CM["@codemirror/commands"];
 	var {language,indentUnit,defaultHighlightStyle,syntaxHighlighting,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
-	var {Extension,EditorState,EditorSelection,Prec} = CM["@codemirror/state"];
+	var {Extension,EditorState,Compartment,EditorSelection,Prec} = CM["@codemirror/state"];
 	var {searchKeymap,highlightSelectionMatches} = CM["@codemirror/search"];
 	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap} = CM["@codemirror/autocomplete"];
 	var {lintKeymap} = CM["@codemirror/lint"];
 	var {oneDark} = CM["@codemirror/theme-one-dark"];
 
 	this.editorSelection = EditorSelection;
-	this.dropCursor = dropCursor;
+	this.compartment = Compartment;
+	this.keymap = keymap;
+
 	this.undo = undo;
 	this.redo = redo;
 
@@ -104,144 +106,9 @@ function CodeMirrorEngine(options) {
 	var sdselection = "#173541";
 	var sdcursor = sdbase04;
 
-	this.solarizedLightTheme = EditorView.theme(
-	{
-		/*"&": {
-			color: slbase00,
-			//backgroundColor: slbackground
-		},*/
+	this.solarizedLightTheme = EditorView.theme({},{dark:false});
 
-		/*".cm-content": {
-			caretColor: slcursor
-		},*/
-
-		//".cm-cursor, .cm-dropCursor": { borderLeftColor: slcursor },
-		//"&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": { backgroundColor: slselection },
-		//".cm-panels": { backgroundColor: sldarkBackground, color: slbase03 },
-		//".cm-panels.cm-panels-top": { borderBottom: "2px solid black" },
-		//".cm-panels.cm-panels-bottom": { borderTop: "2px solid black" },
-
-		/*".cm-searchMatch": {
-			backgroundColor: "#72a1ff59",
-			outline: "1px solid #457dff"
-		},*/
-		/*".cm-searchMatch.cm-searchMatch-selected": {
-			backgroundColor: "#6199ff2f"
-		},*/
-
-		//".cm-activeLine": { backgroundColor: slhighlightBackground },
-		//".cm-selectionMatch": { backgroundColor: "#aafe661a" },
-
-		/*"&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
-			outline: `1px solid ${slbase1}`
-		},*/
-
-		/*".cm-gutters": {
-			//backgroundColor: "#00000010",
-			color: slbase00,
-			border: "none"
-		},*/
-
-		/*".cm-activeLineGutter": {
-			backgroundColor: slhighlightBackground
-		},*/
-
-		/*".cm-foldPlaceholder": {
-			backgroundColor: "transparent",
-			border: "none",
-			color: "#ddd"
-		},*/
-
-		/*".cm-tooltip": {
-			border: "none",
-			backgroundColor: sltooltipBackground
-		},*/
-		/*".cm-tooltip .cm-tooltip-arrow:before": {
-			borderTopColor: "transparent",
-			borderBottomColor: "transparent"
-		},
-		".cm-tooltip .cm-tooltip-arrow:after": {
-			borderTopColor: sltooltipBackground,
-			borderBottomColor: sltooltipBackground
-		},*/
-		/*".cm-tooltip-autocomplete": {
-			"& > ul > li[aria-selected]": {
-				backgroundColor: slhighlightBackground,
-				color: slbase03
-			}
-		}*/
-	},
-	{ dark: false });
-
-	this.solarizedDarkTheme = EditorView.theme(
-	{
-		/*"&": {
-			color: sdbase05,
-			//backgroundColor: sdbackground
-		},*/
-
-		/*".cm-content": {
-			caretColor: sdcursor
-		},*/
-
-		//".cm-cursor, .cm-dropCursor": { borderLeftColor: sdcursor },
-		//"&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": { backgroundColor: sdselection },
-
-		//".cm-panels": { backgroundColor: sddarkBackground, color: sdbase03 },
-		//".cm-panels.cm-panels-top": { borderBottom: "2px solid black" },
-		//".cm-panels.cm-panels-bottom": { borderTop: "2px solid black" },
-
-		/*".cm-searchMatch": {
-			backgroundColor: "#72a1ff59",
-			outline: "1px solid #457dff"
-		},*/
-		/*".cm-searchMatch.cm-searchMatch-selected": {
-			backgroundColor: "#6199ff2f"
-		},*/
-
-		//".cm-activeLine": { backgroundColor: sdhighlightBackground },
-		//".cm-selectionMatch": { backgroundColor: "#aafe661a" },
-
-		/*"&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
-			outline: `1px solid ${sdbase06}`
-		},*/
-
-		/*".cm-gutters": {
-			//backgroundColor: sddarkBackground,
-			color: sdstone,
-			border: "none"
-		},*/
-
-		/*".cm-activeLineGutter": {
-			backgroundColor: sdhighlightBackground
-		},*/
-
-		/*".cm-foldPlaceholder": {
-			backgroundColor: "transparent",
-			border: "none",
-			color: "#ddd"
-		},*/
-
-		/*".cm-tooltip": {
-			border: "none",
-			backgroundColor: sdtooltipBackground
-		},*/
-		/*".cm-tooltip .cm-tooltip-arrow:before": {
-			borderTopColor: "transparent",
-			borderBottomColor: "transparent"
-		},
-		".cm-tooltip .cm-tooltip-arrow:after": {
-			borderTopColor: sdtooltipBackground,
-			borderBottomColor: sdtooltipBackground
-		},*/
-		/*".cm-tooltip-autocomplete": {
-			"& > ul > li[aria-selected]": {
-				backgroundColor: sdhighlightBackground,
-				color: sdbase03
-			}
-		}*/
-	},
-	{ dark: true });
+	this.solarizedDarkTheme = EditorView.theme({},{dark:true});
 
 	var {tags} = CM["@lezer/highlight"];
 	var {HighlightStyle,TagStyle,syntaxHighlighting} = CM["@codemirror/language"];
@@ -445,7 +312,7 @@ function CodeMirrorEngine(options) {
 			//Prec.high(oneDark),
 			//Prec.high(syntaxHighlighting(highlightStyle)),
 			solarizedTheme,
-			syntaxHighlighting(solarizedHighlightStyle),
+			Prec.high(syntaxHighlighting(solarizedHighlightStyle)),
 			Prec.high(EditorView.domEventHandlers({
 				drop(event,view) {
 					self.dragCancel = false;
@@ -520,15 +387,12 @@ function CodeMirrorEngine(options) {
 				}
 			})),
 			//basicSetup,
-			lineNumbers(),
-			highlightActiveLineGutter(),
 			highlightSpecialChars(),
 			history(),//{newGroupDelay: 0, joinToEvent: function() { return false; }}),
-			foldGutter(),
 			drawSelection(),
 			EditorState.allowMultipleSelections.of(true),
 			indentOnInput(),
-			syntaxHighlighting(defaultHighlightStyle, {fallback: true}),
+			syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
 			bracketMatching(),
 			closeBrackets(),
 			autocompletion(),
@@ -564,8 +428,14 @@ function CodeMirrorEngine(options) {
 		);
 	};
 
+	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes") {
+		editorOptions.extensions.push(lineNumbers());
+		editorOptions.extensions.push(foldGutter());
+		editorOptions.extensions.push(highlightActiveLineGutter());
+	};
+
 	var mode = this.widget.editType;
-	switch (mode) {
+	switch(mode) {
 		case ("text/vnd.tiddlywiki" || "text/html"):
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
 			editorOptions.extensions.push(html({selfClosingTags: true}));
@@ -594,6 +464,7 @@ function CodeMirrorEngine(options) {
 		default:
 			break;
 	};
+
 	this.cm = new EditorView(editorOptions);
 };
 
