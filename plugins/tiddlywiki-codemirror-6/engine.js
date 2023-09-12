@@ -163,12 +163,15 @@ function CodeMirrorEngine(options) {
 			//Prec.high(syntaxHighlighting(highlightStyle)),
 			Prec.high(EditorView.domEventHandlers({
 				drop(event,view) {
+					self.dragCancel = false;
 					return self.handleDropEvent(event,view);
 				},
 				dragstart(event,view) {
+					self.dragCancel = true;
 					return false;
 				},
 				dragenter(event,view) {
+					self.dragCancel = true;
 					console.log("dragenter");
 					if(self.widget.isFileDropEnabled && ($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length)) {
 						console.log("preventing default dragenter");
@@ -178,6 +181,7 @@ function CodeMirrorEngine(options) {
 					return false;
 				},
 				dragover(event,view) {
+					self.dragCancel = true;
 					console.log("dragover");
 					if(self.widget.isFileDropEnabled && ($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length)) {
 						console.log("preventing default dragover");
@@ -187,11 +191,21 @@ function CodeMirrorEngine(options) {
 					return false;
 				},
 				dragleave(event,view) {
+					self.dragCancel = false;
 					console.log("dragleave");
 					if(self.widget.isFileDropEnabled) {
 						console.log("preventing default dragleave");
 						event.preventDefault();
 						return true;
+					}
+					return false;
+				},
+				dragend(event,view) {
+					console.log("DRAGEND");
+					self.dragCancel = true;
+					if(self.widget.isFileDropEnabled) {
+						//event.preventDefault();
+						//return true;
 					}
 					return false;
 				},
@@ -266,7 +280,7 @@ function CodeMirrorEngine(options) {
 		);
 	};
 
-	var mode = this.widget.getEditInfo().type;
+	var mode = this.widget.editType;
 	switch (mode) {
 		case ("text/vnd.tiddlywiki" || "text/html"):
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
@@ -315,11 +329,12 @@ CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {
 };
 
 CodeMirrorEngine.prototype.handleDragEnterEvent = function(event) {
-
+	return false;
 };
 
 CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 	if($tw.keyboardManager.handleKeydownEvent(event,{onlyPriority: true})) {
+		this.dragCancel = false;
 		return true;
 	}
 	var widget = this.widget;
@@ -331,19 +346,29 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 		widget = widget.parentWidget;
 	}
 	if(keyboardWidgets.length > 0) {
-		var handled;
+		var handled = undefined;
 		for(var i=0; i<keyboardWidgets.length; i++) {
 			var keyboardWidget = keyboardWidgets[i];
 			var keyInfoArray = keyboardWidget.keyInfoArray;
 			if($tw.keyboardManager.checkKeyDescriptors(event,keyInfoArray)) {
-				handled = true;
+				if(this.dragCancel && ($tw.keyboardManager.getPrintableShortcuts(keyInfoArray).indexOf("Escape") !== -1)) {
+					handled = false;
+				} else {
+					handled = true;
+				}
 			}
 		}
 		if(handled) {
 			console.log("HANDLED");
+			this.dragCancel = false;
+			return true;
+		} else if(handled === false) {
+			event.stopPropagation();
+			this.dragCancel = false;
 			return true;
 		}
 	}
+	this.dragCancel = false;
 	return this.widget.handleKeydownEvent.call(this.widget,event);
 };
 
@@ -429,7 +454,6 @@ CodeMirrorEngine.prototype.focus  = function() {
 Create a blank structure representing a text operation
 */
 CodeMirrorEngine.prototype.createTextOperation = function() {
-	this.cm.focus();
 	var selections = this.cm.state.selection.ranges;
 	var operations = [];
 	for(var i=0; i<selections.length; i++) {
