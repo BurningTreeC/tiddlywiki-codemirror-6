@@ -432,11 +432,11 @@ function CodeMirrorEngine(options) {
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes") {
 		editorOptions.extensions.push(lineNumbers());
 		editorOptions.extensions.push(foldGutter());
-		editorOptions.extensions.push(highlightActiveLineGutter());
 	};
 
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLine") === "yes") {
 		editorOptions.extensions.push(highlightActiveLine());
+		editorOptions.extensions.push(highlightActiveLineGutter());
 	};
 
 	var cmIndentUnit = "	";
