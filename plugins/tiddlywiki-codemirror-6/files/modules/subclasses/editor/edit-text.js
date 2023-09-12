@@ -25,6 +25,16 @@ exports.prototype.execute = function() {
 	Object.getPrototypeOf(Object.getPrototypeOf(this)).execute.call(this);
 };
 
+exports.prototype.handlePasteEvent = function(event) {
+	if(event.clipboardData && event.clipboardData.files && event.clipboardData.files.length) {
+		event.preventDefault();
+		event.stopPropagation();
+		this.dispatchDOMEvent(this.cloneEvent(event,["clipboardData"]));
+		return true;
+	}
+	return false;
+};
+
 exports.prototype.refresh = function(changedTiddlers) {
 	var changedAttributes = this.computeAttributes();
 	if(changedAttributes.type) {

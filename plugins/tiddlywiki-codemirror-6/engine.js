@@ -213,8 +213,7 @@ function CodeMirrorEngine(options) {
 					console.log("PASTE");
 					if(self.widget.isFileDropEnabled) {
 						event["twEditor"] = true;
-						self.widget.handlePasteEvent.call(self.widget,event);
-						return true;
+						return self.widget.handlePasteEvent.call(self.widget,event);
 					} else {
 						event["twEditor"] = true;
 					}

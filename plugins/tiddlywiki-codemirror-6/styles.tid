@@ -5,6 +5,10 @@ tags: $:/tags/Stylesheet
 	font-size: {{$:/config/codemirror-6/fontsize}};
 }
 
+.cm-scroller {
+	font-family: {{$:/themes/tiddlywiki/vanilla/settings/editorfontfamily}} !important;
+}
+
 <$list filter="[{$:/config/TextEditor/EditorHeight/Mode}match[fixed]]" variable="ignore">
 
 .cm-editor {
