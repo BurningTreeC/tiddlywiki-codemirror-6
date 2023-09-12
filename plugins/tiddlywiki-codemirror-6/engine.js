@@ -106,140 +106,140 @@ function CodeMirrorEngine(options) {
 
 	this.solarizedLightTheme = EditorView.theme(
 	{
-		"&": {
+		/*"&": {
 			color: slbase00,
 			//backgroundColor: slbackground
-		},
+		},*/
 
-		".cm-content": {
+		/*".cm-content": {
 			caretColor: slcursor
-		},
+		},*/
 
-		".cm-cursor, .cm-dropCursor": { borderLeftColor: slcursor },
-		"&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": { backgroundColor: slselection },
-		".cm-panels": { backgroundColor: sldarkBackground, color: slbase03 },
-		".cm-panels.cm-panels-top": { borderBottom: "2px solid black" },
-		".cm-panels.cm-panels-bottom": { borderTop: "2px solid black" },
+		//".cm-cursor, .cm-dropCursor": { borderLeftColor: slcursor },
+		//"&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": { backgroundColor: slselection },
+		//".cm-panels": { backgroundColor: sldarkBackground, color: slbase03 },
+		//".cm-panels.cm-panels-top": { borderBottom: "2px solid black" },
+		//".cm-panels.cm-panels-bottom": { borderTop: "2px solid black" },
 
-		".cm-searchMatch": {
+		/*".cm-searchMatch": {
 			backgroundColor: "#72a1ff59",
 			outline: "1px solid #457dff"
-		},
-		".cm-searchMatch.cm-searchMatch-selected": {
+		},*/
+		/*".cm-searchMatch.cm-searchMatch-selected": {
 			backgroundColor: "#6199ff2f"
-		},
+		},*/
 
-		".cm-activeLine": { backgroundColor: slhighlightBackground },
-		".cm-selectionMatch": { backgroundColor: "#aafe661a" },
+		//".cm-activeLine": { backgroundColor: slhighlightBackground },
+		//".cm-selectionMatch": { backgroundColor: "#aafe661a" },
 
-		"&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
+		/*"&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
 			outline: `1px solid ${slbase1}`
-		},
+		},*/
 
-		".cm-gutters": {
+		/*".cm-gutters": {
 			//backgroundColor: "#00000010",
 			color: slbase00,
 			border: "none"
-		},
+		},*/
 
-		".cm-activeLineGutter": {
+		/*".cm-activeLineGutter": {
 			backgroundColor: slhighlightBackground
-		},
+		},*/
 
-		".cm-foldPlaceholder": {
+		/*".cm-foldPlaceholder": {
 			backgroundColor: "transparent",
 			border: "none",
 			color: "#ddd"
-		},
+		},*/
 
-		".cm-tooltip": {
+		/*".cm-tooltip": {
 			border: "none",
 			backgroundColor: sltooltipBackground
-		},
-		".cm-tooltip .cm-tooltip-arrow:before": {
+		},*/
+		/*".cm-tooltip .cm-tooltip-arrow:before": {
 			borderTopColor: "transparent",
 			borderBottomColor: "transparent"
 		},
 		".cm-tooltip .cm-tooltip-arrow:after": {
 			borderTopColor: sltooltipBackground,
 			borderBottomColor: sltooltipBackground
-		},
-		".cm-tooltip-autocomplete": {
+		},*/
+		/*".cm-tooltip-autocomplete": {
 			"& > ul > li[aria-selected]": {
 				backgroundColor: slhighlightBackground,
 				color: slbase03
 			}
-		}
+		}*/
 	},
 	{ dark: false });
 
 	this.solarizedDarkTheme = EditorView.theme(
 	{
-		"&": {
+		/*"&": {
 			color: sdbase05,
 			//backgroundColor: sdbackground
-		},
+		},*/
 
-		".cm-content": {
+		/*".cm-content": {
 			caretColor: sdcursor
-		},
+		},*/
 
-		".cm-cursor, .cm-dropCursor": { borderLeftColor: sdcursor },
-		"&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": { backgroundColor: sdselection },
+		//".cm-cursor, .cm-dropCursor": { borderLeftColor: sdcursor },
+		//"&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": { backgroundColor: sdselection },
 
-		".cm-panels": { backgroundColor: sddarkBackground, color: sdbase03 },
-		".cm-panels.cm-panels-top": { borderBottom: "2px solid black" },
-		".cm-panels.cm-panels-bottom": { borderTop: "2px solid black" },
+		//".cm-panels": { backgroundColor: sddarkBackground, color: sdbase03 },
+		//".cm-panels.cm-panels-top": { borderBottom: "2px solid black" },
+		//".cm-panels.cm-panels-bottom": { borderTop: "2px solid black" },
 
-		".cm-searchMatch": {
+		/*".cm-searchMatch": {
 			backgroundColor: "#72a1ff59",
 			outline: "1px solid #457dff"
-		},
-		".cm-searchMatch.cm-searchMatch-selected": {
+		},*/
+		/*".cm-searchMatch.cm-searchMatch-selected": {
 			backgroundColor: "#6199ff2f"
-		},
+		},*/
 
-		".cm-activeLine": { backgroundColor: sdhighlightBackground },
-		".cm-selectionMatch": { backgroundColor: "#aafe661a" },
+		//".cm-activeLine": { backgroundColor: sdhighlightBackground },
+		//".cm-selectionMatch": { backgroundColor: "#aafe661a" },
 
-		"&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
+		/*"&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
 			outline: `1px solid ${sdbase06}`
-		},
+		},*/
 
-		".cm-gutters": {
+		/*".cm-gutters": {
 			//backgroundColor: sddarkBackground,
 			color: sdstone,
 			border: "none"
-		},
+		},*/
 
-		".cm-activeLineGutter": {
+		/*".cm-activeLineGutter": {
 			backgroundColor: sdhighlightBackground
-		},
+		},*/
 
-		".cm-foldPlaceholder": {
+		/*".cm-foldPlaceholder": {
 			backgroundColor: "transparent",
 			border: "none",
 			color: "#ddd"
-		},
+		},*/
 
-		".cm-tooltip": {
+		/*".cm-tooltip": {
 			border: "none",
 			backgroundColor: sdtooltipBackground
-		},
-		".cm-tooltip .cm-tooltip-arrow:before": {
+		},*/
+		/*".cm-tooltip .cm-tooltip-arrow:before": {
 			borderTopColor: "transparent",
 			borderBottomColor: "transparent"
 		},
 		".cm-tooltip .cm-tooltip-arrow:after": {
 			borderTopColor: sdtooltipBackground,
 			borderBottomColor: sdtooltipBackground
-		},
-		".cm-tooltip-autocomplete": {
+		},*/
+		/*".cm-tooltip-autocomplete": {
 			"& > ul > li[aria-selected]": {
 				backgroundColor: sdhighlightBackground,
 				color: sdbase03
 			}
-		}
+		}*/
 	},
 	{ dark: true });
 

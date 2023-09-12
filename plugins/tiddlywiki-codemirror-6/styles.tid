@@ -4,10 +4,96 @@ tags: $:/tags/Stylesheet
 .cm-editor {
 	font-size: {{$:/config/codemirror-6/fontsize}};
 	color-scheme: {{{ [[$:/palette]get[text]!is[blank]] ~[[$:/palettes/vanilla]] +[get[color-scheme]] ~light }}};
+	color: <<colour foreground>> !important;
+}
+
+.cm-content {
+	caret-color: <<colour foreground>> !important;
 }
 
 .cm-scroller {
 	font-family: {{$:/themes/tiddlywiki/vanilla/settings/editorfontfamily}} !important;
+}
+
+.cm-activeLine, .cm-activeLineGutter {
+	background-color: <<colour cm-active-line>> !important;
+	color: <<colour foreground>>;
+}
+
+.cm-editor ::selection, .cm-editor.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection {
+	background-color: <<colour selection-background>> !important;
+	color: <<colour selection-foreground>> !important;
+}
+
+.cm-cursor, .cm-dropCursor {
+	border-left-color: <<colour foreground>> !important;
+}
+
+.cm-gutters {
+	background-color: <<colour cm-gutter-background>> !important;
+	color: <<colour cm-gutter-foreground>> !important;
+	border: none !important;
+}
+
+.cm-panels {
+	background-color: transparent !important;
+	color: <<colour foreground>> !important;
+}
+
+.cm-panels button[name="close"] {
+	font-size: 25px !important;
+	cursor: pointer !important;
+}
+
+.cm-panels.cm-panels-top: {
+	border-bottom: 2px solid <<colour foreground>>;
+}
+
+.cm-panels.cm-panels-bottom {
+	border-top: 2px solid <<colour foreground>>;
+}
+
+.cm-searchMatch {
+	background-color: <<colour cm-search-match>> !important;
+	outline: 1px solid <<colour cm-search-match-border>> !important;
+}
+
+.cm-searchMatch.cm-searchMatch-selected {
+	background-color: <<colour cm-search-match-selected>> !important;
+}
+
+.cm-selectionMatch {
+	background-color: <<colour cm-selection-match>> !important;
+}
+
+.cm-editor.cm-focused .cm-matchingBracket, .cm-editor.cm-focused .cm-nonmatchingBracket {
+	outline: 1px solid <<colour cm-matching-bracket-outline>> !important;
+}
+
+.cm-tooltip {
+	border: none;
+	background-color: <<colour cm-tooltip-background>> !important;
+}
+
+.cm-tooltip-autocomplete > ul > li[aria-selected] {
+	background-color: <<colour primary>> !important;
+	color: <<colour tiddler-background>> !important;
+}
+
+.cm-tooltip .cm-tooltip-arrow:before {
+	border-top-color: transparent !important;
+	border-bottom-color: transparent !important;
+}
+
+.cm-tooltip .cm-tooltip-arrow:after {
+	border-top-color: <<colour cm-tooltip-background>> !important;
+	border-bottom-color: <<colour cm-tooltip-background>> !important;
+}
+
+.cm-foldPlaceholder {
+	background-color: transparent !important;
+	border: none !important;
+	color: <<colour foreground>> !important;
 }
 
 <$list filter="[{$:/config/TextEditor/EditorHeight/Mode}match[fixed]]" variable="ignore">
