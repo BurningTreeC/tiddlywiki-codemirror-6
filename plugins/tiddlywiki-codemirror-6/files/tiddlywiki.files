@@ -15,6 +15,13 @@
 				"module-type": "texteditoroperation"
 			}
 		},{
+			"file": "modules/editor/operations/focus-editor.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/core/modules/editor/operations/text/focus-editor.js",
+				"module-type": "texteditoroperation"
+			}
+		},{
 			"file": "modules/editor/operations/insert-text.js",
 			"fields": {
 				"type": "application/javascript",
