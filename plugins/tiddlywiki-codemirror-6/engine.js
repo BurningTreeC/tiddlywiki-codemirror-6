@@ -398,7 +398,6 @@ function CodeMirrorEngine(options) {
 			autocompletion(),
 			rectangularSelection(),
 			crosshairCursor(),
-			highlightActiveLine(),
 			highlightSelectionMatches(),
 			keymap.of([
 				...closeBracketsKeymap,
@@ -411,6 +410,8 @@ function CodeMirrorEngine(options) {
 			]),
 			EditorView.lineWrapping,
 			EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
+			EditorView.contentAttributes.of({spellcheck: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/spellcheck") === "yes"}),
+			EditorView.contentAttributes.of({autocorrect: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocorrect") === "yes"}),
 			EditorView.perLineTextDirection.of(true),
 			EditorView.updateListener.of(function(v) {
 				if(v.docChanged) {
@@ -432,6 +433,10 @@ function CodeMirrorEngine(options) {
 		editorOptions.extensions.push(lineNumbers());
 		editorOptions.extensions.push(foldGutter());
 		editorOptions.extensions.push(highlightActiveLineGutter());
+	};
+
+	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLine") === "yes") {
+		editorOptions.extensions.push(highlightActiveLine());
 	};
 
 	var cmIndentUnit = "	";

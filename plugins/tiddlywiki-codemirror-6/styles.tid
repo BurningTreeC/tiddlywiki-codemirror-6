@@ -21,8 +21,9 @@ tags: $:/tags/Stylesheet
 }
 
 .cm-editor ::selection, .cm-editor.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection {
-	background-color: <<colour selection-background>> !important;
-	color: <<colour selection-foreground>> !important;
+	background: initial !important;
+	background-color: <<colour cm-selection-background>> !important;
+	color: <<colour cm-selection-foreground>> !important;
 }
 
 .cm-cursor, .cm-dropCursor {
