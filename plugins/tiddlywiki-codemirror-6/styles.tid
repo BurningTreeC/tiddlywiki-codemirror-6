@@ -16,14 +16,14 @@ tags: $:/tags/Stylesheet
 }
 
 .cm-activeLine, .cm-activeLineGutter {
-	background-color: <<colour cm-active-line>> !important;
+	background-color: <<colour-extend cm-active-line>> !important;
 	color: <<colour foreground>>;
 }
 
 .cm-editor ::selection, .cm-editor.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection {
 	background: initial !important;
-	background-color: <<colour cm-selection-background>> !important;
-	color: <<colour cm-selection-foreground>> !important;
+	background-color: <<colour-extend cm-selection-background>> !important;
+	color: <<colour-extend cm-selection-foreground>> !important;
 }
 
 .cm-cursor, .cm-dropCursor {
@@ -31,8 +31,8 @@ tags: $:/tags/Stylesheet
 }
 
 .cm-gutters {
-	background-color: <<colour cm-gutter-background>> !important;
-	color: <<colour cm-gutter-foreground>> !important;
+	background-color: <<colour-extend cm-gutter-background>> !important;
+	color: <<colour-extend cm-gutter-foreground>> !important;
 	border: none !important;
 }
 
@@ -55,30 +55,30 @@ tags: $:/tags/Stylesheet
 }
 
 .cm-searchMatch {
-	background-color: <<colour cm-search-match>> !important;
-	outline: 1px solid <<colour cm-search-match-border>> !important;
+	background-color: <<colour-extend cm-search-match>> !important;
+	outline: 1px solid <<colour-extend cm-search-match-border>> !important;
 }
 
 .cm-searchMatch.cm-searchMatch-selected {
-	background-color: <<colour cm-search-match-selected>> !important;
+	background-color: <<colour-extend cm-search-match-selected>> !important;
 }
 
 .cm-selectionMatch {
-	background-color: <<colour cm-selection-match>> !important;
+	background-color: <<colour-extend cm-selection-match>> !important;
 }
 
 .cm-editor.cm-focused .cm-matchingBracket, .cm-editor.cm-focused .cm-nonmatchingBracket {
-	outline: 1px solid <<colour cm-matching-bracket-outline>> !important;
+	outline: 1px solid <<colour-extend cm-matching-bracket-outline>> !important;
 }
 
 .cm-tooltip {
 	border: none;
-	background-color: <<colour cm-tooltip-background>> !important;
+	background-color: <<colour-extend cm-tooltip-background>> !important;
 }
 
 .cm-tooltip-autocomplete > ul > li[aria-selected] {
-	background-color: <<colour cm-tooltip-selected-background>> !important;
-	color: <<colour cm-tooltip-selected-foreground>> !important;
+	background-color: <<colour-extend cm-tooltip-selected-background>> !important;
+	color: <<colour-extend cm-tooltip-selected-foreground>> !important;
 }
 
 .cm-tooltip .cm-tooltip-arrow:before {
@@ -87,8 +87,8 @@ tags: $:/tags/Stylesheet
 }
 
 .cm-tooltip .cm-tooltip-arrow:after {
-	border-top-color: <<colour cm-tooltip-background>> !important;
-	border-bottom-color: <<colour cm-tooltip-background>> !important;
+	border-top-color: <<colour-extend cm-tooltip-background>> !important;
+	border-bottom-color: <<colour-extend cm-tooltip-background>> !important;
 }
 
 .cm-foldPlaceholder {

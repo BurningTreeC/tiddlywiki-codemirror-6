@@ -1,6 +1,6 @@
 title: $:/plugins/BTC/tiddlywiki-codemirror-6/macros/colour
 tags: $:/tags/Macro
 
-\define colour(name)
-<$transclude tiddler={{$:/palette}} index="$name$"><$transclude tiddler="$:/palettes/Vanilla" index="$name$"><$transclude tiddler="$:/config/DefaultColourMappings/$name$"><$transclude tiddler={{{ [{$:/palette}addsuffix[/extend]] }}} index="$name$"/></$transclude></$transclude></$transclude>
+\define colour-extend(tiddler:"",name)
+<$transclude tiddler={{{ [<__tiddler__>!is[blank]] ~[{$:/palette}addsuffix[/extend]] }}} index="$name$"/>
 \end
