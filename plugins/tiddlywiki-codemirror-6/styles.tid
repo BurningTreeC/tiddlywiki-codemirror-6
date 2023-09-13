@@ -7,6 +7,15 @@ body {
 	overflow: hidden;
 }
 
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] {
+	position: fixed;
+	top: 0;
+	left: 0;
+	height: 100vh;
+	width: 100vw;
+	z-index: 1000;
+}
+
 .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor {
 	position: fixed;
 	top: 0;
@@ -17,11 +26,11 @@ body {
 	background-color: <<colour tiddler-background>>;
 }
 
-.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > .tc-reveal:last-of-type {
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > .tc-reveal:last-of-type:not([hidden="true"]) {
 	height: 100%;
 }
 
-.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > .tc-reveal:last-of-type > .tc-edit-texteditor {
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > .tc-reveal:last-of-type:not([hidden="true"]) > .tc-edit-texteditor {
 	height: 100%;
 }
 
@@ -31,6 +40,26 @@ body {
 
 .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .cm-editor .cm-panels {
 	background-color: <<colour tiddler-background>> !important;
+}
+
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > .tc-reveal:first-of-type:not([hidden="true"]) {
+	height: 100%;
+}
+
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > .tc-reveal > .tc-tiddler-preview {
+	height: 100%;
+}
+
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > .tc-reveal > .tc-tiddler-preview > .tc-edit-texteditor {
+	height: 100%;
+	width: 50%;
+}
+
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > .tc-reveal > .tc-tiddler-preview > .tc-tiddler-preview-preview {
+	height: 100%;
+	overflow-y: scroll;
+	margin: 0px;
+	width: 50%;
 }
 
 \end

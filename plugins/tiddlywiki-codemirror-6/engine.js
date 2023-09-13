@@ -305,14 +305,35 @@ function CodeMirrorEngine(options) {
 	var solarizedHighlightStyle = this.widget.wiki.getTiddler(this.widget.wiki.getTiddlerText("$:/palette")).fields["color-scheme"] === "light" ? this.solarizedLightHighlightStyle : this.solarizedDarkHighlightStyle;
 
 	var {CompletionContext} = CM["@codemirror/autocomplete"];
+	var completionMinLength = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completionMinLength") || 3);
 
 	function tiddlerCompletions(context = CompletionContext) {
-		var word = context.matchBefore(/\w*/)
-		if (word.from == word.to && !context.explicit) {
+		var word = context.matchBefore(/\w*/);
+		var actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
+		var actionStrings = [];
+		var actions = [];
+		$tw.utils.each(actionTiddlers,function(actionTiddler) {
+			var tiddler = self.widget.wiki.getTiddler(actionTiddler);
+			actionStrings.push(tiddler.fields.string);
+			actions.push(tiddler.fields.text);
+		});
+		$tw.utils.each(actionStrings,function(actionString) {
+			var regex = new RegExp(actionString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+			var stringContext = context.matchBefore(regex);
+			if(stringContext) {
+				var string = stringContext.text;
+				var index = actionStrings.indexOf(string);
+				if(index !== -1) {
+					self.cm.dispatch({changes: {from: stringContext.from, to: stringContext.to, insert: ""}});
+					self.widget.invokeActionString(actions[index],self);
+				}
+			}
+		});
+		if ((word.text.length < completionMinLength) || (word.from === word.to && !context.explicit)) {
 			return null;
 		} else {
 			var options = [];
-			var tiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers]!is[system]!is[shadow]]");
+			var tiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers]!is[system]!is[shadow]!is[draft]]");
 			$tw.utils.each(tiddlers,function(tiddler) {
 				options.push({label: tiddler, type: "keyword"});
 			});
@@ -414,7 +435,7 @@ function CodeMirrorEngine(options) {
 			syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
 			bracketMatching(),
 			closeBrackets(),
-			autocompletion(),
+			autocompletion(), //{activateOnTyping: false}),
 			rectangularSelection(),
 			crosshairCursor(),
 			highlightSelectionMatches(),
@@ -489,10 +510,14 @@ function CodeMirrorEngine(options) {
 		case "text/css":
 			var {css,cssLanguage} = CM["@codemirror/lang-css"];
 			editorOptions.extensions.push(css());
+			var docCompletions = cssLanguage.data.of({autocomplete: tiddlerCompletions});
+			editorOptions.extensions.push(docCompletions);
 			break;
 		case ("text/markdown" || "text/x-markdown"):
 			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
 			editorOptions.extensions.push(markdown());
+			var docCompletions = markdownLanguage.data.of({autocomplete: tiddlerCompletions});
+			editorOptions.extensions.push(docCompletions);
 			break;
 		default:
 			break;
