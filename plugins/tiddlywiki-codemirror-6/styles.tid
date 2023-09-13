@@ -77,8 +77,8 @@ tags: $:/tags/Stylesheet
 }
 
 .cm-tooltip-autocomplete > ul > li[aria-selected] {
-	background-color: <<colour primary>> !important;
-	color: <<colour tiddler-background>> !important;
+	background-color: <<colour cm-tooltip-selected-background>> !important;
+	color: <<colour cm-tooltip-selected-foreground>> !important;
 }
 
 .cm-tooltip .cm-tooltip-arrow:before {
