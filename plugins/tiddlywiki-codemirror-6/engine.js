@@ -304,6 +304,25 @@ function CodeMirrorEngine(options) {
 	var solarizedTheme = this.widget.wiki.getTiddler(this.widget.wiki.getTiddlerText("$:/palette")).fields["color-scheme"] === "light" ? this.solarizedLightTheme : this.solarizedDarkTheme;
 	var solarizedHighlightStyle = this.widget.wiki.getTiddler(this.widget.wiki.getTiddlerText("$:/palette")).fields["color-scheme"] === "light" ? this.solarizedLightHighlightStyle : this.solarizedDarkHighlightStyle;
 
+	var {CompletionContext} = CM["@codemirror/autocomplete"];
+
+	function tiddlerCompletions(context = CompletionContext) {
+		var word = context.matchBefore(/\w*/)
+		if (word.from == word.to && !context.explicit) {
+			return null;
+		} else {
+			var options = [];
+			var tiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers]!is[system]!is[shadow]]");
+			$tw.utils.each(tiddlers,function(tiddler) {
+				options.push({label: tiddler, type: "keyword"});
+			});
+			return {
+				from: word.from,
+				options: options
+			}
+		}
+	};
+
 	var editorOptions = {
 		doc: options.value,
 		parent: this.domNode,
@@ -451,6 +470,8 @@ function CodeMirrorEngine(options) {
 		case ("text/vnd.tiddlywiki" || "text/html"):
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
 			editorOptions.extensions.push(html({selfClosingTags: true}));
+			var docCompletions = htmlLanguage.data.of({autocomplete: tiddlerCompletions});
+			editorOptions.extensions.push(docCompletions);
 			break;
 		case "application/javascript":
 			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
