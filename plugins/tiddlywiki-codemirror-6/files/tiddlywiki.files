@@ -99,10 +99,10 @@
 				"module-type": "widget-subclass"
 			}
 		},{
-			"file": "modules/subclasses/editor/edit-text.js",
+			"file": "modules/subclasses/editor/edit-codemirror-6.js",
 			"fields": {
 				"type": "application/javascript",
-				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/subclasses/editor/edit-text.js",
+				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/subclasses/editor/edit-codemirror-6.js",
 				"module-type": "widget-subclass"
 			}
 		},{
