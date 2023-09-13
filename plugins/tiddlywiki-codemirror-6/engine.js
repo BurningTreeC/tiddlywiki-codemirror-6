@@ -339,7 +339,7 @@ function CodeMirrorEngine(options) {
 			});
 			return {
 				from: word.from,
-				options: options
+				options: options //filter: false
 			}
 		}
 	};
@@ -492,7 +492,7 @@ function CodeMirrorEngine(options) {
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
 			editorOptions.extensions.push(html({selfClosingTags: true}));
 			var docCompletions = htmlLanguage.data.of({autocomplete: tiddlerCompletions});
-			editorOptions.extensions.push(docCompletions);
+			editorOptions.extensions.push(Prec.high(docCompletions));
 			break;
 		case "application/javascript":
 			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
@@ -517,7 +517,7 @@ function CodeMirrorEngine(options) {
 			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
 			editorOptions.extensions.push(markdown());
 			var docCompletions = markdownLanguage.data.of({autocomplete: tiddlerCompletions});
-			editorOptions.extensions.push(docCompletions);
+			editorOptions.extensions.push(Prec.high(docCompletions));
 			break;
 		default:
 			break;
