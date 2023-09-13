@@ -1,6 +1,40 @@
 title: $:/plugins/BTC/tiddlywiki-codemirror-6/styles
 tags: $:/tags/Stylesheet
 
+\define make-editor-fullscreen()
+
+body {
+	overflow: hidden;
+}
+
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor {
+	position: fixed;
+	top: 0;
+	left: 0;
+	height: 100vh;
+	width: 100vw;
+	z-index: 1000;
+	background-color: <<colour tiddler-background>>;
+}
+
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > .tc-reveal:last-of-type {
+	height: 100%;
+}
+
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > .tc-reveal:last-of-type > .tc-edit-texteditor {
+	height: 100%;
+}
+
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .cm-editor {
+	height: 100%;
+}
+
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .cm-editor .cm-panels {
+	background-color: <<colour tiddler-background>> !important;
+}
+
+\end
+
 .cm-editor {
 	font-size: {{$:/config/codemirror-6/fontsize}};
 	color-scheme: {{{ [[$:/palette]get[text]!is[blank]] ~[[$:/palettes/vanilla]] +[get[color-scheme]] ~light }}};
@@ -119,3 +153,17 @@ tags: $:/tags/Stylesheet
 		padding: 6px;
 	}
 }
+
+<$list filter="[all[tiddlers]prefix[$:/state/codemirror-6/fullscreen]] +[limit[1]]" variable="fullscreenStateTiddler">
+
+<$list filter="[<fullscreenStateTiddler>get[text]match[yes]]" variable="ignore">
+
+<$let fullscreenTiddler={{{ [<fullscreenStateTiddler>removeprefix[$:/state/codemirror-6/fullscreen/]] }}} cssEscapedTitle={{{ [<fullscreenTiddler>escapecss[]] }}}>
+
+<<make-editor-fullscreen>>
+
+</$let>
+
+</$list>
+
+</$list>
