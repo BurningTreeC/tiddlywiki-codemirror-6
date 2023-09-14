@@ -306,6 +306,7 @@ function CodeMirrorEngine(options) {
 
 	var {CompletionContext} = CM["@codemirror/autocomplete"];
 	var completionMinLength = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completionMinLength") || 3);
+	var completeVariables = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeVariables") === "yes";
 
 	function tiddlerCompletions(context = CompletionContext) {
 		var word = context.matchBefore(/\w*/); // /\w*/ or /[\w\s]+/
@@ -338,6 +339,21 @@ function CodeMirrorEngine(options) {
 				$tw.utils.each(tiddlers,function(tiddler) {
 					options.push({label: tiddler, type: "tiddler", boost: 99}); //section: "Tiddlers"
 				});
+				if(completeVariables) {
+					var variableNames = [];
+					var widget = self.widget;
+					while(widget && !widget.hasOwnProperty("variables")) {
+						widget = widget.parentWidget;
+					}
+					if(widget && widget.variables) {
+						for(var variable in widget.variables) {
+							variableNames.push(variable);
+						}
+					}
+					$tw.utils.each(variableNames,function(variableName) {
+						options.push({label: variableName, type: "variable", boost: 98});
+					});
+				}
 				return {
 					from: word.from,
 					options: options //filter: false
