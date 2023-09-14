@@ -319,7 +319,7 @@ function CodeMirrorEngine(options) {
 
 	function tiddlerCompletions(context = CompletionContext) {
 		var matchBeforeRegex = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
-		var word = validateRegex(matchBeforeRegex) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/\w*/); // /\w*/ or /[\w\s]+/
+		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/\w*/); // /\w*/ or /[\w\s]+/
 		var actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
 		var actionStrings = [];
 		var actions = [];
@@ -341,11 +341,11 @@ function CodeMirrorEngine(options) {
 			}
 		});
 		if(word) {
-			if ((word.text.length < completionMinLength) || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
+			if ((word.text.length <= completionMinLength)) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
 				return null;
 			} else {
 				var options = [];
-				var tiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers]!is[system]!is[shadow]!is[draft]]");
+				var tiddlers = self.widget.wiki.filterTiddlers(self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteTiddlerFilter"));
 				$tw.utils.each(tiddlers,function(tiddler) {
 					options.push({label: tiddler, type: "tiddler", boost: 99}); //section: "Tiddlers"
 				});
@@ -361,7 +361,7 @@ function CodeMirrorEngine(options) {
 						}
 					}
 					$tw.utils.each(variableNames,function(variableName) {
-						options.push({label: variableName, type: "variable", boost: 98});
+						options.push({label: variableName, type: "variable", boost: -99});
 					});
 				}
 				return {
@@ -518,13 +518,13 @@ function CodeMirrorEngine(options) {
 		mode = "text/vnd.tiddlywiki";
 	}
 	switch(mode) {
-		case ("text/vnd.tiddlywiki"):
+		case "text/vnd.tiddlywiki":
 			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
 			editorOptions.extensions.push(markdown());
 			var docCompletions = markdownLanguage.data.of({autocomplete: tiddlerCompletions});
 			editorOptions.extensions.push(Prec.high(docCompletions));
 			break;			
-		case ("text/html"):
+		case "text/html":
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
 			editorOptions.extensions.push(html({selfClosingTags: true}));
 			var docCompletions = htmlLanguage.data.of({autocomplete: tiddlerCompletions});
@@ -549,7 +549,8 @@ function CodeMirrorEngine(options) {
 			var docCompletions = cssLanguage.data.of({autocomplete: tiddlerCompletions});
 			editorOptions.extensions.push(Prec.high(docCompletions));
 			break;
-		case ("text/markdown" || "text/x-markdown"):
+		case "text/markdown":
+		case "text/x-markdown":
 			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
 			editorOptions.extensions.push(markdown());
 			var docCompletions = markdownLanguage.data.of({autocomplete: tiddlerCompletions});
@@ -702,24 +703,52 @@ CodeMirrorEngine.prototype.focus  = function() {
 /*
 Create a blank structure representing a text operation
 */
-CodeMirrorEngine.prototype.createTextOperation = function() {
+CodeMirrorEngine.prototype.createTextOperation = function(type) {
 	var selections = this.cm.state.selection.ranges;
-	var operations = [];
-	for(var i=0; i<selections.length; i++) {
-		var anchorPos = selections[i].from,
-			headPos = selections[i].to;
-		var operation = {
+	var operations;
+	switch(type) {
+	case ("excise"):
+	case ("focus-editor"):
+	case ("insert-text"):
+	case ("make-link"):
+	case ("prefix-lines"):
+	case ("redo"):
+	case ("undo"):
+	case ("replace-all"):
+	case ("replace-selection"):
+	case ("save-selection"):
+	case ("wrap-lines"):
+	case ("wrap-selection"):
+		operations = [];
+		for(var i=0; i<selections.length; i++) {
+			var anchorPos = selections[i].from,
+				headPos = selections[i].to;
+			var operation = {
+				text: this.cm.state.doc.toString(),
+				selStart: anchorPos,
+				selEnd: headPos,
+				cutStart: null,
+				cutEnd: null,
+				replacement: null,
+				newSelStart: null,
+				newSelEnd: null
+			}
+			operation.selection = this.cm.state.sliceDoc(anchorPos,headPos);
+			operations.push(operation);
+		}
+		break;
+	default:
+		operations = {
 			text: this.cm.state.doc.toString(),
-			selStart: anchorPos,
-			selEnd: headPos,
+			selStart: selections[0].from,
+			selEnd: selections[0].to,
 			cutStart: null,
 			cutEnd: null,
 			replacement: null,
 			newSelStart: null,
-			newSelEnd: null
+			newSelEnd: null			
 		}
-		operation.selection = this.cm.state.sliceDoc(anchorPos,headPos);
-		operations.push(operation);
+		break;
 	}
 	return operations;
 };

@@ -25,6 +25,24 @@ exports.prototype.execute = function() {
 	Object.getPrototypeOf(Object.getPrototypeOf(this)).execute.call(this);
 };
 
+	/*
+	Handle an edit text operation message from the toolbar
+	*/
+exports.prototype.handleEditTextOperationMessage = function(event) {
+	// Prepare information about the operation
+	var operation = this.engine.createTextOperation(event.param);
+	// Invoke the handler for the selected operation
+	var handler = this.editorOperations[event.param];
+	if(handler) {
+		handler.call(this,event,operation);
+	}
+	// Execute the operation via the engine
+	var newText = this.engine.executeTextOperation(operation);
+	// Fix the tiddler height and save changes
+	this.engine.fixHeight();
+	this.saveChanges(newText);
+};
+
 exports.prototype.handlePasteEvent = function(event) {
 	if(event.clipboardData && event.clipboardData.files && event.clipboardData.files.length) {
 		event.preventDefault();
