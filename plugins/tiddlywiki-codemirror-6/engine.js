@@ -778,6 +778,15 @@ CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 				range: selectionRange
 			}
 		}));
+	} else if(operations) {
+		this.cm.dispatch(this.cm.state.changeByRange(function(range) {
+			var editorChanges = [{from: operations.cutStart, to: operations.cutEnd, insert: operations.replacement}];
+			var selectionRange = self.editorSelection.range(operations.newSelStart,operations.newSelEnd);
+			return {
+				changes: editorChanges,
+				range: selectionRange
+			}			
+		}));
 	}
 	this.cm.focus();
 	return this.cm.state.doc.toString();
