@@ -304,7 +304,7 @@ function CodeMirrorEngine(options) {
 	var solarizedTheme = this.widget.wiki.getTiddler(this.widget.wiki.getTiddlerText("$:/palette")).fields["color-scheme"] === "light" ? this.solarizedLightTheme : this.solarizedDarkTheme;
 	var solarizedHighlightStyle = this.widget.wiki.getTiddler(this.widget.wiki.getTiddlerText("$:/palette")).fields["color-scheme"] === "light" ? this.solarizedLightHighlightStyle : this.solarizedDarkHighlightStyle;
 
-	var {CompletionContext} = CM["@codemirror/autocomplete"];
+	var {CompletionContext,completeAnyWord} = CM["@codemirror/autocomplete"];
 	var completionMinLength = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completionMinLength") || 3);
 	var completeVariables = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeVariables") === "yes";
 
@@ -317,7 +317,7 @@ function CodeMirrorEngine(options) {
 		}
 	};
 
-	function tiddlerCompletions(context = CompletionContext) {
+	this.tiddlerCompletionSource = function tiddlerCompletions(context = CompletionContext) {
 		var matchBeforeRegex = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
 		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/\w*/); // /\w*/ or /[\w\s]+/
 		var actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
@@ -465,7 +465,7 @@ function CodeMirrorEngine(options) {
 			syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
 			bracketMatching(),
 			closeBrackets(),
-			autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip"}, selectOnOpen: selectOnOpen}), //{activateOnTyping: false}),
+			autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip"}, selectOnOpen: selectOnOpen}), //{activateOnTyping: false, closeOnBlur: false}),
 			rectangularSelection(),
 			crosshairCursor(),
 			highlightSelectionMatches(),
@@ -478,6 +478,7 @@ function CodeMirrorEngine(options) {
 				...completionKeymap,
 				...lintKeymap
 			]),
+			EditorState.languageData.of(function() { return [{autocomplete: completeAnyWord}]; }),
 			EditorView.lineWrapping,
 			EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
 			EditorView.contentAttributes.of({spellcheck: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/spellcheck") === "yes"}),
@@ -521,18 +522,20 @@ function CodeMirrorEngine(options) {
 		case "text/vnd.tiddlywiki":
 			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
 			editorOptions.extensions.push(markdown());
-			var docCompletions = markdownLanguage.data.of({autocomplete: tiddlerCompletions});
+			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorOptions.extensions.push(Prec.high(docCompletions));
 			break;			
 		case "text/html":
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
 			editorOptions.extensions.push(html({selfClosingTags: true}));
-			var docCompletions = htmlLanguage.data.of({autocomplete: tiddlerCompletions});
+			var docCompletions = htmlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorOptions.extensions.push(Prec.high(docCompletions));
 			break;
 		case "application/javascript":
 			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
 			editorOptions.extensions.push(javascript());
+			var docCompletions = javascriptLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+			editorOptions.extensions.push(Prec.high(docCompletions));
 			/*editorOptions.extensions.push(
 				javascriptLanguage.data.of({
 					autocomplete: scopeCompletionSource(globalThis)//self.domNode.ownerDocument.defaultView)
@@ -546,14 +549,14 @@ function CodeMirrorEngine(options) {
 		case "text/css":
 			var {css,cssLanguage} = CM["@codemirror/lang-css"];
 			editorOptions.extensions.push(css());
-			var docCompletions = cssLanguage.data.of({autocomplete: tiddlerCompletions});
+			var docCompletions = cssLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorOptions.extensions.push(Prec.high(docCompletions));
 			break;
 		case "text/markdown":
 		case "text/x-markdown":
 			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
 			editorOptions.extensions.push(markdown());
-			var docCompletions = markdownLanguage.data.of({autocomplete: tiddlerCompletions});
+			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorOptions.extensions.push(Prec.high(docCompletions));
 			break;
 		default:
@@ -746,7 +749,7 @@ CodeMirrorEngine.prototype.createTextOperation = function(type) {
 			cutEnd: null,
 			replacement: null,
 			newSelStart: null,
-			newSelEnd: null			
+			newSelEnd: null
 		}
 		break;
 	}
