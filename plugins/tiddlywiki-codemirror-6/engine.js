@@ -40,11 +40,12 @@ function CodeMirrorEngine(options) {
 	var {language,indentUnit,defaultHighlightStyle,syntaxHighlighting,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
 	var {Extension,EditorState,Compartment,EditorSelection,Prec} = CM["@codemirror/state"];
 	var {searchKeymap,highlightSelectionMatches} = CM["@codemirror/search"];
-	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap} = CM["@codemirror/autocomplete"];
+	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus} = CM["@codemirror/autocomplete"];
 	var {lintKeymap} = CM["@codemirror/lint"];
 	var {oneDark} = CM["@codemirror/theme-one-dark"];
 
 	this.editorSelection = EditorSelection;
+	this.completionStatus = completionStatus;
 	this.compartment = Compartment;
 	this.keymap = keymap;
 
@@ -374,127 +375,123 @@ function CodeMirrorEngine(options) {
 
 	var selectOnOpen = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/selectOnOpen") === "yes";
 
-	var editorOptions = {
-		doc: options.value,
-		parent: this.domNode,
-		extensions: [
-			dropCursor(),
-			//Prec.high(oneDark),
-			//Prec.high(syntaxHighlighting(highlightStyle)),
-			solarizedTheme,
-			Prec.high(syntaxHighlighting(solarizedHighlightStyle)),
-			Prec.high(EditorView.domEventHandlers({
-				drop(event,view) {
-					self.dragCancel = false;
-					return self.handleDropEvent(event,view);
-				},
-				dragstart(event,view) {
-					self.dragCancel = true;
-					return false;
-				},
-				dragenter(event,view) {
-					self.dragCancel = true;
-					console.log("dragenter");
-					if(self.widget.isFileDropEnabled && ($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length)) {
-						console.log("preventing default dragenter");
-						event.preventDefault();
-						return true;
-					}
-					return false;
-				},
-				dragover(event,view) {
-					self.dragCancel = true;
-					console.log("dragover");
-					if(self.widget.isFileDropEnabled && ($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length)) {
-						console.log("preventing default dragover");
-						event.preventDefault();
-						return true;
-					}
-					return false;
-				},
-				dragleave(event,view) {
-					self.dragCancel = false;
-					console.log("dragleave");
-					if(self.widget.isFileDropEnabled) {
-						console.log("preventing default dragleave");
-						event.preventDefault();
-						return true;
-					}
-					return false;
-				},
-				dragend(event,view) {
-					console.log("DRAGEND");
-					self.dragCancel = true;
-					if(self.widget.isFileDropEnabled) {
-						//event.preventDefault();
-						//return true;
-					}
-					return false;
-				},
-				paste(event,view) {
-					console.log("PASTE");
-					if(self.widget.isFileDropEnabled) {
-						event["twEditor"] = true;
-						return self.widget.handlePasteEvent.call(self.widget,event);
-					} else {
-						event["twEditor"] = true;
-					}
-					return false;
-				},
-				keydown(event,view) {
-					return self.handleKeydownEvent(event,view);
-				},
-				focus(event,view) {
-					console.log("FOCUS");
-					if(self.widget.editCancelPopups) {
-						$tw.popup.cancel(0);
-					}
-					return false;
-				},
-				blur(event,view) {
-					console.log("BLUR");
-					return false;
+	var editorExtensions = [
+		dropCursor(),
+		//Prec.high(oneDark),
+		//Prec.high(syntaxHighlighting(highlightStyle)),
+		solarizedTheme,
+		Prec.high(syntaxHighlighting(solarizedHighlightStyle)),
+		Prec.high(EditorView.domEventHandlers({
+			drop(event,view) {
+				self.dragCancel = false;
+				return self.handleDropEvent(event,view);
+			},
+			dragstart(event,view) {
+				self.dragCancel = true;
+				return false;
+			},
+			dragenter(event,view) {
+				self.dragCancel = true;
+				console.log("dragenter");
+				if(self.widget.isFileDropEnabled && ($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length)) {
+					console.log("preventing default dragenter");
+					event.preventDefault();
+					return true;
 				}
-			})),
-			//basicSetup,
-			highlightSpecialChars(),
-			history(),//{newGroupDelay: 0, joinToEvent: function() { return false; }}),
-			drawSelection(),
-			EditorState.allowMultipleSelections.of(true),
-			indentOnInput(),
-			syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
-			bracketMatching(),
-			closeBrackets(),
-			autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip"}, selectOnOpen: selectOnOpen}), //{activateOnTyping: false, closeOnBlur: false}),
-			rectangularSelection(),
-			crosshairCursor(),
-			highlightSelectionMatches(),
-			keymap.of([
-				...closeBracketsKeymap,
-				...defaultKeymap,
-				...searchKeymap,
-				...historyKeymap,
-				...foldKeymap,
-				...completionKeymap,
-				...lintKeymap
-			]),
-			EditorState.languageData.of(function() { return [{autocomplete: completeAnyWord}]; }),
-			EditorView.lineWrapping,
-			EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
-			EditorView.contentAttributes.of({spellcheck: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/spellcheck") === "yes"}),
-			EditorView.contentAttributes.of({autocorrect: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocorrect") === "yes"}),
-			EditorView.contentAttributes.of({translate: self.widget.wiki.getTiddlerText("$:/state/codemirror-6/translate/" + self.widget.editTitle) === "yes" ? "yes" : "no"}),
-			EditorView.perLineTextDirection.of(true),
-			EditorView.updateListener.of(function(v) {
-				if(v.docChanged) {
-					self.widget.saveChanges(self.cm.state.doc.toString());
+				return false;
+			},
+			dragover(event,view) {
+				self.dragCancel = true;
+				console.log("dragover");
+				if(self.widget.isFileDropEnabled && ($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length)) {
+					console.log("preventing default dragover");
+					event.preventDefault();
+					return true;
 				}
-			}),
-		]
-	};
+				return false;
+			},
+			dragleave(event,view) {
+				self.dragCancel = false;
+				console.log("dragleave");
+				if(self.widget.isFileDropEnabled) {
+					console.log("preventing default dragleave");
+					event.preventDefault();
+					return true;
+				}
+				return false;
+			},
+			dragend(event,view) {
+				console.log("DRAGEND");
+				self.dragCancel = true;
+				if(self.widget.isFileDropEnabled) {
+					//event.preventDefault();
+					//return true;
+				}
+				return false;
+			},
+			paste(event,view) {
+				console.log("PASTE");
+				if(self.widget.isFileDropEnabled) {
+					event["twEditor"] = true;
+					return self.widget.handlePasteEvent.call(self.widget,event);
+				} else {
+					event["twEditor"] = true;
+				}
+				return false;
+			},
+			keydown(event,view) {
+				return self.handleKeydownEvent(event,view);
+			},
+			focus(event,view) {
+				console.log("FOCUS");
+				if(self.widget.editCancelPopups) {
+					$tw.popup.cancel(0);
+				}
+				return false;
+			},
+			blur(event,view) {
+				console.log("BLUR");
+				return false;
+			}
+		})),
+		//basicSetup,
+		highlightSpecialChars(),
+		history(), //{newGroupDelay: 0, joinToEvent: function() { return false; }}),
+		drawSelection(),
+		EditorState.allowMultipleSelections.of(true),
+		indentOnInput(),
+		syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
+		bracketMatching(),
+		closeBrackets(),
+		autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip"}, selectOnOpen: selectOnOpen}), //{activateOnTyping: false, closeOnBlur: false}),
+		rectangularSelection(),
+		crosshairCursor(),
+		highlightSelectionMatches(),
+		keymap.of([
+			...closeBracketsKeymap,
+			...defaultKeymap,
+			...searchKeymap,
+			...historyKeymap,
+			...foldKeymap,
+			...completionKeymap,
+			...lintKeymap
+		]),
+		EditorState.languageData.of(function() { return [{autocomplete: completeAnyWord}]; }),
+		EditorView.lineWrapping,
+		EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
+		EditorView.contentAttributes.of({spellcheck: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/spellcheck") === "yes"}),
+		EditorView.contentAttributes.of({autocorrect: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocorrect") === "yes"}),
+		EditorView.contentAttributes.of({translate: self.widget.wiki.getTiddlerText("$:/state/codemirror-6/translate/" + self.widget.editTitle) === "yes" ? "yes" : "no"}),
+		EditorView.perLineTextDirection.of(true),
+		EditorView.updateListener.of(function(v) {
+			if(v.docChanged) {
+				self.widget.saveChanges(self.cm.state.doc.toString());
+			}
+		}),
+	];
 
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes") {
-		editorOptions.extensions.push(
+		editorExtensions.push(
 			keymap.of([
 				indentWithTab
 			])
@@ -502,17 +499,17 @@ function CodeMirrorEngine(options) {
 	};
 
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes") {
-		editorOptions.extensions.push(lineNumbers());
-		editorOptions.extensions.push(foldGutter());
+		editorExtensions.push(lineNumbers());
+		editorExtensions.push(foldGutter());
 	};
 
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLine") === "yes") {
-		editorOptions.extensions.push(highlightActiveLine());
-		editorOptions.extensions.push(highlightActiveLineGutter());
+		editorExtensions.push(highlightActiveLine());
+		editorExtensions.push(highlightActiveLineGutter());
 	};
 
 	var cmIndentUnit = "	";
-	editorOptions.extensions.push(indentUnit.of(cmIndentUnit));
+	editorExtensions.push(indentUnit.of(cmIndentUnit));
 
 	var mode = this.widget.editType;
 	if(mode === "") {
@@ -521,22 +518,22 @@ function CodeMirrorEngine(options) {
 	switch(mode) {
 		case "text/vnd.tiddlywiki":
 			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
-			editorOptions.extensions.push(markdown());
+			editorExtensions.push(markdown());
 			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorOptions.extensions.push(Prec.high(docCompletions));
+			editorExtensions.push(Prec.high(docCompletions));
 			break;			
 		case "text/html":
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
-			editorOptions.extensions.push(html({selfClosingTags: true}));
+			editorExtensions.push(html({selfClosingTags: true}));
 			var docCompletions = htmlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorOptions.extensions.push(Prec.high(docCompletions));
+			editorExtensions.push(Prec.high(docCompletions));
 			break;
 		case "application/javascript":
 			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
-			editorOptions.extensions.push(javascript());
+			editorExtensions.push(javascript());
 			var docCompletions = javascriptLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorOptions.extensions.push(Prec.high(docCompletions));
-			/*editorOptions.extensions.push(
+			editorExtensions.push(Prec.high(docCompletions));
+			/*editorExtensions.push(
 				javascriptLanguage.data.of({
 					autocomplete: scopeCompletionSource(globalThis)//self.domNode.ownerDocument.defaultView)
 				})
@@ -544,25 +541,29 @@ function CodeMirrorEngine(options) {
 			break;
 		case "application/json":
 			var {json,jsonLanguage} = CM["@codemirror/lang-json"];
-			editorOptions.extensions.push(json());
+			editorExtensions.push(json());
 			break;
 		case "text/css":
 			var {css,cssLanguage} = CM["@codemirror/lang-css"];
-			editorOptions.extensions.push(css());
+			editorExtensions.push(css());
 			var docCompletions = cssLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorOptions.extensions.push(Prec.high(docCompletions));
+			editorExtensions.push(Prec.high(docCompletions));
 			break;
 		case "text/markdown":
 		case "text/x-markdown":
 			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
-			editorOptions.extensions.push(markdown());
+			editorExtensions.push(markdown());
 			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorOptions.extensions.push(Prec.high(docCompletions));
+			editorExtensions.push(Prec.high(docCompletions));
 			break;
 		default:
 			break;
 	};
-
+	this.state = EditorState.create({doc: options.value,extensions: editorExtensions});
+	var editorOptions = {
+		parent: this.domNode,
+		state: this.state
+	};
 	this.cm = new EditorView(editorOptions);
 };
 
@@ -589,6 +590,12 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 	if($tw.keyboardManager.handleKeydownEvent(event,{onlyPriority: true})) {
 		this.dragCancel = false;
 		return true;
+	}
+	console.log(event);
+	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && (this.completionStatus(this.cm.state) === "active")) {
+		event.stopPropagation();
+		console.log("ACTIVE");
+		return false;
 	}
 	var widget = this.widget;
 	var keyboardWidgets = [];
