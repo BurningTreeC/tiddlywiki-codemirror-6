@@ -39,7 +39,7 @@ function CodeMirrorEngine(options) {
 	var {defaultKeymap,standardKeymap,indentWithTab,history,historyKeymap,undo,redo} = CM["@codemirror/commands"];
 	var {language,indentUnit,defaultHighlightStyle,syntaxHighlighting,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
 	var {Extension,EditorState,Compartment,EditorSelection,Prec} = CM["@codemirror/state"];
-	var {searchKeymap,highlightSelectionMatches} = CM["@codemirror/search"];
+	var {searchKeymap,highlightSelectionMatches,openSearchPanel} = CM["@codemirror/search"];
 	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus} = CM["@codemirror/autocomplete"];
 	var {lintKeymap} = CM["@codemirror/lint"];
 	var {oneDark} = CM["@codemirror/theme-one-dark"];
@@ -51,6 +51,7 @@ function CodeMirrorEngine(options) {
 
 	this.undo = undo;
 	this.redo = redo;
+	this.openSearchPanel = openSearchPanel;
 
 	// Solarized light theme adapted from: https://github.com/craftzdog/cm6-themes/blob/main/packages/solarized-light/src/index.ts
 
@@ -721,10 +722,11 @@ CodeMirrorEngine.prototype.createTextOperation = function(type) {
 	case ("make-link"):
 	case ("prefix-lines"):
 	case ("redo"):
-	case ("undo"):
 	case ("replace-all"):
 	case ("replace-selection"):
 	case ("save-selection"):
+	case ("search"):
+	case ("undo"):
 	case ("wrap-lines"):
 	case ("wrap-selection"):
 		operations = [];
@@ -766,10 +768,13 @@ Execute a text operation
 */
 CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 	var self = this;
-	if(operations.type === "undo") {
+	if(operations.type && (operations.type === "undo")) {
 		this.undo(this.cm);
-	} else if(operations.type === "redo") {
+	} else if(operations.type && (operations.type === "redo")) {
 		this.redo(this.cm);
+	} else if(operations.type && (operations.type === "search")) {
+		console.log(this.cm);
+		this.openSearchPanel(this.cm);
 	} else if(operations && operations.length) {
 		var ranges = this.cm.state.selection.ranges;
 		this.cm.dispatch(this.cm.state.changeByRange(function(range) {

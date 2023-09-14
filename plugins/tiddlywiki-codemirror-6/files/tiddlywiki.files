@@ -64,6 +64,13 @@
 				"module-type": "texteditoroperation"
 			}
 		},{
+			"file": "modules/editor/operations/search.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/core/modules/editor/operations/text/search.js",
+				"module-type": "texteditoroperation"
+			}
+		},{
 			"file": "modules/editor/operations/wrap-lines.js",
 			"fields": {
 				"type": "application/javascript",
