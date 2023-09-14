@@ -362,6 +362,8 @@ function CodeMirrorEngine(options) {
 		}
 	};
 
+	var selectOnOpen = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/selectOnOpen") === "yes";
+
 	var editorOptions = {
 		doc: options.value,
 		parent: this.domNode,
@@ -453,7 +455,7 @@ function CodeMirrorEngine(options) {
 			syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
 			bracketMatching(),
 			closeBrackets(),
-			autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip"}}), //{activateOnTyping: false}),
+			autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip"}, selectOnOpen: selectOnOpen}), //{activateOnTyping: false}),
 			rectangularSelection(),
 			crosshairCursor(),
 			highlightSelectionMatches(),
@@ -506,7 +508,13 @@ function CodeMirrorEngine(options) {
 		mode = "text/vnd.tiddlywiki";
 	}
 	switch(mode) {
-		case ("text/vnd.tiddlywiki" || "text/html"):
+		case ("text/vnd.tiddlywiki"):
+			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
+			editorOptions.extensions.push(markdown());
+			var docCompletions = markdownLanguage.data.of({autocomplete: tiddlerCompletions});
+			editorOptions.extensions.push(Prec.high(docCompletions));
+			break;			
+		case ("text/html"):
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
 			editorOptions.extensions.push(html({selfClosingTags: true}));
 			var docCompletions = htmlLanguage.data.of({autocomplete: tiddlerCompletions});
