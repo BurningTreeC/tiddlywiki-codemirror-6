@@ -318,7 +318,8 @@ function CodeMirrorEngine(options) {
 	};
 
 	function tiddlerCompletions(context = CompletionContext) {
-		var word = context.matchBefore(/\w*/); // /\w*/ or /[\w\s]+/
+		var matchBeforeRegex = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
+		var word = validateRegex(matchBeforeRegex) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/\w*/); // /\w*/ or /[\w\s]+/
 		var actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
 		var actionStrings = [];
 		var actions = [];
