@@ -308,7 +308,9 @@ function CodeMirrorEngine(options) {
 	var completionMinLength = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completionMinLength") || 3);
 
 	function tiddlerCompletions(context = CompletionContext) {
-		var word = context.matchBefore(/\w*/);
+		console.log(context);
+		var word = context.matchBefore(/[\w\s]+/); // /\w*/
+		console.log(word);
 		var actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
 		var actionStrings = [];
 		var actions = [];
@@ -329,17 +331,19 @@ function CodeMirrorEngine(options) {
 				}
 			}
 		});
-		if ((word.text.length < completionMinLength) || (word.from === word.to && !context.explicit)) {
-			return null;
-		} else {
-			var options = [];
-			var tiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers]!is[system]!is[shadow]!is[draft]]");
-			$tw.utils.each(tiddlers,function(tiddler) {
-				options.push({label: tiddler, type: "keyword"});
-			});
-			return {
-				from: word.from,
-				options: options //filter: false
+		if(word) {
+			if ((word.text.length < completionMinLength) || (word.from === word.to && !context.explicit)) {
+				return null;
+			} else {
+				var options = [];
+				var tiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers]!is[system]!is[shadow]!is[draft]]");
+				$tw.utils.each(tiddlers,function(tiddler) {
+					options.push({label: tiddler, type: "keyword"});
+				});
+				return {
+					from: word.from,
+					options: options //filter: false
+				}
 			}
 		}
 	};
