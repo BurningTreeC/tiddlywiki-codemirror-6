@@ -308,8 +308,16 @@ function CodeMirrorEngine(options) {
 	var completionMinLength = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completionMinLength") || 3);
 	var completeVariables = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeVariables") === "yes";
 
-	function tiddlerCompletions(context = CompletionContext) {
+	function validateRegex(pattern) {
+		try {
+			new RegExp(regex, options);
+			return true;
+		} catch(e) {
+			return false;
+		}
+	};
 
+	function tiddlerCompletions(context = CompletionContext) {
 		var word = context.matchBefore(/\w*/); // /\w*/ or /[\w\s]+/
 		var actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
 		var actionStrings = [];
