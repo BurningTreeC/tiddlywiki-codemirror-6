@@ -453,7 +453,7 @@ function CodeMirrorEngine(options) {
 			syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
 			bracketMatching(),
 			closeBrackets(),
-			autocompletion(), //{activateOnTyping: false}),
+			autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip"}}), //{activateOnTyping: false}),
 			rectangularSelection(),
 			crosshairCursor(),
 			highlightSelectionMatches(),
@@ -529,7 +529,7 @@ function CodeMirrorEngine(options) {
 			var {css,cssLanguage} = CM["@codemirror/lang-css"];
 			editorOptions.extensions.push(css());
 			var docCompletions = cssLanguage.data.of({autocomplete: tiddlerCompletions});
-			editorOptions.extensions.push(docCompletions);
+			editorOptions.extensions.push(Prec.high(docCompletions));
 			break;
 		case ("text/markdown" || "text/x-markdown"):
 			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
