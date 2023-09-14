@@ -308,9 +308,7 @@ function CodeMirrorEngine(options) {
 	var completionMinLength = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completionMinLength") || 3);
 
 	function tiddlerCompletions(context = CompletionContext) {
-		console.log(context);
-		var word = context.matchBefore(/[\w\s]+/); // /\w*/
-		console.log(word);
+		var word = context.matchBefore(/\w*/); // /\w*/ or /[\w\s]+/
 		var actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
 		var actionStrings = [];
 		var actions = [];
@@ -327,18 +325,18 @@ function CodeMirrorEngine(options) {
 				var index = actionStrings.indexOf(string);
 				if(index !== -1) {
 					self.cm.dispatch({changes: {from: stringContext.from, to: stringContext.to, insert: ""}});
-					self.widget.invokeActionString(actions[index],self);
+					self.widget.invokeActionString(actions[index],self,undefined,self.widget.variables);
 				}
 			}
 		});
 		if(word) {
-			if ((word.text.length < completionMinLength) || (word.from === word.to && !context.explicit)) {
+			if ((word.text.length < completionMinLength) || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
 				return null;
 			} else {
 				var options = [];
 				var tiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers]!is[system]!is[shadow]!is[draft]]");
 				$tw.utils.each(tiddlers,function(tiddler) {
-					options.push({label: tiddler, type: "keyword"});
+					options.push({label: tiddler, type: "tiddler", boost: 99}); //section: "Tiddlers"
 				});
 				return {
 					from: word.from,
