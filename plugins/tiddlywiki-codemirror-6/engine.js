@@ -308,9 +308,9 @@ function CodeMirrorEngine(options) {
 	var completionMinLength = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completionMinLength") || 3);
 	var completeVariables = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeVariables") === "yes";
 
-	function validateRegex(pattern) {
+	function validateRegex(regex) {
 		try {
-			new RegExp(regex, options);
+			new RegExp(regex);
 			return true;
 		} catch(e) {
 			return false;
