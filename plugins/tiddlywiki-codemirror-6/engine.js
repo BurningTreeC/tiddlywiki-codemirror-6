@@ -310,7 +310,7 @@ function CodeMirrorEngine(options) {
 
 	function tiddlerCompletions(context = CompletionContext) {
 
-		var word = context.matchBefore(/\S+$/); // /\w*/ or /[\w\s]+/
+		var word = context.matchBefore(/\w*/); // /\w*/ or /[\w\s]+/
 		var actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
 		var actionStrings = [];
 		var actions = [];
