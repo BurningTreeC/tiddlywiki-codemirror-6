@@ -591,10 +591,8 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 		this.dragCancel = false;
 		return true;
 	}
-	console.log(event);
 	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && (this.completionStatus(this.cm.state) === "active")) {
 		event.stopPropagation();
-		console.log("ACTIVE");
 		return false;
 	}
 	var widget = this.widget;
