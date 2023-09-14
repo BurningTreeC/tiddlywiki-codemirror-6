@@ -1,0 +1,13 @@
+title: $:/config/codemirror-6/
+
+autocompleteRegex: \w*
+autocorrect: no
+completeVariables: yes
+completionMinLength: 0
+fontsize: 15px
+highlightActiveLine: yes
+indentWithTab: yes
+lineNumbers: yes
+rtl: no
+selectOnOpen: yes
+translate: no
