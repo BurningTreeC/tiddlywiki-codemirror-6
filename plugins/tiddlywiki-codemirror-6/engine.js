@@ -344,7 +344,6 @@ function CodeMirrorEngine(options) {
 				}
 			}
 		});
-		console.log(word);
 		if(word) {
 			if ((word.text.length <= completionMinLength)) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
 				return null;
@@ -372,7 +371,7 @@ function CodeMirrorEngine(options) {
 				if(completeWidgets) {
 					var widgetNames = ["<$action-confirm ", "<$action-createtiddler ", "<$action-deletefield ", "<$action-deletetiddler ", "<$action-listops ", "<$action-log ", "<$action-navigate ", "<$action-popup ", "<$action-sendmessage ", "<$action-setfield ", "<$action-setmultiplefields ", "<$browse ", "<$button ", "<$checkbox ", "<$codeblock ", "<$count ", "<$diff-text ", "<$draggable ", "<$droppable ", "<$dropzone ", "<$edit-bitmap ", "<$edit-text ", "<$edit ", "<$encrypt ", "<$entity ", "<$error ", "<$eventcatcher ", "<$fieldmangler ", "<$fields ", "<$fill ", "<$genesis ", "<$image ", "<$importvariables ", "<$jsontiddler ", "<$keyboard ", "<$let ", "<$linkcatcher ", "<$link ", "<$list ", "<$log ", "<$macrocall ", "<$messagecatcher ", "<$navigator ", "<$parameters ", "<$password ", "<$vars ", "<$radio ", "<$range ", "<$reveal ", "<$scrollable ", "<$select ", "<$setmultiplevariables ", "<$setvariable ", "<$set ", "<$slot ", "<$text ", "<$tiddler ", "<$transclude ", "<$vars ", "<$view ", "<$wikify "];
 					$tw.utils.each(widgetNames,function(widgetName) {
-						options.push({label: widgetName, displayLabel: widgetName.substring(2), type: "cm-widget", boost: 99});
+						options.push({label: widgetName, displayLabel: widgetName.substring(2,widgetName.length - 1), type: "cm-widget", boost: 99});
 					});
 				}
 				return {

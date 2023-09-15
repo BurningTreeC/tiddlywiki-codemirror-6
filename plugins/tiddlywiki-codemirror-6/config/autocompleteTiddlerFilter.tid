@@ -1,3 +1,6 @@
 title: $:/config/codemirror-6/autocompleteTiddlerFilter
+caption: Autocomplete Filter
+description: The filter used for the autocompletion matches
+settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/input
 
 [all[tiddlers]!is[system]!is[shadow]!is[draft]]

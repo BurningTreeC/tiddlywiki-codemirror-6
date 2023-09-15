@@ -1,3 +1,6 @@
 title: $:/config/codemirror-6/completionMinLength
+caption: Autocompletion ~MinLength
+description: The minimum length needed to open the autocompletion-popup
+settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/input
 
 0
