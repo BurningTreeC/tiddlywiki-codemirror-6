@@ -35,11 +35,11 @@ function CodeMirrorEngine(options) {
 	this.widget.domNodes.push(this.domNode);
 
 	var {minimalSetup,basicSetup} = CM["codemirror"];
-	var {EditorView,dropCursor,keymap,highlightSpecialChars,drawSelection,highlightActiveLine,rectangularSelection,crosshairCursor,lineNumbers,highlightActiveLineGutter} = CM["@codemirror/view"];
+	var {EditorView,dropCursor,keymap,highlightSpecialChars,drawSelection,highlightActiveLine,rectangularSelection,crosshairCursor,lineNumbers,highlightActiveLineGutter,placeholder} = CM["@codemirror/view"];
 	var {defaultKeymap,standardKeymap,indentWithTab,history,historyKeymap,undo,redo} = CM["@codemirror/commands"];
 	var {language,indentUnit,defaultHighlightStyle,syntaxHighlighting,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
 	var {Extension,EditorState,Compartment,EditorSelection,Prec} = CM["@codemirror/state"];
-	var {searchKeymap,highlightSelectionMatches,openSearchPanel} = CM["@codemirror/search"];
+	var {searchKeymap,highlightSelectionMatches,openSearchPanel,closeSearchPanel} = CM["@codemirror/search"];
 	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus} = CM["@codemirror/autocomplete"];
 	var {lintKeymap} = CM["@codemirror/lint"];
 	var {oneDark} = CM["@codemirror/theme-one-dark"];
@@ -52,6 +52,7 @@ function CodeMirrorEngine(options) {
 	this.undo = undo;
 	this.redo = redo;
 	this.openSearchPanel = openSearchPanel;
+	this.closeSearchPanel = closeSearchPanel;
 
 	// Solarized light theme adapted from: https://github.com/craftzdog/cm6-themes/blob/main/packages/solarized-light/src/index.ts
 
@@ -517,6 +518,11 @@ function CodeMirrorEngine(options) {
 		editorExtensions.push(highlightActiveLineGutter());
 	};
 
+	if(this.widget.editPlaceholder) {
+		console.log(this.widget.editPlaceholder);
+		editorExtensions.push(placeholder(self.widget.editPlaceholder));
+	};
+
 	var cmIndentUnit = "	";
 	editorExtensions.push(indentUnit.of(cmIndentUnit));
 
@@ -782,7 +788,7 @@ CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 		this.redo(this.cm);
 	} else if(operations.type && (operations.type === "search")) {
 		console.log(this.cm);
-		this.openSearchPanel(this.cm);
+		this.closeSearchPanel(this.cm) || this.openSearchPanel(this.cm);
 	} else if(operations && operations.length) {
 		var ranges = this.cm.state.selection.ranges;
 		this.cm.dispatch(this.cm.state.changeByRange(function(range) {
