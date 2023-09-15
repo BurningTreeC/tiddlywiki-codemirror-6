@@ -309,6 +309,7 @@ function CodeMirrorEngine(options) {
 	var {CompletionContext,completeAnyWord} = CM["@codemirror/autocomplete"];
 	var completionMinLength = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completionMinLength") || 3);
 	var completeVariables = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeVariables") === "yes";
+	var completeWidgets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeWidgets") === "yes";
 
 	function validateRegex(regex) {
 		try {
@@ -342,6 +343,7 @@ function CodeMirrorEngine(options) {
 				}
 			}
 		});
+		console.log(word);
 		if(word) {
 			if ((word.text.length <= completionMinLength)) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
 				return null;
@@ -349,7 +351,7 @@ function CodeMirrorEngine(options) {
 				var options = [];
 				var tiddlers = self.widget.wiki.filterTiddlers(self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteTiddlerFilter"));
 				$tw.utils.each(tiddlers,function(tiddler) {
-					options.push({label: tiddler, type: "tiddler", boost: 99}); //section: "Tiddlers"
+					options.push({label: tiddler, type: "cm-tiddler", boost: 99}); //section: "Tiddlers"
 				});
 				if(completeVariables) {
 					var variableNames = [];
@@ -363,7 +365,13 @@ function CodeMirrorEngine(options) {
 						}
 					}
 					$tw.utils.each(variableNames,function(variableName) {
-						options.push({label: variableName, type: "variable", boost: -99});
+						options.push({label: variableName, type: "cm-variable", boost: -99});
+					});
+				}
+				if(completeWidgets) {
+					var widgetNames = ["<$action-confirm ", "<$action-createtiddler ", "<$action-deletefield ", "<$action-deletetiddler ", "<$action-listops ", "<$action-log ", "<$action-navigate ", "<$action-popup ", "<$action-sendmessage ", "<$action-setfield ", "<$action-setmultiplefields ", "<$browse ", "<$button ", "<$checkbox ", "<$codeblock ", "<$count ", "<$diff-text ", "<$draggable ", "<$droppable ", "<$dropzone ", "<$edit-bitmap ", "<$edit-text ", "<$edit ", "<$encrypt ", "<$entity ", "<$error ", "<$eventcatcher ", "<$fieldmangler ", "<$fields ", "<$fill ", "<$genesis ", "<$image ", "<$importvariables ", "<$jsontiddler ", "<$keyboard ", "<$let ", "<$linkcatcher ", "<$link ", "<$list ", "<$log ", "<$macrocall ", "<$messagecatcher ", "<$navigator ", "<$parameters ", "<$password ", "<$vars ", "<$radio ", "<$range ", "<$reveal ", "<$scrollable ", "<$select ", "<$setmultiplevariables ", "<$setvariable ", "<$set ", "<$slot ", "<$text ", "<$tiddler ", "<$transclude ", "<$vars ", "<$view ", "<$wikify "];
+					$tw.utils.each(widgetNames,function(widgetName) {
+						options.push({label: widgetName, displayLabel: widgetName.substring(2), type: "cm-widget", boost: 99});
 					});
 				}
 				return {
