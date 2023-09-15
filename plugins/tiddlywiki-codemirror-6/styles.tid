@@ -100,7 +100,7 @@ body {
 }
 
 .cm-panels {
-	background-color: transparent !important;
+	background-color: <<colour tiddler-background>> !important;
 	color: <<colour foreground>> !important;
 }
 
