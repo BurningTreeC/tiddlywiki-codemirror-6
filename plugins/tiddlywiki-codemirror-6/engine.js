@@ -348,36 +348,15 @@ function CodeMirrorEngine(options) {
 			if ((word.text.length <= completionMinLength)) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
 				return null;
 			} else {
-				var options = [];
-				var tiddlers = self.widget.wiki.filterTiddlers(self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteTiddlerFilter"));
-				$tw.utils.each(tiddlers,function(tiddler) {
-					options.push({label: tiddler, type: "cm-tiddler", boost: 99}); //section: "Tiddlers"
-				});
-				if(completeVariables) {
-					var variableNames = [];
-					var widget = self.widget;
-					while(widget && !widget.hasOwnProperty("variables")) {
-						widget = widget.parentWidget;
-					}
-					if(widget && widget.variables) {
-						for(var variable in widget.variables) {
-							variableNames.push(variable);
-						}
-					}
-					$tw.utils.each(variableNames,function(variableName) {
-						options.push({label: variableName, type: "cm-variable", boost: -99});
-					});
-				}
-				if(completeWidgets) {
-					var widgetNames = ["<$action-confirm ", "<$action-createtiddler ", "<$action-deletefield ", "<$action-deletetiddler ", "<$action-listops ", "<$action-log ", "<$action-navigate ", "<$action-popup ", "<$action-sendmessage ", "<$action-setfield ", "<$action-setmultiplefields ", "<$browse ", "<$button ", "<$checkbox ", "<$codeblock ", "<$count ", "<$diff-text ", "<$draggable ", "<$droppable ", "<$dropzone ", "<$edit-bitmap ", "<$edit-text ", "<$edit ", "<$encrypt ", "<$entity ", "<$error ", "<$eventcatcher ", "<$fieldmangler ", "<$fields ", "<$fill ", "<$genesis ", "<$image ", "<$importvariables ", "<$jsontiddler ", "<$keyboard ", "<$let ", "<$linkcatcher ", "<$link ", "<$list ", "<$log ", "<$macrocall ", "<$messagecatcher ", "<$navigator ", "<$parameters ", "<$password ", "<$vars ", "<$radio ", "<$range ", "<$reveal ", "<$scrollable ", "<$select ", "<$setmultiplevariables ", "<$setvariable ", "<$set ", "<$slot ", "<$text ", "<$tiddler ", "<$transclude ", "<$vars ", "<$view ", "<$wikify "];
-					$tw.utils.each(widgetNames,function(widgetName) {
-						options.push({label: widgetName, displayLabel: widgetName.substring(2,widgetName.length - 1), type: "cm-widget", boost: 99});
-					});
-				}
 				return {
 					from: word.from,
-					options: options //filter: false
+					options: self.getCompletionOptions(completeVariables,completeWidgets) //filter: false
 				}
+			}
+		} else if(context.explicit) {
+			return {
+				from: context.pos,
+				options: self.getCompletionOptions(completeVariables,completeWidgets) //filter: false
 			}
 		}
 	};
@@ -579,6 +558,36 @@ function CodeMirrorEngine(options) {
 		state: this.state
 	};
 	this.cm = new EditorView(editorOptions);
+};
+
+CodeMirrorEngine.prototype.getCompletionOptions = function(completeVariables,completeWidgets) {
+	var options = [];
+	var tiddlers = this.widget.wiki.filterTiddlers(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteTiddlerFilter"));
+	$tw.utils.each(tiddlers,function(tiddler) {
+		options.push({label: tiddler, type: "cm-tiddler", boost: 99}); //section: "Tiddlers"
+	});
+	if(completeVariables) {
+		var variableNames = [];
+		var widget = this.widget;
+		while(widget && !widget.hasOwnProperty("variables")) {
+			widget = widget.parentWidget;
+		}
+		if(widget && widget.variables) {
+			for(var variable in widget.variables) {
+				variableNames.push(variable);
+			}
+		}
+		$tw.utils.each(variableNames,function(variableName) {
+			options.push({label: variableName, type: "cm-variable", boost: -99});
+		});
+	}
+	if(completeWidgets) {
+		var widgetNames = ["<$action-confirm ", "<$action-createtiddler ", "<$action-deletefield ", "<$action-deletetiddler ", "<$action-listops ", "<$action-log ", "<$action-navigate ", "<$action-popup ", "<$action-sendmessage ", "<$action-setfield ", "<$action-setmultiplefields ", "<$browse ", "<$button ", "<$checkbox ", "<$codeblock ", "<$count ", "<$diff-text ", "<$draggable ", "<$droppable ", "<$dropzone ", "<$edit-bitmap ", "<$edit-text ", "<$edit ", "<$encrypt ", "<$entity ", "<$error ", "<$eventcatcher ", "<$fieldmangler ", "<$fields ", "<$fill ", "<$genesis ", "<$image ", "<$importvariables ", "<$jsontiddler ", "<$keyboard ", "<$let ", "<$linkcatcher ", "<$link ", "<$list ", "<$log ", "<$macrocall ", "<$messagecatcher ", "<$navigator ", "<$parameters ", "<$password ", "<$vars ", "<$radio ", "<$range ", "<$reveal ", "<$scrollable ", "<$select ", "<$setmultiplevariables ", "<$setvariable ", "<$set ", "<$slot ", "<$text ", "<$tiddler ", "<$transclude ", "<$vars ", "<$view ", "<$wikify "];
+		$tw.utils.each(widgetNames,function(widgetName) {
+			options.push({label: widgetName, displayLabel: widgetName.substring(2,widgetName.length - 1), type: "cm-widget", boost: 99});
+		});
+	}
+	return options;
 };
 
 CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {
