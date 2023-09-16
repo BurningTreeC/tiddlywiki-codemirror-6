@@ -1,0 +1,14 @@
+title: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/EditorTools/preview
+tags: $:/tags/EditorTools
+
+<$reveal stateTitle=<<edit-preview-state>> type="match" text="yes" tag="div">
+<div class="tc-tiddler-preview-preview" data-tiddler-title={{!!draft.title}} data-tags={{!!tags}}>
+
+<$transclude tiddler={{$:/state/editpreviewtype}} mode="inline">
+
+<$transclude tiddler="$:/core/ui/EditTemplate/body/preview/output" mode="inline"/>
+
+</$transclude>
+
+</div>
+</$reveal>

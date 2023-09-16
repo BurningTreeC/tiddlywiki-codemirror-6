@@ -112,7 +112,7 @@ function CodeMirrorEngine(options) {
 
 	this.solarizedDarkTheme = EditorView.theme({},{dark:true});
 
-	var {tags} = CM["@lezer/highlight"];
+	var {styleTags,tags} = CM["@lezer/highlight"];
 	var {HighlightStyle,TagStyle,syntaxHighlighting} = CM["@codemirror/language"];
 
 	this.solarizedLightHighlightStyle = HighlightStyle.define([
@@ -496,7 +496,6 @@ function CodeMirrorEngine(options) {
 	};
 
 	if(this.widget.editPlaceholder) {
-		console.log(this.widget.editPlaceholder);
 		editorExtensions.push(placeholder(self.widget.editPlaceholder));
 	};
 
@@ -772,7 +771,6 @@ CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 	} else if(operations.type && (operations.type === "redo")) {
 		this.redo(this.cm);
 	} else if(operations.type && (operations.type === "search")) {
-		console.log(this.cm);
 		this.closeSearchPanel(this.cm) || this.openSearchPanel(this.cm);
 	} else if(operations && operations.length) {
 		var ranges = this.cm.state.selection.ranges;
