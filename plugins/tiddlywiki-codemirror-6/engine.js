@@ -37,7 +37,7 @@ function CodeMirrorEngine(options) {
 	var {minimalSetup,basicSetup} = CM["codemirror"];
 	var {EditorView,dropCursor,keymap,highlightSpecialChars,drawSelection,highlightActiveLine,rectangularSelection,crosshairCursor,lineNumbers,highlightActiveLineGutter,placeholder} = CM["@codemirror/view"];
 	var {defaultKeymap,standardKeymap,indentWithTab,history,historyKeymap,undo,redo} = CM["@codemirror/commands"];
-	var {language,indentUnit,defaultHighlightStyle,syntaxHighlighting,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
+	var {language,indentUnit,defaultHighlightStyle,syntaxHighlighting,syntaxTree,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
 	var {Extension,EditorState,Compartment,EditorSelection,Prec} = CM["@codemirror/state"];
 	var {searchKeymap,highlightSelectionMatches,openSearchPanel,closeSearchPanel} = CM["@codemirror/search"];
 	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus} = CM["@codemirror/autocomplete"];
@@ -46,7 +46,6 @@ function CodeMirrorEngine(options) {
 
 	this.editorSelection = EditorSelection;
 	this.completionStatus = completionStatus;
-	this.compartment = Compartment;
 	this.keymap = keymap;
 
 	this.undo = undo;
@@ -510,7 +509,7 @@ function CodeMirrorEngine(options) {
 	}
 	switch(mode) {
 		case "text/vnd.tiddlywiki":
-			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
+			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"]; //TODO: tiddlywikiLanguage 
 			editorExtensions.push(markdown());
 			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));
@@ -552,10 +551,10 @@ function CodeMirrorEngine(options) {
 		default:
 			break;
 	};
-	this.state = EditorState.create({doc: options.value,extensions: editorExtensions});
+	var state = EditorState.create({doc: options.value,extensions: editorExtensions});
 	var editorOptions = {
 		parent: this.domNode,
-		state: this.state
+		state: state
 	};
 	this.cm = new EditorView(editorOptions);
 };
@@ -662,28 +661,6 @@ CodeMirrorEngine.prototype.setText = function(text,type) {
 	if(!this.cm.hasFocus) {
 		this.updateDomNodeText(text);
 	}
-/*	switch (type) {
-		case ("text/vnd.tiddlywiki" || "text/html"):
-			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
-			this.cm.dispatch({
-				effects: languageCompartment.reconfigure(html({selfClosingTags: true}))
-			});
-			break;
-		case "application/javascript":
-			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
-			this.cm.dispatch({
-				effects: languageCompartment.reconfigure(javascript())
-			});
-			break;
-		case "text/css":
-			var {css,cssLanguage} = CM["@codemirror/lang-css"];
-			this.cm.dispatch({
-				effects: languageCompartment.reconfigure(css())
-			});
-			break;
-		default:
-			break;
-	};*/
 };
 
 /*
@@ -813,7 +790,7 @@ CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 				range: selectionRange
 			}
 		}));
-	} else if(operations) {
+	} else if(operations.type !== "focus-editor" && operations) {
 		this.cm.dispatch(this.cm.state.changeByRange(function(range) {
 			var editorChanges = [{from: operations.cutStart, to: operations.cutEnd, insert: operations.replacement}];
 			var selectionRange = self.editorSelection.range(operations.newSelStart,operations.newSelEnd);
