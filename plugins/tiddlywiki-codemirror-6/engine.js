@@ -508,10 +508,14 @@ function CodeMirrorEngine(options) {
 	}
 	switch(mode) {
 		case "text/vnd.tiddlywiki":
-			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"]; //TODO: tiddlywikiLanguage 
+			var {tiddlywiki,tiddlywikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
+			editorExtensions.push(tiddlywiki());
+			var docCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+			editorExtensions.push(Prec.high(docCompletions));
+			/*var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"]; //TODO: tiddlywikiLanguage 
 			editorExtensions.push(markdown());
 			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(docCompletions));
+			editorExtensions.push(Prec.high(docCompletions));*/
 			break;			
 		case "text/html":
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
