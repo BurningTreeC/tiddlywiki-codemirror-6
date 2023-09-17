@@ -580,6 +580,7 @@ function CodeMirrorEngine(options) {
 };
 
 CodeMirrorEngine.prototype.getCompletionOptions = function(completeVariables,completeWidgets,completeFilters) {
+	var self = this;
 	var options = [];
 	var tiddlers = this.widget.wiki.filterTiddlers(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteTiddlerFilter"));
 	$tw.utils.each(tiddlers,function(tiddler) {
@@ -601,7 +602,6 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(completeVariables,com
 		});
 	}
 	if(completeWidgets) {
-		//var widgetNames = ["action-confirm ", "action-createtiddler ", "action-deletefield ", "action-deletetiddler ", "action-listops ", "action-log ", "action-navigate ", "action-popup ", "action-sendmessage ", "action-setfield ", "action-setmultiplefields ", "browse ", "button ", "checkbox ", "codeblock ", "count ", "diff-text ", "draggable ", "droppable ", "dropzone ", "edit-bitmap ", "edit-text ", "edit ", "encrypt ", "entity ", "error ", "eventcatcher ", "fieldmangler ", "fields ", "fill ", "genesis ", "image ", "importvariables ", "jsontiddler ", "keyboard ", "let ", "linkcatcher ", "link ", "list ", "log ", "macrocall ", "messagecatcher ", "navigator ", "parameters ", "password ", "vars ", "radio ", "range ", "reveal ", "scrollable ", "select ", "setmultiplevariables ", "setvariable ", "set ", "slot ", "text ", "tiddler ", "transclude ", "vars ", "view ", "wikify "];
 		var widgetNames = [];
 		$tw.utils.each($tw.modules.types["widget"],function(widget) {
 			var widgetName = Object.getOwnPropertyNames(widget.exports);
@@ -616,7 +616,6 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(completeVariables,com
 	if(completeFilters) {
 		var filterNames = [],
 			filterPrefixNames = [];
-		console.log($tw.modules.types);
 		$tw.utils.each($tw.modules.types["filteroperator"],function(filteroperator) {
 			var filterName = Object.getOwnPropertyNames(filteroperator.exports);
 			$tw.utils.each(filterName,function(name) {
@@ -633,7 +632,16 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(completeVariables,com
 			options.push({label: filterName, type: "cm-filter", boost: 1})
 		});
 		$tw.utils.each(filterPrefixNames,function(filterPrefixName) {
-			options.push({label: ":" + filterPrefixName, type: "cm-filterrunprefix", boost: 1})
+			options.push({label: ":" + filterPrefixName + "[]", type: "cm-filterrunprefix", boost: 1, apply: function(view,completion,from,to) {
+				view.dispatch(view.state.changeByRange(function(range) {
+					var editorChanges = [{from: from, to: to, insert: completion.label}];
+					var selectionRange = self.editorSelection.range(from + completion.label.length - 1,from + completion.label.length - 1);
+					return {
+						changes: editorChanges,
+						range: selectionRange
+					}
+				}));
+			}});
 		});
 	}
 	return options;
@@ -823,7 +831,7 @@ CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 		this.redo(this.cm);
 	} else if(operations.type && (operations.type === "search")) {
 		this.closeSearchPanel(this.cm) || this.openSearchPanel(this.cm);
-	} else if(operations && operations.length) {
+	} else if((operations.type !== "focus-editor") && operations && operations.length) {
 		var ranges = this.cm.state.selection.ranges;
 		this.cm.dispatch(this.cm.state.changeByRange(function(range) {
 			var index;
