@@ -435,8 +435,6 @@ function CodeMirrorEngine(options) {
 			},
 			focus(event,view) {
 				console.log("FOCUS");
-				var selections = view.state.selection;
-				console.log(selections);
 				if(self.widget.editCancelPopups) {
 					$tw.popup.cancel(0);
 				}
