@@ -40,7 +40,7 @@ function CodeMirrorEngine(options) {
 	var {language,indentUnit,defaultHighlightStyle,syntaxHighlighting,syntaxTree,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
 	var {Extension,EditorState,Compartment,EditorSelection,Prec} = CM["@codemirror/state"];
 	var {searchKeymap,highlightSelectionMatches,openSearchPanel,closeSearchPanel} = CM["@codemirror/search"];
-	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus} = CM["@codemirror/autocomplete"];
+	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus,acceptCompletion} = CM["@codemirror/autocomplete"];
 	var {lintKeymap} = CM["@codemirror/lint"];
 	var {oneDark} = CM["@codemirror/theme-one-dark"];
 
@@ -353,13 +353,13 @@ function CodeMirrorEngine(options) {
 			} else {
 				return {
 					from: word.from,
-					options: self.getCompletionOptions(completeVariables,completeWidgets,completeFilters) //filter: false
+					options: self.getCompletionOptions(context,completeVariables,completeWidgets,completeFilters) //filter: false
 				}
 			}
 		} else if(context.explicit) {
 			return {
 				from: context.pos,
-				options: self.getCompletionOptions(completeVariables,completeWidgets,completeFilters)
+				options: self.getCompletionOptions(context,completeVariables,completeWidgets,completeFilters)
 			}
 		}
 	};
@@ -435,6 +435,8 @@ function CodeMirrorEngine(options) {
 			},
 			focus(event,view) {
 				console.log("FOCUS");
+				var selections = view.state.selection;
+				console.log(selections);
 				if(self.widget.editCancelPopups) {
 					$tw.popup.cancel(0);
 				}
@@ -485,7 +487,8 @@ function CodeMirrorEngine(options) {
 		editorExtensions.push(
 			keymap.of([
 				indentWithTab
-			])
+			]),
+			Prec.high(keymap.of({key: "Tab", run: acceptCompletion}))
 		);
 	};
 
@@ -579,7 +582,7 @@ function CodeMirrorEngine(options) {
 	this.cm = new EditorView(editorOptions);
 };
 
-CodeMirrorEngine.prototype.getCompletionOptions = function(completeVariables,completeWidgets,completeFilters) {
+CodeMirrorEngine.prototype.getCompletionOptions = function(context,completeVariables,completeWidgets,completeFilters) {
 	var self = this;
 	var options = [];
 	var tiddlers = this.widget.wiki.filterTiddlers(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteTiddlerFilter"));
@@ -629,11 +632,21 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(completeVariables,com
 			});
 		});
 		$tw.utils.each(filterNames,function(filterName) {
-			options.push({label: filterName, type: "cm-filter", boost: 1})
+			options.push({label: filterName + "[]", type: "cm-filter", boost: 1, apply: function(view,completion,from,to) {
+				view.dispatch(view.state.changeByRange(function(range) {
+					var editorChanges = [{from: from, to: to, insert: completion.label}];
+					var selectionRange = self.editorSelection.range(from + completion.label.length - 1,from + completion.label.length - 1);
+					return {
+						changes: editorChanges,
+						range: selectionRange
+					}
+				}));				
+			}});
 		});
 		$tw.utils.each(filterPrefixNames,function(filterPrefixName) {
 			options.push({label: ":" + filterPrefixName + "[]", type: "cm-filterrunprefix", boost: 1, apply: function(view,completion,from,to) {
 				view.dispatch(view.state.changeByRange(function(range) {
+					// TODO: check if there's a leading ":" and use "from - 1" in that case
 					var editorChanges = [{from: from, to: to, insert: completion.label}];
 					var selectionRange = self.editorSelection.range(from + completion.label.length - 1,from + completion.label.length - 1);
 					return {
