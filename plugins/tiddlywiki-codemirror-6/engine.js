@@ -325,7 +325,7 @@ function CodeMirrorEngine(options) {
 		var matchBeforeRegex = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
 		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/\w*/); // /\w*/ or /[\w\s]+/
 		var isVariableCompletion = false,
-			isFilterCompletion = context.matchBefore(new RegExp("\\[" + (word ? word.text : ""))) !== null,
+			isFilterCompletion = ((context.matchBefore(new RegExp("\\[" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp("\\]" + (word ? word.text : ""))) !== null)),
 			isWidgetCompletion = context.matchBefore(new RegExp("<\\$" + (word ? word.text : ""))) !== null,
 			isSingleVariableCompletion = context.matchBefore(new RegExp("<" + (word ? word.text : ""))) !== null,
 			isDoubleVariableCompletion = context.matchBefore(new RegExp("<<" + (word ? word.text : ""))) !== null,
@@ -669,8 +669,7 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,complete
 		});
 	}
 	if(completeFilters && isFilterCompletion && !isFilterrunPrefixCompletion && !isWidgetCompletion && !isVariableCompletion) {
-		var filterNames = [],
-			filterPrefixNames = [];
+		var filterNames = [];
 		$tw.utils.each($tw.modules.types["filteroperator"],function(filteroperator) {
 			var filterName = Object.getOwnPropertyNames(filteroperator.exports);
 			$tw.utils.each(filterName,function(name) {
@@ -691,6 +690,7 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,complete
 		});
 	}
 	if(completeFilters && isFilterrunPrefixCompletion && !isWidgetCompletion && !isFilterCompletion && !isVariableCompletion) {
+		var filterPrefixNames = [];
 		$tw.utils.each($tw.modules.types["filterrunprefix"],function(filterrunprefix) {
 			var filterRunPrefixName = Object.getOwnPropertyNames(filterrunprefix.exports);
 			$tw.utils.each(filterRunPrefixName,function(name) {
