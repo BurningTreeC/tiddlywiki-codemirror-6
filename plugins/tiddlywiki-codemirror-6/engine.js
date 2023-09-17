@@ -310,6 +310,7 @@ function CodeMirrorEngine(options) {
 	var completionMinLength = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completionMinLength") || 3);
 	var completeVariables = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeVariables") === "yes";
 	var completeWidgets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeWidgets") === "yes";
+	var completeFilters = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeFilters") === "yes";
 
 	function validateRegex(regex) {
 		try {
@@ -352,13 +353,13 @@ function CodeMirrorEngine(options) {
 			} else {
 				return {
 					from: word.from,
-					options: self.getCompletionOptions(completeVariables,completeWidgets) //filter: false
+					options: self.getCompletionOptions(completeVariables,completeWidgets,completeFilters) //filter: false
 				}
 			}
 		} else if(context.explicit) {
 			return {
 				from: context.pos,
-				options: self.getCompletionOptions(completeVariables,completeWidgets)
+				options: self.getCompletionOptions(completeVariables,completeWidgets,completeFilters)
 			}
 		}
 	};
@@ -578,7 +579,7 @@ function CodeMirrorEngine(options) {
 	this.cm = new EditorView(editorOptions);
 };
 
-CodeMirrorEngine.prototype.getCompletionOptions = function(completeVariables,completeWidgets) {
+CodeMirrorEngine.prototype.getCompletionOptions = function(completeVariables,completeWidgets,completeFilters) {
 	var options = [];
 	var tiddlers = this.widget.wiki.filterTiddlers(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteTiddlerFilter"));
 	$tw.utils.each(tiddlers,function(tiddler) {
@@ -600,9 +601,39 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(completeVariables,com
 		});
 	}
 	if(completeWidgets) {
-		var widgetNames = ["action-confirm ", "action-createtiddler ", "action-deletefield ", "action-deletetiddler ", "action-listops ", "action-log ", "action-navigate ", "action-popup ", "action-sendmessage ", "action-setfield ", "action-setmultiplefields ", "browse ", "button ", "checkbox ", "codeblock ", "count ", "diff-text ", "draggable ", "droppable ", "dropzone ", "edit-bitmap ", "edit-text ", "edit ", "encrypt ", "entity ", "error ", "eventcatcher ", "fieldmangler ", "fields ", "fill ", "genesis ", "image ", "importvariables ", "jsontiddler ", "keyboard ", "let ", "linkcatcher ", "link ", "list ", "log ", "macrocall ", "messagecatcher ", "navigator ", "parameters ", "password ", "vars ", "radio ", "range ", "reveal ", "scrollable ", "select ", "setmultiplevariables ", "setvariable ", "set ", "slot ", "text ", "tiddler ", "transclude ", "vars ", "view ", "wikify "];
+		//var widgetNames = ["action-confirm ", "action-createtiddler ", "action-deletefield ", "action-deletetiddler ", "action-listops ", "action-log ", "action-navigate ", "action-popup ", "action-sendmessage ", "action-setfield ", "action-setmultiplefields ", "browse ", "button ", "checkbox ", "codeblock ", "count ", "diff-text ", "draggable ", "droppable ", "dropzone ", "edit-bitmap ", "edit-text ", "edit ", "encrypt ", "entity ", "error ", "eventcatcher ", "fieldmangler ", "fields ", "fill ", "genesis ", "image ", "importvariables ", "jsontiddler ", "keyboard ", "let ", "linkcatcher ", "link ", "list ", "log ", "macrocall ", "messagecatcher ", "navigator ", "parameters ", "password ", "vars ", "radio ", "range ", "reveal ", "scrollable ", "select ", "setmultiplevariables ", "setvariable ", "set ", "slot ", "text ", "tiddler ", "transclude ", "vars ", "view ", "wikify "];
+		var widgetNames = [];
+		$tw.utils.each($tw.modules.types["widget"],function(widget) {
+			var widgetName = Object.getOwnPropertyNames(widget.exports);
+			$tw.utils.each(widgetName,function(name) {
+				widgetNames.push(name);
+			});
+		});
 		$tw.utils.each(widgetNames,function(widgetName) {
-			options.push({label: widgetName, displayLabel: widgetName.substring(0,widgetName.length - 1), type: "cm-widget", boost: 99});
+			options.push({label: widgetName + " ", displayLabel: widgetName, type: "cm-widget", boost: 99});
+		});
+	}
+	if(completeFilters) {
+		var filterNames = [],
+			filterPrefixNames = [];
+		console.log($tw.modules.types);
+		$tw.utils.each($tw.modules.types["filteroperator"],function(filteroperator) {
+			var filterName = Object.getOwnPropertyNames(filteroperator.exports);
+			$tw.utils.each(filterName,function(name) {
+				filterNames.push(name);
+			});
+		});
+		$tw.utils.each($tw.modules.types["filterrunprefix"],function(filterrunprefix) {
+			var filterRunPrefixName = Object.getOwnPropertyNames(filterrunprefix.exports);
+			$tw.utils.each(filterRunPrefixName,function(name) {
+				filterPrefixNames.push(name);
+			});
+		});
+		$tw.utils.each(filterNames,function(filterName) {
+			options.push({label: filterName, type: "cm-filter", boost: 1})
+		});
+		$tw.utils.each(filterPrefixNames,function(filterPrefixName) {
+			options.push({label: ":" + filterPrefixName, type: "cm-filterrunprefix", boost: 1})
 		});
 	}
 	return options;

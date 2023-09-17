@@ -55,7 +55,7 @@ exports.prototype.handlePasteEvent = function(event) {
 
 exports.prototype.refresh = function(changedTiddlers) {
 	var changedAttributes = this.computeAttributes();
-	if(changedAttributes.type || changedTiddlers["$:/config/codemirror-6/indentWithTab"] || changedTiddlers["$:/config/codemirror-6/lineNumbers"] || changedTiddlers["$:/config/codemirror-6/spellcheck"] || changedTiddlers["$:/config/codemirror-6/highlightActiveLine"] || changedTiddlers["$:/config/codemirror-6/autocorrect"] || changedTiddlers["$:/state/codemirror-6/translate/" + this.editTitle] || changedTiddlers["$:/config/codemirror-6/completionMinLength"] || changedTiddlers["$:/config/codemirror-6/completeVariables"] || changedTiddlers["$:/config/codemirror-6/completeWidgets"] || changedTiddlers["$:/config/codemirror-6/selectOnOpen"]) {
+	if(changedAttributes.type || changedTiddlers["$:/config/codemirror-6/indentWithTab"] || changedTiddlers["$:/config/codemirror-6/lineNumbers"] || changedTiddlers["$:/config/codemirror-6/spellcheck"] || changedTiddlers["$:/config/codemirror-6/highlightActiveLine"] || changedTiddlers["$:/config/codemirror-6/autocorrect"] || changedTiddlers["$:/state/codemirror-6/translate/" + this.editTitle] || changedTiddlers["$:/config/codemirror-6/completionMinLength"] || changedTiddlers["$:/config/codemirror-6/completeVariables"] || changedTiddlers["$:/config/codemirror-6/completeFilters"] || changedTiddlers["$:/config/codemirror-6/completeWidgets"] || changedTiddlers["$:/config/codemirror-6/selectOnOpen"]) {
 		this.refreshSelf();
 		return true;
 	}
