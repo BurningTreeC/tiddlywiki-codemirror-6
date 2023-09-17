@@ -332,19 +332,22 @@ function CodeMirrorEngine(options) {
 			actions.push(tiddler.fields.text);
 		});
 		$tw.utils.each(actionStrings,function(actionString) {
-			var regex = new RegExp(actionString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-			var stringContext = context.matchBefore(regex);
-			if(stringContext) {
-				var string = stringContext.text;
-				var index = actionStrings.indexOf(string);
-				if(index !== -1) {
-					self.cm.dispatch({changes: {from: stringContext.from, to: stringContext.to, insert: ""}});
-					self.widget.invokeActionString(actions[index],self,undefined,self.widget.variables);
+			var actionStringEscaped = actionString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			var regex = validateRegex(actionStringEscaped) ? new RegExp(actionStringEscaped) : null;
+			if(regex) {
+				var stringContext = context.matchBefore(regex);
+				if(stringContext) {
+					var string = stringContext.text;
+					var index = actionStrings.indexOf(string);
+					if(index !== -1) {
+						self.cm.dispatch({changes: {from: stringContext.from, to: stringContext.to, insert: ""}});
+						self.widget.invokeActionString(actions[index],self,undefined,self.widget.variables);
+					}
 				}
 			}
 		});
 		if(word) {
-			if ((word.text.length <= completionMinLength)) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
+			if ((word.text.length <= completionMinLength) && !context.explicit) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
 				return null;
 			} else {
 				return {
@@ -355,7 +358,7 @@ function CodeMirrorEngine(options) {
 		} else if(context.explicit) {
 			return {
 				from: context.pos,
-				options: self.getCompletionOptions(completeVariables,completeWidgets) //filter: false
+				options: self.getCompletionOptions(completeVariables,completeWidgets)
 			}
 		}
 	};
@@ -508,6 +511,18 @@ function CodeMirrorEngine(options) {
 	}
 	switch(mode) {
 		case "text/vnd.tiddlywiki":
+			/*var {LanguageSupport,StreamLanguage} = CM["@codemirror/language"];
+			var tiddlywikiLanguage = StreamLanguage.define({
+				name: "tiddlywiki",
+				startState: function(indentUnit = number) {
+					return {};
+				}
+			});
+			var tiddlywiki = function() {
+				return new LanguageSupport(tiddlywikiLanguage);
+			}
+			editorExtensions.push(tiddlywiki());
+			editorExtensions.push(Prec.high(tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource})));*/
 			var {tiddlywiki,tiddlywikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
 			editorExtensions.push(tiddlywiki());
 			var docCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
@@ -550,6 +565,7 @@ function CodeMirrorEngine(options) {
 			editorExtensions.push(markdown());
 			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));
+			editorExtensions.push(Prec.high(keymap.of(markdownKeymap)));
 			break;
 		default:
 			break;
