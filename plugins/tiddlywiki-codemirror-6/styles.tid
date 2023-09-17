@@ -71,7 +71,7 @@ body {
 }
 
 .cm-content {
-	caret-color: <<colour foreground>> !important;
+	caret-color: <<colour cm-caret-colour>> !important;
 }
 
 .cm-scroller {
@@ -90,7 +90,7 @@ body {
 }
 
 .cm-cursor, .cm-dropCursor {
-	border-left-color: <<colour foreground>> !important;
+	border-left-color: <<colour cm-caret-colour>> !important;
 }
 
 .cm-gutters {
@@ -157,7 +157,7 @@ body {
 .cm-foldPlaceholder {
 	background-color: transparent !important;
 	border: none !important;
-	color: <<colour foreground>> !important;
+	color: <<colour cm-fold-placeholder-foreground>> !important;
 }
 
 <$list filter="[{$:/config/TextEditor/EditorHeight/Mode}match[fixed]]" variable="ignore">

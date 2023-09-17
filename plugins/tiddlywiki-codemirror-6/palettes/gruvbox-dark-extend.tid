@@ -14,3 +14,4 @@ cm-selection-background: <<colour selection-background>>
 cm-selection-foreground: <<colour selection-foreground>>
 cm-tooltip-selected-background: <<colour primary>>
 cm-tooltip-selected-foreground: <<colour background>>
+cm-caret-colour: <<colour foreground>>
