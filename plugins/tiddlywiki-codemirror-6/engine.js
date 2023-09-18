@@ -44,6 +44,8 @@ function CodeMirrorEngine(options) {
 	var {lintKeymap} = CM["@codemirror/lint"];
 	var {oneDark} = CM["@codemirror/theme-one-dark"];
 
+	var {Tree,Parser} = CM["@lezer/common"];
+
 	this.editorSelection = EditorSelection;
 	this.completionStatus = completionStatus;
 	this.keymap = keymap;
@@ -324,8 +326,7 @@ function CodeMirrorEngine(options) {
 	this.tiddlerCompletionSource = function tiddlerCompletions(context = CompletionContext) {
 		var matchBeforeRegex = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
 		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/\w*/); // /\w*/ or /[\w\s]+/
-		var isVariableCompletion = false,
-			isFilterCompletion = ((context.matchBefore(new RegExp("\\[" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp("\\]" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp(">" + (word ? word.text : ""))) !== null)),
+		var isFilterCompletion = ((context.matchBefore(new RegExp("\\[" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp("\\]" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp(">" + (word ? word.text : ""))) !== null)),
 			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\$" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp("<\\/\\$" + (word ? word.text : ""))) !== null)),
 			isVariableCompletion = ((context.matchBefore(new RegExp("<" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp("<<" + (word ? word.text : ""))) !== null)),
 			isFilterrunPrefixCompletion = context.matchBefore(new RegExp(":" + (word ? word.text : ""))) !== null;
@@ -482,7 +483,9 @@ function CodeMirrorEngine(options) {
 		EditorView.perLineTextDirection.of(true),
 		EditorView.updateListener.of(function(v) {
 			if(v.docChanged) {
-				self.widget.saveChanges(self.cm.state.doc.toString());
+				var text = self.cm.state.doc.toString();
+				self.widget.saveChanges(text);
+				self.handleDocChanges(text);
 			}
 		}),
 	];
@@ -518,22 +521,12 @@ function CodeMirrorEngine(options) {
 	}
 	switch(mode) {
 		case "text/vnd.tiddlywiki":
-			/*var {LanguageSupport,StreamLanguage} = CM["@codemirror/language"];
-			var tiddlywikiLanguage = StreamLanguage.define({
-				name: "tiddlywiki",
-				startState: function(indentUnit = number) {
-					return {};
-				}
-			});
-			var tiddlywiki = function() {
-				return new LanguageSupport(tiddlywikiLanguage);
-			}
-			editorExtensions.push(tiddlywiki());
-			editorExtensions.push(Prec.high(tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource})));*/
 			var {tiddlywiki,tiddlywikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
 			editorExtensions.push(tiddlywiki());
 			var docCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));
+			var tree = tiddlywikiLanguage.parser.parse(options.value);
+			console.log(tree);
 			/*var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"]; //TODO: tiddlywikiLanguage 
 			editorExtensions.push(markdown());
 			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
@@ -651,7 +644,7 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,complete
 					apply;
 				if(matchBeforeOpening) {
 					applyFrom = from;
-					apply = completion.label + "  >";
+					apply = completion.label + " >";
 					applyTo = applyFrom + apply.length - 1;
 				} else if(matchBeforeClosing) {
 					applyFrom = from;
@@ -659,7 +652,7 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,complete
 					applyTo = applyFrom + apply.length;
 				} else {
 					applyFrom = from;
-					apply = "<$" + completion.label + "  >";
+					apply = "<$" + completion.label + " >";
 					applyTo = applyFrom + apply.length;
 				}
 				view.dispatch(view.state.changeByRange(function(range) {
@@ -670,7 +663,7 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,complete
 						range: selectionRange
 					}
 				}));
-			}}); // displayLabel: widgetName
+			}});
 		});
 	}
 	if(completeFilters && isFilterCompletion && !isFilterrunPrefixCompletion && !isWidgetCompletion && !isVariableCompletion) {
@@ -729,6 +722,11 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,complete
 		});
 	}
 	return options;
+};
+
+CodeMirrorEngine.prototype.handleDocChanges = function(text) {
+	var parseTree = this.widget.wiki.parseText("text/vnd.tiddlywiki",text).tree;
+	console.log(parseTree);
 };
 
 CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {
