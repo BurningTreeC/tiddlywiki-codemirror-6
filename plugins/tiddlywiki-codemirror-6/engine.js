@@ -531,12 +531,14 @@ function CodeMirrorEngine(options) {
 			editorExtensions.push(markdown());
 			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));*/
-			break;			
+			break;
 		case "text/html":
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
 			editorExtensions.push(html({selfClosingTags: true}));
 			var docCompletions = htmlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));
+			var tree = htmlLanguage.parser.parse(options.value);
+			console.log(tree);
 			break;
 		case "application/javascript":
 			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
@@ -561,11 +563,13 @@ function CodeMirrorEngine(options) {
 			break;
 		case "text/markdown":
 		case "text/x-markdown":
-			var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
+			var {markdown,markdownLanguage,markdownKeymap} = CM["@codemirror/lang-markdown"];
 			editorExtensions.push(markdown());
 			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));
 			editorExtensions.push(Prec.high(keymap.of(markdownKeymap)));
+			var tree = markdownLanguage.parser.parse(options.value);
+			console.log(tree);
 			break;
 		default:
 			break;
