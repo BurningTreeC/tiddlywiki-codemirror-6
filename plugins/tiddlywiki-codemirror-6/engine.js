@@ -325,7 +325,7 @@ function CodeMirrorEngine(options) {
 
 	this.tiddlerCompletionSource = function tiddlerCompletions(context = CompletionContext) {
 		var matchBeforeRegex = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
-		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/\w*/); // /\w*/ or /[\w\s]+/
+		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/[\w-]*/); // /\w*/ or /[\w\s]+/
 		var isFilterCompletion = ((context.matchBefore(new RegExp("\\[" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp("\\]" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp(">" + (word ? word.text : ""))) !== null)),
 			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\$" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp("<\\/\\$" + (word ? word.text : ""))) !== null)),
 			isVariableCompletion = ((context.matchBefore(new RegExp("<" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp("<<" + (word ? word.text : ""))) !== null)),
@@ -600,10 +600,10 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,complete
 				variableNames.push(variable);
 			}
 		}
+		var matchBeforeDouble = context.matchBefore(new RegExp("<<" + (word ? word.text : "")));
+		var matchBeforeSingle = context.matchBefore(new RegExp("<" + (word ? word.text : "")));
 		$tw.utils.each(variableNames,function(variableName) {
 			options.push({label: variableName, displayLabel: "<<" + variableName + ">>", type: "cm-variable", boost: 99, apply: function(view,completion,from,to) {
-				var matchBeforeDouble = context.matchBefore(new RegExp("<<" + (word ? word.text : "")));
-				var matchBeforeSingle = context.matchBefore(new RegExp("<" + (word ? word.text : "")));
 				var applyFrom,
 					applyTo,
 					apply;
@@ -637,12 +637,12 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,complete
 				widgetNames.push(name);
 			});
 		});
+		var matchBeforeOpeningRegex = new RegExp("<\\$" + (word ? word.text : ""));
+		var matchBeforeClosingRegex = new RegExp("<\\/\\$" + (word ? word.text : ""));
+		var matchBeforeOpening = context.matchBefore(matchBeforeOpeningRegex);
+		var matchBeforeClosing = context.matchBefore(matchBeforeClosingRegex);
 		$tw.utils.each(widgetNames,function(widgetName) {
 			options.push({label: widgetName, displayLabel: "<$" + widgetName + ">", type: "cm-widget", boost: 99, apply: function(view,completion,from,to) {
-				var matchBeforeOpeningRegex = new RegExp("<\\$" + (word ? word.text : ""));
-				var matchBeforeClosingRegex = new RegExp("<\\/\\$" + (word ? word.text : ""));
-				var matchBeforeOpening = context.matchBefore(matchBeforeOpeningRegex);
-				var matchBeforeClosing = context.matchBefore(matchBeforeClosingRegex);
 				var applyFrom,
 					applyTo,
 					apply;
@@ -699,10 +699,10 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,complete
 				filterPrefixNames.push(name);
 			});
 		});
+		var matchBefore = context.matchBefore(new RegExp(":" + (word ? word.text : "")));
 		$tw.utils.each(filterPrefixNames,function(filterPrefixName) {
 			options.push({label: filterPrefixName, displayLabel: ":" + filterPrefixName + "[]", type: "cm-filterrunprefix", boost: 99, apply: function(view,completion,from,to) {
 				view.dispatch(view.state.changeByRange(function(range) {
-					var matchBefore = context.matchBefore(new RegExp(":" + (word ? word.text : "")));
 					var applyFrom,
 						applyTo,
 						apply;
