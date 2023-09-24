@@ -586,8 +586,37 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,complete
 	var self = this;
 	var options = [];
 	var tiddlers = this.widget.wiki.filterTiddlers(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteTiddlerFilter"));
+	var matchBeforeSystem = context.matchBefore(new RegExp("\\$:/" + (word ? word.text : "")));
+	var matchBeforeSystemAlmost = context.matchBefore(new RegExp("\\$:" + (word ? word.text : "")));
+	var matchBeforeDollar = context.matchBefore(new RegExp("\\$" + (word ? word.text : "")));
 	$tw.utils.each(tiddlers,function(tiddler) {
-		options.push({label: tiddler, type: "cm-tiddler", boost: 99}); //section: "Tiddlers"
+		options.push({label: tiddler, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
+			var applyFrom,
+				applyTo,
+				apply;
+			if(matchBeforeSystem && completion.label.startsWith("$:/")) {
+				applyFrom = from - 3;
+				apply = completion.label;
+			} else if(matchBeforeSystemAlmost && completion.label.startsWith("$:/")) {
+				applyFrom = from - 2;
+				apply = completion.label;
+			} else if(matchBeforeDollar && completion.label.startsWith("$:/")) {
+				applyFrom = from - 1;
+				apply = completion.label;
+			} else {
+				applyFrom = from;
+				apply = completion.label;
+			}
+			applyTo = applyFrom + apply.length;
+			view.dispatch(view.state.changeByRange(function(range) {
+				var editorChanges = [{from:  applyFrom, to: to, insert: apply}];
+				var selectionRange = self.editorSelection.range(applyTo,applyTo);
+				return {
+					changes: editorChanges,
+					range: selectionRange
+				}
+			}));
+		}}); //section: "Tiddlers"
 	});
 	if(completeVariables && isVariableCompletion && !isFilterrunPrefixCompletion && !isWidgetCompletion) {
 		var variableNames = [];
