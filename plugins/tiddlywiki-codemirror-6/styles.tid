@@ -93,6 +93,10 @@ body {
 	border-left-color: <<colour cm-caret-colour>> !important;
 }
 
+.cm-cursor, .cm-dropCursor {
+	border-left: {{$:/config/codemirror-6/cursor-thickness}} solid !important;
+}
+
 .cm-gutters {
 	background-color: <<colour-extend cm-gutter-background>> !important;
 	color: <<colour-extend cm-gutter-foreground>> !important;
