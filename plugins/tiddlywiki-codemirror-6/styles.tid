@@ -139,6 +139,11 @@ body {
 	background-color: <<colour-extend cm-tooltip-background>> !important;
 }
 
+.cm-tooltip-autocomplete > ul > li {
+	font-family: {{$:/themes/tiddlywiki/vanilla/settings/editorfontfamily}} !important;
+	overflow: hidden;
+}
+
 .cm-tooltip-autocomplete > ul > li[aria-selected] {
 	background-color: <<colour-extend cm-tooltip-selected-background>> !important;
 	color: <<colour-extend cm-tooltip-selected-foreground>> !important;
@@ -158,6 +163,10 @@ body {
 	background-color: transparent !important;
 	border: none !important;
 	color: <<colour cm-fold-placeholder-foreground>> !important;
+}
+
+.cm-completionIcon.cm-completionIcon-cm-tiddler:after {
+	content: '🐟';
 }
 
 <$list filter="[{$:/config/TextEditor/EditorHeight/Mode}match[fixed]]" variable="ignore">

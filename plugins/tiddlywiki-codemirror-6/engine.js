@@ -564,7 +564,7 @@ function CodeMirrorEngine(options) {
 		case "text/markdown":
 		case "text/x-markdown":
 			var {markdown,markdownLanguage,markdownKeymap} = CM["@codemirror/lang-markdown"];
-			editorExtensions.push(markdown());
+			editorExtensions.push(markdown({base: markdownLanguage}));
 			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));
 			editorExtensions.push(Prec.high(keymap.of(markdownKeymap)));
@@ -714,7 +714,6 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,complete
 						apply = ":" + completion.label + "[]";
 					}
 					applyTo = applyFrom + apply.length - 1;
-					// TODO: check if there's a leading ":" and use "from - 1" in that case
 					var editorChanges = [{from: applyFrom, to: to, insert: apply}];
 					var selectionRange = self.editorSelection.range(applyTo,applyTo);
 					return {
