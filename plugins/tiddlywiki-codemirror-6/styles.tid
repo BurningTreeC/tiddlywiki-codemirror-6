@@ -170,7 +170,7 @@ body {
 }
 
 .cm-completionIcon.cm-completionIcon-cm-tiddler:after {
-	content: '🐟';
+	content: '{{$:/config/codemirror-6/tiddler-completion-icon}}';
 }
 
 <$list filter="[{$:/config/TextEditor/EditorHeight/Mode}match[fixed]]" variable="ignore">
