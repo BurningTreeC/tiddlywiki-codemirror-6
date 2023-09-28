@@ -1,0 +1,5 @@
+title: $:/config/codemirror-6/widget-completion-icon
+caption: Widget completion icon
+description: The icon for widget completions
+settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/input
+

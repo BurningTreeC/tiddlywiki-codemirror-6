@@ -173,6 +173,22 @@ body {
 	content: '{{$:/config/codemirror-6/tiddler-completion-icon}}';
 }
 
+.cm-completionIcon.cm-completionIcon-cm-variable:after {
+	content: '{{$:/config/codemirror-6/variable-completion-icon}}';
+}
+
+.cm-completionIcon.cm-completionIcon-cm-widget:after {
+	content: '{{$:/config/codemirror-6/widget-completion-icon}}';
+}
+
+.cm-completionIcon.cm-completionIcon-cm-filter:after {
+	content: '{{$:/config/codemirror-6/filter-completion-icon}}';
+}
+
+.cm-completionIcon.cm-completionIcon-cm-filterrunprefix:after {
+	content: '{{$:/config/codemirror-6/filterrunprefix-completion-icon}}';
+}
+
 <$list filter="[{$:/config/TextEditor/EditorHeight/Mode}match[fixed]]" variable="ignore">
 
 .cm-editor {
