@@ -485,7 +485,6 @@ function CodeMirrorEngine(options) {
 			if(v.docChanged) {
 				var text = self.cm.state.doc.toString();
 				self.widget.saveChanges(text);
-				self.handleDocChanges(text);
 			}
 		}),
 	];
@@ -754,11 +753,6 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,complete
 		});
 	}
 	return options;
-};
-
-CodeMirrorEngine.prototype.handleDocChanges = function(text) {
-	var parseTree = this.widget.wiki.parseText("text/vnd.tiddlywiki",text).tree;
-	console.log(parseTree);
 };
 
 CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {
