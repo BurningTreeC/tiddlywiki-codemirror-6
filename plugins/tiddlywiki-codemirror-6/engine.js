@@ -756,7 +756,6 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,complete
 };
 
 CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {
-	console.log("DROP");
 	if(!this.widget.isFileDropEnabled) {
 		event.stopPropagation();
 		return false;
@@ -805,7 +804,6 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 			}
 		}
 		if(handled) {
-			console.log("HANDLED");
 			this.dragCancel = false;
 			return true;
 		} else if(handled === false) {
