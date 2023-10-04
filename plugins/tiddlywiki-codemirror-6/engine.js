@@ -196,8 +196,6 @@ function CodeMirrorEngine(options) {
 		EditorState.allowMultipleSelections.of(true),
 		indentOnInput(),
 		syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
-		bracketMatching(),
-		closeBrackets(),
 		autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip"}, selectOnOpen: selectOnOpen}), //{activateOnTyping: false, closeOnBlur: false}),
 		rectangularSelection(),
 		crosshairCursor(),
@@ -234,6 +232,14 @@ function CodeMirrorEngine(options) {
 			])
 		);
 	};
+
+	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/closeBrackets") === "yes") {
+		editorExtensions.push(closeBrackets());
+	}
+
+	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/bracketMatching") === "yes") {
+		editorExtensions.push(bracketMatching());
+	}
 
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes") {
 		editorExtensions.push(lineNumbers());
