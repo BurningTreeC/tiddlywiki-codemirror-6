@@ -679,7 +679,6 @@ CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 			}
 		}));
 	} else if(operations.type !== "focus-editor" && operations && operations.cutStart && operations.cutEnd && operations.newSelStart && operations.newSelEnd && operations.replacement) {
-		console.log(operations);
 		this.cm.dispatch(this.cm.state.changeByRange(function(range) {
 			var editorChanges = [{from: operations.cutStart, to: operations.cutEnd, insert: operations.replacement}];
 			var selectionRange = self.editorSelection.range(operations.newSelStart,operations.newSelEnd);
