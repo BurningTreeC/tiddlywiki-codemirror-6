@@ -8,6 +8,20 @@
 				"module-type": "library"
 			}
 		},{
+			"file": "modules/startup/load-codemirror-modules.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/startup/load-codemirror-modules.js",
+				"module-type": "startup"
+			}
+		},{
+			"file": "modules/utils/codemirror-highlight-utils.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/utils/codemirror-highlight-utils.js",
+				"module-type": "codemirror-utils"
+			}
+		},{
 			"file": "modules/editor/operations/excise.js",
 			"fields": {
 				"type": "application/javascript",
