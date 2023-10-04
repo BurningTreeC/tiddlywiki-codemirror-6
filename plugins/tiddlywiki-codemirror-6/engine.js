@@ -262,7 +262,7 @@ function CodeMirrorEngine(options) {
 			editorExtensions.push(tiddlywiki());
 			var docCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));
-			/*var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"]; //TODO: tiddlywikiLanguage 
+			/*var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
 			editorExtensions.push(markdown());
 			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));*/
@@ -678,7 +678,8 @@ CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 				range: selectionRange
 			}
 		}));
-	} else if(operations.type !== "focus-editor" && operations) {
+	} else if(operations.type !== "focus-editor" && operations && operations.cutStart && operations.cutEnd) {
+		console.log(operations);
 		this.cm.dispatch(this.cm.state.changeByRange(function(range) {
 			var editorChanges = [{from: operations.cutStart, to: operations.cutEnd, insert: operations.replacement}];
 			var selectionRange = self.editorSelection.range(operations.newSelStart,operations.newSelEnd);
