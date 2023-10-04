@@ -134,8 +134,6 @@ function CodeMirrorEngine(options) {
 
 	var editorExtensions = [
 		dropCursor(),
-		//Prec.high(oneDark),
-		//Prec.high(syntaxHighlighting(highlightStyle)),
 		solarizedTheme,
 		Prec.high(syntaxHighlighting(solarizedHighlightStyle)),
 		Prec.high(EditorView.domEventHandlers({
@@ -178,7 +176,6 @@ function CodeMirrorEngine(options) {
 				return false;
 			},
 			dragend(event,view) {
-				console.log("DRAGEND");
 				self.dragCancel = true;
 				if(self.widget.isFileDropEnabled) {
 					//event.preventDefault();
@@ -187,7 +184,6 @@ function CodeMirrorEngine(options) {
 				return false;
 			},
 			paste(event,view) {
-				console.log("PASTE");
 				if(self.widget.isFileDropEnabled) {
 					event["twEditor"] = true;
 					return self.widget.handlePasteEvent.call(self.widget,event);
@@ -200,14 +196,12 @@ function CodeMirrorEngine(options) {
 				return self.handleKeydownEvent(event,view);
 			},
 			focus(event,view) {
-				console.log("FOCUS");
 				if(self.widget.editCancelPopups) {
 					$tw.popup.cancel(0);
 				}
 				return false;
 			},
 			blur(event,view) {
-				console.log("BLUR");
 				return false;
 			}
 		})),
@@ -540,6 +534,7 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 	}
 	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && (this.completionStatus(this.cm.state) === "active")) {
 		event.stopPropagation();
+		event.preventDefault(); //TODO ???
 		return false;
 	}
 	var widget = this.widget;
@@ -615,14 +610,7 @@ CodeMirrorEngine.prototype.getText = function() {
 Fix the height of textarea to fit content
 */
 CodeMirrorEngine.prototype.fixHeight = function() {
-	if(this.widget.editAutoHeight) {
-		// Resize to fit
-		//this.cm.setSize(null,null);
-	} else {
-		//var fixedHeight = parseInt(this.widget.wiki.getTiddlerText(HEIGHT_VALUE_TITLE,"400px"),10);
-		//fixedHeight = Math.max(fixedHeight,20);
-		//this.cm.setSize(null,fixedHeight);
-	}
+	return true;
 };
 
 /*
