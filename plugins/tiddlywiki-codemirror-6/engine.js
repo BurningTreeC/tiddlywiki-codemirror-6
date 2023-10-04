@@ -56,7 +56,6 @@ function CodeMirrorEngine(options) {
 	this.closeSearchPanel = closeSearchPanel;
 
 	this.solarizedLightTheme = EditorView.theme({},{dark:false});
-
 	this.solarizedDarkTheme = EditorView.theme({},{dark:true});
 
 	var {styleTags,tags} = CM["@lezer/highlight"];
@@ -74,18 +73,9 @@ function CodeMirrorEngine(options) {
 	var completeWidgets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeWidgets") === "yes";
 	var completeFilters = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeFilters") === "yes";
 
-	function validateRegex(regex) {
-		try {
-			new RegExp(regex);
-			return true;
-		} catch(e) {
-			return false;
-		}
-	};
-
 	this.tiddlerCompletionSource = function tiddlerCompletions(context = CompletionContext) {
 		var matchBeforeRegex = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
-		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/[\w-\/]*/); // /\w*/ or /[\w\s]+/
+		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && $tw.utils.codemirror.validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/[\w-\/]*/); // /\w*/ or /[\w\s]+/
 		var isFilterCompletion = ((context.matchBefore(new RegExp("\\[" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp("\\]" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp(">" + (word ? word.text : ""))) !== null)),
 			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\$" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp("<\\/\\$" + (word ? word.text : ""))) !== null)),
 			isVariableCompletion = ((context.matchBefore(new RegExp("<" + (word ? word.text : ""))) !== null) || (context.matchBefore(new RegExp("<<" + (word ? word.text : ""))) !== null)),
@@ -100,7 +90,7 @@ function CodeMirrorEngine(options) {
 		});
 		$tw.utils.each(actionStrings,function(actionString) {
 			var actionStringEscaped = actionString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-			var regex = validateRegex(actionStringEscaped) ? new RegExp(actionStringEscaped) : null;
+			var regex = $tw.utils.codemirror.validateRegex(actionStringEscaped) ? new RegExp(actionStringEscaped) : null;
 			if(regex) {
 				var stringContext = context.matchBefore(regex);
 				if(stringContext) {
