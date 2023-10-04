@@ -1,9 +1,11 @@
-title: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/EditorToolbar/undo
+title: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/EditorToolbar/search
 tags: $:/tags/EditorToolbar
-icon: $:/plugins/BTC/tiddlywiki-codemirror-6/icons/undo
+icon: $:/core/images/advanced-search-button
+caption: Search
+description: toggle the visibility of the search panel
 condition: [<targetTiddler>!has[type]] [<targetTiddler>get[type]!prefix[image/]] [<targetTiddler>get[type]match[image/svg+xml]]
 
 <$action-sendmessage
 	$message="tm-edit-text-operation"
-	$param="undo"
+	$param="search"
 />
