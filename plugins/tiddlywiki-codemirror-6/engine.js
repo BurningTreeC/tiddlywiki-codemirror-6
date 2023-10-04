@@ -147,9 +147,7 @@ function CodeMirrorEngine(options) {
 			},
 			dragenter(event,view) {
 				self.dragCancel = true;
-				console.log("dragenter");
 				if(self.widget.isFileDropEnabled && ($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length)) {
-					console.log("preventing default dragenter");
 					event.preventDefault();
 					return true;
 				}
@@ -157,9 +155,7 @@ function CodeMirrorEngine(options) {
 			},
 			dragover(event,view) {
 				self.dragCancel = true;
-				console.log("dragover");
 				if(self.widget.isFileDropEnabled && ($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length)) {
-					console.log("preventing default dragover");
 					event.preventDefault();
 					return true;
 				}
@@ -167,9 +163,7 @@ function CodeMirrorEngine(options) {
 			},
 			dragleave(event,view) {
 				self.dragCancel = false;
-				console.log("dragleave");
 				if(self.widget.isFileDropEnabled) {
-					console.log("preventing default dragleave");
 					event.preventDefault();
 					return true;
 				}
@@ -278,8 +272,6 @@ function CodeMirrorEngine(options) {
 			editorExtensions.push(tiddlywiki());
 			var docCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));
-			var tree = tiddlywikiLanguage.parser.parse(options.value);
-			console.log(tree);
 			/*var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"]; //TODO: tiddlywikiLanguage 
 			editorExtensions.push(markdown());
 			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
@@ -290,8 +282,6 @@ function CodeMirrorEngine(options) {
 			editorExtensions.push(html({selfClosingTags: true}));
 			var docCompletions = htmlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));
-			var tree = htmlLanguage.parser.parse(options.value);
-			console.log(tree);
 			break;
 		case "application/javascript":
 			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
@@ -321,8 +311,6 @@ function CodeMirrorEngine(options) {
 			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));
 			editorExtensions.push(Prec.high(keymap.of(markdownKeymap)));
-			var tree = markdownLanguage.parser.parse(options.value);
-			console.log(tree);
 			break;
 		default:
 			break;
@@ -534,7 +522,6 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 	}
 	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && (this.completionStatus(this.cm.state) === "active")) {
 		event.stopPropagation();
-		event.preventDefault(); //TODO ???
 		return false;
 	}
 	var widget = this.widget;

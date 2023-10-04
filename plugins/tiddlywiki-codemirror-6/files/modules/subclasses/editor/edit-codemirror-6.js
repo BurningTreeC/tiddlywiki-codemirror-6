@@ -34,6 +34,7 @@ exports.prototype.handleEditTextOperationMessage = function(event) {
 	// Invoke the handler for the selected operation
 	var handler = this.editorOperations[event.param];
 	if(handler) {
+		event.event.stopPropagation(); //TODO ???
 		handler.call(this,event,operation);
 	}
 	// Execute the operation via the engine
