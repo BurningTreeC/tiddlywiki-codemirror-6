@@ -26,15 +26,15 @@ body {
 	background-color: <<colour tiddler-background>>;
 }
 
-.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div:not(.tc-tiddler-preview) > div:nth-child(2) {
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div:not(.tc-tiddler-preview) > .tc-edit-texteditor {
 	overflow-y: auto;
 }
 
-.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div.tc-tiddler-preview > div:nth-child(2) {
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div.tc-tiddler-preview > .tc-edit-texteditor {
 	overflow-y: auto;
 }
 
-.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > div:nth-child(3) {
+.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > .tc-tiddler-preview-preview {
 	overflow-y: auto;
 }
 
@@ -229,22 +229,19 @@ body {
 	grid-area: toolbar;
 }
 
-.tc-tiddler-edit-frame .tc-dropzone-editor > div > div:not(.tc-tiddler-preview) > div:nth-child(2) {
+.tc-tiddler-edit-frame .tc-dropzone-editor > div > div:not(.tc-tiddler-preview) > .tc-edit-texteditor {
 	grid-area: editor;
 	width: 100%;
 }
 
-.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > div:nth-child(2) {
+.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > .tc-edit-texteditor {
 	grid-area: editor;
 	width: 100%;
 }
 
-.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > div:nth-child(3) {
+.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > .tc-tiddler-preview-preview {
 	grid-area: preview;
 	width: 100%;
-}
-
-.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview .tc-tiddler-preview-preview {
 	margin: 0;
 }
 
