@@ -26,19 +26,8 @@ body {
 	background-color: <<colour tiddler-background>>;
 }
 
-.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div {
-	height: 100%;
-}
-
-.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div.tc-tiddler-preview {
-	height: 100%;
-}
-
-.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div:not(.tc-tiddler-preview) {
-	height: 100%;
-}
-
-.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div > div .cm-editor {
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div, .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div.tc-tiddler-preview,
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div:not(.tc-tiddler-preview), .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div > div .cm-editor {
 	height: 100%;
 }
 
