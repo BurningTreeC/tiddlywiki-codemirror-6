@@ -48,7 +48,6 @@ function CodeMirrorEngine(options) {
 
 	this.editorSelection = EditorSelection;
 	this.completionStatus = completionStatus;
-	this.keymap = keymap;
 
 	this.undo = undo;
 	this.redo = redo;
@@ -210,7 +209,6 @@ function CodeMirrorEngine(options) {
 			...lintKeymap
 		]),
 		Prec.high(keymap.of({key: "Tab", run: acceptCompletion})),
-		EditorState.languageData.of(function() { return [{autocomplete: completeAnyWord}]; }),
 		EditorView.lineWrapping,
 		EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
 		EditorView.contentAttributes.of({spellcheck: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/spellcheck") === "yes"}),
@@ -233,13 +231,17 @@ function CodeMirrorEngine(options) {
 		);
 	};
 
+	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeAnyWord") === "yes") {
+		editorExtensions.push(EditorState.languageData.of(function() { return [{autocomplete: completeAnyWord}]; }));
+	};
+
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/closeBrackets") === "yes") {
 		editorExtensions.push(closeBrackets());
-	}
+	};
 
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/bracketMatching") === "yes") {
 		editorExtensions.push(bracketMatching());
-	}
+	};
 
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes") {
 		editorExtensions.push(lineNumbers());
