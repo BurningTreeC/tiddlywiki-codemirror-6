@@ -26,6 +26,18 @@ body {
 	background-color: <<colour tiddler-background>>;
 }
 
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div:not(.tc-tiddler-preview) > div:nth-child(2) {
+	overflow-y: auto;
+}
+
+.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div.tc-tiddler-preview > div:nth-child(2) {
+	overflow-y: auto;
+}
+
+.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > div:nth-child(3) {
+	overflow-y: auto;
+}
+
 .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div, .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div.tc-tiddler-preview,
 .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div:not(.tc-tiddler-preview), .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div > div .cm-editor {
 	height: 100%;
@@ -211,7 +223,6 @@ body {
 	"editor";
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
-	overflow-y: hidden;
 }
 
 .tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > .tc-editor-toolbar {
@@ -221,23 +232,24 @@ body {
 .tc-tiddler-edit-frame .tc-dropzone-editor > div > div:not(.tc-tiddler-preview) > div:nth-child(2) {
 	grid-area: editor;
 	width: 100%;
-	overflow-y: auto;
 }
 
 .tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > div:nth-child(2) {
 	grid-area: editor;
 	width: 100%;
-	overflow-y: auto;
 }
 
 .tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > div:nth-child(3) {
 	grid-area: preview;
 	width: 100%;
-	overflow-y: auto;
 }
 
 .tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview .tc-tiddler-preview-preview {
 	margin: 0;
+}
+
+.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview {
+	overflow: inherit;
 }
 
 /** checkbox switches start **/
