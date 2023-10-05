@@ -31,51 +31,11 @@ body {
 }
 
 .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div.tc-tiddler-preview {
-	display: grid;
-	grid-template-areas: 
-	"toolbar toolbar"
-	"editor preview";
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto 1fr;
 	height: 100%;
-	overflow-y: hidden;
 }
 
 .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div:not(.tc-tiddler-preview) {
-	display: grid;
-	grid-template-areas: 
-	"toolbar"
-	"editor";
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
 	height: 100%;
-	overflow-y: hidden;
-}
-
-.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div.tc-tiddler-preview > .tc-editor-toolbar {
-	grid-area: toolbar;
-}
-
-.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div:not(.tc-tiddler-preview) > div:nth-child(2) {
-	grid-area: editor;
-	width: 100%;
-	overflow-y: auto;
-}
-
-.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div.tc-tiddler-preview > div:nth-child(2) {
-	grid-area: editor;
-	width: 100%;
-	overflow-y: auto;
-}
-
-.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div.tc-tiddler-preview > div:nth-child(3) {
-	grid-area: preview;
-	width: 100%;
-	overflow-y: auto;
-}
-
-.tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div.tc-tiddler-preview .tc-tiddler-preview-preview {
-	margin: 0;
 }
 
 .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div > div .cm-editor {
@@ -245,6 +205,51 @@ body {
 </$list>
 
 </$list>
+
+.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview {
+	display: grid;
+	grid-template-areas: 
+	"toolbar toolbar"
+	"editor preview";
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+}
+
+.tc-tiddler-edit-frame .tc-dropzone-editor > div > div:not(.tc-tiddler-preview) {
+	display: grid;
+	grid-template-areas: 
+	"toolbar"
+	"editor";
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+	overflow-y: hidden;
+}
+
+.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > .tc-editor-toolbar {
+	grid-area: toolbar;
+}
+
+.tc-tiddler-edit-frame .tc-dropzone-editor > div > div:not(.tc-tiddler-preview) > div:nth-child(2) {
+	grid-area: editor;
+	width: 100%;
+	overflow-y: auto;
+}
+
+.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > div:nth-child(2) {
+	grid-area: editor;
+	width: 100%;
+	overflow-y: auto;
+}
+
+.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > div:nth-child(3) {
+	grid-area: preview;
+	width: 100%;
+	overflow-y: auto;
+}
+
+.tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview .tc-tiddler-preview-preview {
+	margin: 0;
+}
 
 /** checkbox switches start **/
 /** https://www.w3schools.com/howto/howto_css_switch.asp **/
