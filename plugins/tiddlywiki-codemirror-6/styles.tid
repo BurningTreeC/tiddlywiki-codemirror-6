@@ -44,9 +44,9 @@ body {
 .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div:not(.tc-tiddler-preview) {
 	display: grid;
 	grid-template-areas: 
-	"toolbar toolbar"
-	"editor editor";
-    grid-template-columns: 1fr 1fr;
+	"toolbar"
+	"editor";
+    grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
 	height: 100%;
 	overflow-y: hidden;
