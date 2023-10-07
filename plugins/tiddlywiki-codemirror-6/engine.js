@@ -42,7 +42,6 @@ function CodeMirrorEngine(options) {
 	var {searchKeymap,highlightSelectionMatches,openSearchPanel,closeSearchPanel} = CM["@codemirror/search"];
 	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus,acceptCompletion} = CM["@codemirror/autocomplete"];
 	var {lintKeymap} = CM["@codemirror/lint"];
-	var {oneDark} = CM["@codemirror/theme-one-dark"];
 
 	var {Tree,Parser} = CM["@lezer/common"];
 
@@ -270,10 +269,6 @@ function CodeMirrorEngine(options) {
 			editorExtensions.push(tiddlywiki());
 			var docCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));
-			/*var {markdown,markdownLanguage} = CM["@codemirror/lang-markdown"];
-			editorExtensions.push(markdown());
-			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(docCompletions));*/
 			break;
 		case "text/html":
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
@@ -595,7 +590,7 @@ CodeMirrorEngine.prototype.getText = function() {
 Fix the height of textarea to fit content
 */
 CodeMirrorEngine.prototype.fixHeight = function() {
-	return true;
+	this.cm.requestMeasure();
 };
 
 /*
