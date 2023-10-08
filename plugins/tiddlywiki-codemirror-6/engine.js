@@ -104,8 +104,8 @@ function CodeMirrorEngine(options) {
 				}
 			}
 		});
-		if(word || prefixBefore) {
-			if ((word.text.length <= completionMinLength) && !context.explicit && !prefixBefore) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
+		if(word && !prefixBefore) {
+			if ((word.text.length <= completionMinLength) && !context.explicit) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
 				return null;
 			} else {
 				return {
@@ -117,6 +117,12 @@ function CodeMirrorEngine(options) {
 			return {
 				from: context.pos,
 				options: self.getCompletionOptions(context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
+			}
+		} else if(prefixBefore) {
+			var options = [];
+			return {
+				from: context.pos,
+				options: self.getTiddlerCompletionOptions(options,context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
 			}
 		}
 	};
@@ -323,9 +329,8 @@ function CodeMirrorEngine(options) {
 	this.cm = new EditorView(editorOptions);
 };
 
-CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) {
+CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(options,context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) {
 	var self = this;
-	var options = [];
 	var tiddlers = this.widget.wiki.filterTiddlers(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteTiddlerFilter"));
 	var matchBeforeSystem = context.matchBefore(new RegExp("\\$:/" + text));
 	var matchBeforeSystemAlmost = context.matchBefore(new RegExp("\\$:" + text));
@@ -359,6 +364,13 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,text,com
 			}));
 		}}); //section: "Tiddlers"
 	});
+	return options;
+};
+
+CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) {
+	var self = this;
+	var options = [];
+	this.getTiddlerCompletionOptions(options,context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
 	if(completeVariables && isVariableCompletion && !isFilterrunPrefixCompletion && !isWidgetCompletion) {
 		var variableNames = [];
 		var widget = this.widget;
