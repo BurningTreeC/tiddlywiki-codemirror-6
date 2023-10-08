@@ -70,6 +70,7 @@ function CodeMirrorEngine(options) {
 	var completeVariables = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeVariables") === "yes";
 	var completeWidgets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeWidgets") === "yes";
 	var completeFilters = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeFilters") === "yes";
+	var autoOpenOnTyping = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autoOpenOnTyping") === "yes";
 
 	this.tiddlerCompletionSource = function tiddlerCompletions(context = CompletionContext) {
 		var matchBeforeRegex = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
@@ -104,7 +105,7 @@ function CodeMirrorEngine(options) {
 				}
 			}
 		});
-		if(word && !prefixBefore) {
+		if(word && !prefixBefore && autoOpenOnTyping) {
 			if ((word.text.length <= completionMinLength) && !context.explicit) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
 				return null;
 			} else {
@@ -196,10 +197,10 @@ function CodeMirrorEngine(options) {
 				return false;
 			}
 		})),
-		tooltips({
+/*		tooltips({
 			position: 'absolute' | 'fixed',
 			parent: self.domNode.ownerDocument.body
-		}),
+		}),*/
 		//basicSetup,
 		highlightSpecialChars(),
 		history(), //{newGroupDelay: 0, joinToEvent: function() { return false; }}),
@@ -207,7 +208,7 @@ function CodeMirrorEngine(options) {
 		EditorState.allowMultipleSelections.of(true),
 		indentOnInput(),
 		syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
-		autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip"}, selectOnOpen: selectOnOpen, closeOnBlur: false}), //{activateOnTyping: false, closeOnBlur: false}),
+		autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip"}, selectOnOpen: selectOnOpen}), //{activateOnTyping: false, closeOnBlur: false}),
 		rectangularSelection(),
 		crosshairCursor(),
 		highlightSelectionMatches(),
@@ -335,6 +336,7 @@ CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(options,contex
 	var matchBeforeSystem = context.matchBefore(new RegExp("\\$:/" + text));
 	var matchBeforeSystemAlmost = context.matchBefore(new RegExp("\\$:" + text));
 	var matchBeforeDollar = context.matchBefore(new RegExp("\\$" + text));
+	var matchBeforeBrackets = context.matchBefore(new RegExp("\\[\\[" + text));
 	$tw.utils.each(tiddlers,function(tiddler) {
 		options.push({label: tiddler, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
 			var applyFrom,
@@ -349,6 +351,9 @@ CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(options,contex
 			} else if(matchBeforeDollar && completion.label.startsWith("$:/")) {
 				applyFrom = from - 1;
 				apply = completion.label;
+			} else if(matchBeforeBrackets) {
+				applyFrom = from;
+				apply = completion.label + "]]";
 			} else {
 				applyFrom = from;
 				apply = completion.label;
