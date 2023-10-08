@@ -48,6 +48,7 @@ body {
 .cm-editor {
 	font-size: {{$:/config/codemirror-6/fontsize}};
 	color-scheme: {{{ [[$:/palette]get[text]!is[blank]] ~[[$:/palettes/vanilla]] +[get[color-scheme]] ~light }}};
+	background-color: <<colour tiddler-background>> !important;
 	color: <<colour foreground>> !important;
 }
 
@@ -123,6 +124,8 @@ body {
 	border: none;
 	background-color: <<colour-extend cm-tooltip-background>> !important;
 	color: <<colour-extend cm-tooltip-foreground>> !important;
+	font-size: {{$:/config/codemirror-6/fontsize}};
+	z-index: 9999 !important;
 }
 
 .cm-tooltip-autocomplete > ul > li {
