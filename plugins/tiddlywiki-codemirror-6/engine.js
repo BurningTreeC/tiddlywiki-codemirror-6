@@ -71,15 +71,19 @@ function CodeMirrorEngine(options) {
 	var completeWidgets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeWidgets") === "yes";
 	var completeFilters = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeFilters") === "yes";
 	var autoOpenOnTyping = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autoOpenOnTyping") === "yes";
+	var deleteAutoCompletePrefix = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/deleteAutoCompletePrefix") === "yes";
 
 	this.tiddlerCompletionSource = function tiddlerCompletions(context = CompletionContext) {
 		var matchBeforeRegex = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
 		var matchBeforePrefix = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegexPrefix").replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && $tw.utils.codemirror.validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/[\w-\/]*/); // /\w*/ or /[\w\s]+/
-		console.log(word);
 		var text = word ? word.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
 		var prefixBefore = (matchBeforePrefix && (matchBeforePrefix !== "")) && $tw.utils.codemirror.validateRegex(matchBeforePrefix + text) ? context.matchBefore(new RegExp(matchBeforePrefix + text)) : null;
-		console.log(prefixBefore);
+		var prefixString;
+		if(prefixBefore) {
+			prefixString = prefixBefore.text.replace(text,"");
+			prefixBefore.to = (prefixBefore.from + prefixString.length);
+		}
 		var isFilterCompletion = ((context.matchBefore(new RegExp("\\[" + text)) !== null) || (context.matchBefore(new RegExp("\\]" + text)) !== null) || (context.matchBefore(new RegExp(">" + text)) !== null)),
 			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\$" + text)) !== null) || (context.matchBefore(new RegExp("<\\/\\$" + text)) !== null)),
 			isVariableCompletion = ((context.matchBefore(new RegExp("<" + text)) !== null) || (context.matchBefore(new RegExp("<<" + text)) !== null)),
@@ -113,19 +117,19 @@ function CodeMirrorEngine(options) {
 			} else {
 				return {
 					from: word.from,
-					options: self.getCompletionOptions(context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) //filter: false
+					options: self.getCompletionOptions(context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) //filter: false
 				}
 			}
 		} else if(word && context.explicit) {
 			return {
 				from: word.from,
-				options: self.getCompletionOptions(context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
+				options: self.getCompletionOptions(context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
 			}
 		} else if(word && prefixBefore) {
 			var options = [];
 			return {
 				from: word.from,
-				options: self.getTiddlerCompletionOptions(options,context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
+				options: self.getTiddlerCompletionOptions(options,context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
 			}
 		}
 	};
@@ -251,7 +255,9 @@ function CodeMirrorEngine(options) {
 		editorExtensions.push(EditorState.languageData.of(function() { return [{autocomplete: completeAnyWord}]; }));
 	};
 
-	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/closeBrackets") === "yes") {
+	this.closeBrackets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/closeBrackets") === "yes";
+
+	if(this.closeBrackets) {
 		editorExtensions.push(closeBrackets());
 	};
 
@@ -333,14 +339,13 @@ function CodeMirrorEngine(options) {
 	this.cm = new EditorView(editorOptions);
 };
 
-CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(options,context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) {
+CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(options,context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) {
 	var self = this;
 	var tiddlers = this.widget.wiki.filterTiddlers(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteTiddlerFilter"));
 	var matchBeforeSystem = context.matchBefore(new RegExp("\\$:/" + text));
 	var matchBeforeSystemAlmost = context.matchBefore(new RegExp("\\$:" + text));
 	var matchBeforeDollar = context.matchBefore(new RegExp("\\$" + text));
 	var matchBeforeBrackets = context.matchBefore(new RegExp("\\[\\[" + text));
-	console.log(context);
 	$tw.utils.each(tiddlers,function(tiddler) {
 		options.push({label: tiddler, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
 			var applyFrom,
@@ -349,37 +354,44 @@ CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(options,contex
 			if(matchBeforeSystem && completion.label.startsWith("$:/")) {
 				applyFrom = from - 3;
 				apply = completion.label;
+				applyTo = applyFrom + apply.length;
 			} else if(matchBeforeSystemAlmost && completion.label.startsWith("$:/")) {
 				applyFrom = from - 2;
 				apply = completion.label;
+				applyTo = applyFrom + apply.length;
 			} else if(matchBeforeDollar && completion.label.startsWith("$:/")) {
 				applyFrom = from - 1;
 				apply = completion.label;
+				applyTo = applyFrom + apply.length;
 			} else if(matchBeforeBrackets) {
 				applyFrom = from;
-				apply = completion.label + "]]";
+				apply = completion.label + (self.closeBrackets ? "" : "]]");
+				applyTo = self.closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
 			} else {
 				applyFrom = from;
 				apply = completion.label;
+				applyTo = applyFrom + apply.length;
 			}
-			applyTo = applyFrom + apply.length;
 			view.dispatch(view.state.changeByRange(function(range) {
-				var editorChanges = [{from:  applyFrom, to: to, insert: apply}];
+				var editorChanges = [{from: applyFrom, to: to, insert: apply}];
 				var selectionRange = self.editorSelection.range(applyTo,applyTo);
 				return {
 					changes: editorChanges,
 					range: selectionRange
 				}
 			}));
+			if(deleteAutoCompletePrefix && prefixBefore) {
+				self.cm.dispatch({changes: {from: prefixBefore.from, to: prefixBefore.to, insert: ""}});
+			};
 		}}); //section: "Tiddlers"
 	});
 	return options;
 };
 
-CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) {
+CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) {
 	var self = this;
 	var options = [];
-	this.getTiddlerCompletionOptions(options,context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
+	this.getTiddlerCompletionOptions(options,context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
 	if(completeVariables && isVariableCompletion && !isFilterrunPrefixCompletion && !isWidgetCompletion) {
 		var variableNames = [];
 		var widget = this.widget;
@@ -410,7 +422,7 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,text,com
 				}
 				applyTo = applyFrom + apply.length;
 				view.dispatch(view.state.changeByRange(function(range) {
-					var editorChanges = [{from:  applyFrom, to: to, insert: apply}];
+					var editorChanges = [{from: applyFrom, to: to, insert: apply}];
 					var selectionRange = self.editorSelection.range(applyTo,applyTo);
 					return {
 						changes: editorChanges,
