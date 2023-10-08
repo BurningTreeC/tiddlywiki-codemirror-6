@@ -199,10 +199,9 @@ function CodeMirrorEngine(options) {
 				return false;
 			}
 		})),
-/*		tooltips({
-			position: 'absolute' | 'fixed',
+		tooltips({
 			parent: self.domNode.ownerDocument.body
-		}),*/
+		}),
 		//basicSetup,
 		highlightSpecialChars(),
 		history(), //{newGroupDelay: 0, joinToEvent: function() { return false; }}),
