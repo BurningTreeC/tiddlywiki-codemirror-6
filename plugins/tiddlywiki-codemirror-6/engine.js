@@ -75,9 +75,11 @@ function CodeMirrorEngine(options) {
 	this.tiddlerCompletionSource = function tiddlerCompletions(context = CompletionContext) {
 		var matchBeforeRegex = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
 		var matchBeforePrefix = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegexPrefix").replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-		var prefixBefore = (matchBeforePrefix && (matchBeforePrefix !== "")) && $tw.utils.codemirror.validateRegex(matchBeforePrefix) ? context.matchBefore(new RegExp(matchBeforePrefix)) : null;
 		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && $tw.utils.codemirror.validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/[\w-\/]*/); // /\w*/ or /[\w\s]+/
+		console.log(word);
 		var text = word ? word.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
+		var prefixBefore = (matchBeforePrefix && (matchBeforePrefix !== "")) && $tw.utils.codemirror.validateRegex(matchBeforePrefix + text) ? context.matchBefore(new RegExp(matchBeforePrefix + text)) : null;
+		console.log(prefixBefore);
 		var isFilterCompletion = ((context.matchBefore(new RegExp("\\[" + text)) !== null) || (context.matchBefore(new RegExp("\\]" + text)) !== null) || (context.matchBefore(new RegExp(">" + text)) !== null)),
 			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\$" + text)) !== null) || (context.matchBefore(new RegExp("<\\/\\$" + text)) !== null)),
 			isVariableCompletion = ((context.matchBefore(new RegExp("<" + text)) !== null) || (context.matchBefore(new RegExp("<<" + text)) !== null)),
@@ -114,15 +116,15 @@ function CodeMirrorEngine(options) {
 					options: self.getCompletionOptions(context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) //filter: false
 				}
 			}
-		} else if(context.explicit) {
+		} else if(word && context.explicit) {
 			return {
-				from: context.pos,
+				from: word.from,
 				options: self.getCompletionOptions(context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
 			}
-		} else if(prefixBefore) {
+		} else if(word && prefixBefore) {
 			var options = [];
 			return {
-				from: context.pos,
+				from: word.from,
 				options: self.getTiddlerCompletionOptions(options,context,word,text,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
 			}
 		}
@@ -337,6 +339,7 @@ CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(options,contex
 	var matchBeforeSystemAlmost = context.matchBefore(new RegExp("\\$:" + text));
 	var matchBeforeDollar = context.matchBefore(new RegExp("\\$" + text));
 	var matchBeforeBrackets = context.matchBefore(new RegExp("\\[\\[" + text));
+	console.log(context);
 	$tw.utils.each(tiddlers,function(tiddler) {
 		options.push({label: tiddler, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
 			var applyFrom,
