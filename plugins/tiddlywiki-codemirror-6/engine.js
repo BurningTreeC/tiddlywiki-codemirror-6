@@ -131,6 +131,7 @@ function CodeMirrorEngine(options) {
 	};
 
 	var selectOnOpen = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/selectOnOpen") === "yes";
+	var autocompleteIcons = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteIcons") === "yes";
 
 	var editorExtensions = [
 		dropCursor(),
@@ -209,7 +210,7 @@ function CodeMirrorEngine(options) {
 		EditorState.allowMultipleSelections.of(true),
 		indentOnInput(),
 		syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
-		autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip"}, selectOnOpen: selectOnOpen}), //{activateOnTyping: false, closeOnBlur: false}),
+		autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip"}, selectOnOpen: selectOnOpen, icons: autocompleteIcons}), //{activateOnTyping: false, closeOnBlur: false}),
 		rectangularSelection(),
 		crosshairCursor(),
 		highlightSelectionMatches(),
