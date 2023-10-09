@@ -407,7 +407,7 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,text,del
 				}
 			}));
 			if(deleteAutoCompletePrefix && prefixBefore) {
-				self.cm.dispatch({changes: {from: prefixBefore.from, to: prefixBefore.to, insert: ""}});
+				view.dispatch({changes: {from: prefixBefore.from, to: prefixBefore.to, insert: ""}});
 			};
 		}}); //section: "Tiddlers"
 	});
@@ -500,7 +500,10 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,text,del
 				filterNames.push(name);
 			});
 		});
-		filterNames.splice(filterNames.indexOf("[unknown]"), 1);
+		var indexOfUnknown = filterNames.indexOf("[unknown]");
+		if(indexOfUnknown > -1) {
+			filterNames.splice(indexOfUnknown, 1);
+		}
 		$tw.utils.each(filterNames,function(filterName) {
 			options.push({label: filterName + "[]", type: "cm-filter", boost: 99, apply: function(view,completion,from,to) {
 				view.dispatch(view.state.changeByRange(function(range) {
