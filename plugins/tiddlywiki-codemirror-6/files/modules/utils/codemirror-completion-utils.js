@@ -9,7 +9,8 @@ module-type: codemirror-utils
 
 
 // TODO: look for configured prefixes for tiddler, widget, filter, maybe variables and filterrunprefix completions first
-// When inserting the completion result, test if the prefix should be removed and text if there's a suffix that should also be removed
+// When inserting the completion result, test if the prefix should be removed and test if there's a suffix that should also be removed
+// view.sliceDoc(a,b)
 exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping,completionMinLength) {
 
 	var tiddlerCompletions = function(context) {
