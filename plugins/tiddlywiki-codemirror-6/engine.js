@@ -73,7 +73,7 @@ function CodeMirrorEngine(options) {
 	var autoOpenOnTyping = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autoOpenOnTyping") === "yes";
 	var deleteAutoCompletePrefix = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/deleteAutoCompletePrefix") === "yes";
 
-	this.tiddlerCompletionSource = $tw.utils.codemirror.getTiddlerCompletions(this.widget,this.editorSelection,autoOpenOnTyping,completionMinLength);
+	this.tiddlerCompletionSource = $tw.utils.codemirror.getTiddlerCompletions(this.widget,this.editorSelection,autoOpenOnTyping,completionMinLength,deleteAutoCompletePrefix);
 	this.actionCompletionSource = function(context) {
 		var actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
 		var actionStrings = [];
