@@ -73,21 +73,8 @@ function CodeMirrorEngine(options) {
 	var autoOpenOnTyping = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autoOpenOnTyping") === "yes";
 	var deleteAutoCompletePrefix = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/deleteAutoCompletePrefix") === "yes";
 
-	this.tiddlerCompletionSource = function tiddlerCompletions(context) {
-		var matchBeforeRegex = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
-		var matchBeforePrefix = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegexPrefix").replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && $tw.utils.codemirror.validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/[\w-\/]*/); // /\w*/ or /[\w\s]+/
-		var text = word ? word.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
-		var prefixBefore = (matchBeforePrefix && (matchBeforePrefix !== "")) && $tw.utils.codemirror.validateRegex(matchBeforePrefix + text) ? context.matchBefore(new RegExp(matchBeforePrefix + text)) : null;
-		var prefixString;
-		if(prefixBefore) {
-			prefixString = prefixBefore.text.replace(text,"");
-			prefixBefore.to = (prefixBefore.from + prefixString.length);
-		}
-		var isFilterCompletion = ((context.matchBefore(new RegExp("\\[" + text)) !== null) || (context.matchBefore(new RegExp("\\]" + text)) !== null) || (context.matchBefore(new RegExp(">" + text)) !== null)),
-			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\$" + text)) !== null) || (context.matchBefore(new RegExp("<\\/\\$" + text)) !== null)),
-			isVariableCompletion = ((context.matchBefore(new RegExp("<" + text)) !== null) || (context.matchBefore(new RegExp("<<" + text)) !== null)),
-			isFilterrunPrefixCompletion = context.matchBefore(new RegExp(":" + text)) !== null;
+	this.tiddlerCompletionSource = $tw.utils.codemirror.getTiddlerCompletions(this.widget,this.editorSelection,autoOpenOnTyping,completionMinLength);
+	this.actionCompletionSource = function(context) {
 		var actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
 		var actionStrings = [];
 		var actions = [];
@@ -111,27 +98,6 @@ function CodeMirrorEngine(options) {
 				}
 			}
 		});
-		if(word && !prefixBefore && autoOpenOnTyping) {
-			if ((word.text.length <= completionMinLength) && !context.explicit) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
-				return null;
-			} else {
-				return {
-					from: word.from,
-					options: self.getCompletionOptions(context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) //filter: false
-				}
-			}
-		} else if(word && context.explicit) {
-			return {
-				from: word.from,
-				options: self.getCompletionOptions(context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
-			}
-		} else if(word && prefixBefore) {
-			var options = [];
-			return {
-				from: word.from,
-				options: self.getCompletionOptions(context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
-			}
-		}
 	};
 
 	var selectOnOpen = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/selectOnOpen") === "yes";
@@ -291,7 +257,9 @@ function CodeMirrorEngine(options) {
 			var {tiddlywiki,tiddlywikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
 			editorExtensions.push(tiddlywiki());
 			var docCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+			var actionCompletions = tiddlywikiLanguage.data.of({autocomplete: this.actionCompletionSource});
 			editorExtensions.push(Prec.high(docCompletions));
+			editorExtensions.push(Prec.high(actionCompletions));
 			break;
 		case "text/html":
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
@@ -337,220 +305,6 @@ function CodeMirrorEngine(options) {
 		state: state
 	};
 	this.cm = new EditorView(editorOptions);
-};
-
-CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) {
-	var self = this;
-	var options = [];
-	var tiddlers = this.widget.wiki.filterTiddlers(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteTiddlerFilter"));
-	var matchBeforeSystem = context.matchBefore(new RegExp("\\$:/" + text));
-	var matchBeforeSystemAlmost = context.matchBefore(new RegExp("\\$:" + text));
-	var matchBeforeDollar = context.matchBefore(new RegExp("\\$" + text));
-	var matchBeforeSingleSquareBrackets = context.matchBefore(new RegExp("\\[" + text));
-	var matchBeforeSingleRoundedBrackets = context.matchBefore(new RegExp("\\(" + text));
-	var matchBeforeSingleLoopedBrackets = context.matchBefore(new RegExp("\\{" + text));
-	var matchBeforeDoubleSquareBrackets = context.matchBefore(new RegExp("\\[\\[" + text));
-	var matchBeforeDoubleRoundedBrackets = context.matchBefore(new RegExp("\\(\\(" + text));
-	var matchBeforeDoubleLoopedBrackets = context.matchBefore(new RegExp("\\{\\{" + text));
-	$tw.utils.each(tiddlers,function(tiddler) {
-		options.push({label: tiddler, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
-			var applyFrom,
-				applyTo,
-				apply;
-			if(matchBeforeSystem && completion.label.startsWith("$:/")) {
-				applyFrom = from - 3;
-				apply = completion.label;
-				applyTo = applyFrom + apply.length;
-			} else if(matchBeforeSystemAlmost && completion.label.startsWith("$:/")) {
-				applyFrom = from - 2;
-				apply = completion.label;
-				applyTo = applyFrom + apply.length;
-			} else if(matchBeforeDollar && completion.label.startsWith("$:/")) {
-				applyFrom = from - 1;
-				apply = completion.label;
-				applyTo = applyFrom + apply.length;
-			} else if(matchBeforeSingleSquareBrackets && !matchBeforeDoubleSquareBrackets) {
-				applyFrom = from;
-				apply = completion.label + (self.closeBrackets ? "" : "]");
-				applyTo = self.closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
-			} else if(matchBeforeSingleRoundedBrackets && !matchBeforeDoubleRoundedBrackets) {
-				applyFrom = from - 1;
-				apply = completion.label;
-				applyTo = self.closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
-			} else if(matchBeforeSingleLoopedBrackets && !matchBeforeDoubleLoopedBrackets) {
-				applyFrom = from;
-				apply = completion.label + (self.closeBrackets ? "" : "}");
-				applyTo = self.closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
-			} else if(matchBeforeDoubleSquareBrackets) {
-				applyFrom = from;
-				apply = completion.label + (self.closeBrackets ? "" : "]]");
-				applyTo = self.closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
-			} else if(matchBeforeDoubleRoundedBrackets) {
-				applyFrom = from - 2;
-				apply = completion.label;
-				applyTo = self.closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
-			} else if(matchBeforeDoubleLoopedBrackets) {
-				applyFrom = from;
-				apply = completion.label + (self.closeBrackets ? "" : "}}");
-				applyTo = self.closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
-			} else {
-				applyFrom = from;
-				apply = completion.label;
-				applyTo = applyFrom + apply.length;
-			}
-			view.dispatch(view.state.changeByRange(function(range) {
-				var editorChanges = [{from: applyFrom, to: to, insert: apply}];
-				var selectionRange = self.editorSelection.range(applyTo,applyTo);
-				return {
-					changes: editorChanges,
-					range: selectionRange
-				}
-			}));
-			if(deleteAutoCompletePrefix && prefixBefore) {
-				view.dispatch({changes: {from: prefixBefore.from, to: prefixBefore.to, insert: ""}});
-			};
-		}}); //section: "Tiddlers"
-	});
-	if(completeVariables && isVariableCompletion && !isFilterrunPrefixCompletion && !isWidgetCompletion) {
-		var variableNames = [];
-		var widget = this.widget;
-		while(widget && !widget.hasOwnProperty("variables")) {
-			widget = widget.parentWidget;
-		}
-		if(widget && widget.variables) {
-			for(var variable in widget.variables) {
-				variableNames.push(variable);
-			}
-		}
-		var matchBeforeDouble = context.matchBefore(new RegExp("<<" + text));
-		var matchBeforeSingle = context.matchBefore(new RegExp("<" + text));
-		$tw.utils.each(variableNames,function(variableName) {
-			options.push({label: variableName, displayLabel: "<<" + variableName + ">>", type: "cm-variable", boost: 99, apply: function(view,completion,from,to) {
-				var applyFrom,
-					applyTo,
-					apply;
-				if(matchBeforeSingle && !matchBeforeDouble) {
-					applyFrom = from - 1;
-					apply = "<" + completion.label + ">";
-				} else if(matchBeforeDouble) {
-					applyFrom = from - 2;
-					apply = "<<" + completion.label + ">>"
-				} else {
-					applyFrom = from;
-					apply = "<<" + completion.label + ">>"
-				}
-				applyTo = applyFrom + apply.length;
-				view.dispatch(view.state.changeByRange(function(range) {
-					var editorChanges = [{from: applyFrom, to: to, insert: apply}];
-					var selectionRange = self.editorSelection.range(applyTo,applyTo);
-					return {
-						changes: editorChanges,
-						range: selectionRange
-					}
-				}));
-			}});
-		});
-	}
-	if(completeWidgets && isWidgetCompletion) {
-		var widgetNames = [];
-		$tw.utils.each($tw.modules.types["widget"],function(widget) {
-			var widgetName = Object.getOwnPropertyNames(widget.exports);
-			$tw.utils.each(widgetName,function(name) {
-				widgetNames.push(name);
-			});
-		});
-		var matchBeforeOpeningRegex = new RegExp("<\\$" + text);
-		var matchBeforeClosingRegex = new RegExp("<\\/\\$" + text);
-		var matchBeforeOpening = context.matchBefore(matchBeforeOpeningRegex);
-		var matchBeforeClosing = context.matchBefore(matchBeforeClosingRegex);
-		$tw.utils.each(widgetNames,function(widgetName) {
-			options.push({label: widgetName, displayLabel: "<$" + widgetName + ">", type: "cm-widget", boost: 99, apply: function(view,completion,from,to) {
-				var applyFrom,
-					applyTo,
-					apply;
-				if(matchBeforeOpening) {
-					applyFrom = from;
-					apply = completion.label + " >";
-					applyTo = applyFrom + apply.length - 1;
-				} else if(matchBeforeClosing) {
-					applyFrom = from;
-					apply = completion.label + ">"
-					applyTo = applyFrom + apply.length;
-				} else {
-					applyFrom = from;
-					apply = "<$" + completion.label + " >";
-					applyTo = applyFrom + apply.length;
-				}
-				view.dispatch(view.state.changeByRange(function(range) {
-					var editorChanges = [{from: applyFrom, to: to, insert: apply}];
-					var selectionRange = self.editorSelection.range(applyTo,applyTo);
-					return {
-						changes: editorChanges,
-						range: selectionRange
-					}
-				}));
-			}});
-		});
-	}
-	if(completeFilters && isFilterCompletion && !isFilterrunPrefixCompletion && !isWidgetCompletion && !isVariableCompletion) {
-		var filterNames = [];
-		$tw.utils.each($tw.modules.types["filteroperator"],function(filteroperator) {
-			var filterName = Object.getOwnPropertyNames(filteroperator.exports);
-			$tw.utils.each(filterName,function(name) {
-				filterNames.push(name);
-			});
-		});
-		var indexOfUnknown = filterNames.indexOf("[unknown]");
-		if(indexOfUnknown > -1) {
-			filterNames.splice(indexOfUnknown, 1);
-		}
-		$tw.utils.each(filterNames,function(filterName) {
-			options.push({label: filterName + "[]", type: "cm-filter", boost: 99, apply: function(view,completion,from,to) {
-				view.dispatch(view.state.changeByRange(function(range) {
-					var editorChanges = [{from: from, to: to, insert: completion.label}];
-					var selectionRange = self.editorSelection.range(from + completion.label.length - 1,from + completion.label.length - 1);
-					return {
-						changes: editorChanges,
-						range: selectionRange
-					}
-				}));
-			}});
-		});
-	}
-	if(completeFilters && isFilterrunPrefixCompletion && !isWidgetCompletion && !isFilterCompletion && !isVariableCompletion) {
-		var filterPrefixNames = [];
-		$tw.utils.each($tw.modules.types["filterrunprefix"],function(filterrunprefix) {
-			var filterRunPrefixName = Object.getOwnPropertyNames(filterrunprefix.exports);
-			$tw.utils.each(filterRunPrefixName,function(name) {
-				filterPrefixNames.push(name);
-			});
-		});
-		var matchBefore = context.matchBefore(new RegExp(":" + text));
-		$tw.utils.each(filterPrefixNames,function(filterPrefixName) {
-			options.push({label: filterPrefixName, displayLabel: ":" + filterPrefixName + "[]", type: "cm-filterrunprefix", boost: 99, apply: function(view,completion,from,to) {
-				view.dispatch(view.state.changeByRange(function(range) {
-					var applyFrom,
-						applyTo,
-						apply;
-					if(matchBefore) {
-						applyFrom = from;
-						apply = completion.label + "[]";
-					} else {
-						applyFrom = from;
-						apply = ":" + completion.label + "[]";
-					}
-					applyTo = applyFrom + apply.length - 1;
-					var editorChanges = [{from: applyFrom, to: to, insert: apply}];
-					var selectionRange = self.editorSelection.range(applyTo,applyTo);
-					return {
-						changes: editorChanges,
-						range: selectionRange
-					}
-				}));
-			}});
-		});
-	}
-	return options;
 };
 
 CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {
