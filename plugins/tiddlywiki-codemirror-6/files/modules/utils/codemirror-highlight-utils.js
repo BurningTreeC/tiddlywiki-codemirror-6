@@ -5,6 +5,8 @@ module-type: codemirror-utils
 
 \*/
 
+(function() {
+
 // Solarized light theme adapted from: https://github.com/craftzdog/cm6-themes/blob/main/packages/solarized-light/src/index.ts
 
 var slbase00 = "#657b83",
@@ -257,3 +259,5 @@ exports.getSolarizedDarkHighlightStyle = function(HighlightStyle,tags) {
 
 	return highlightStyle;
 };
+
+})();

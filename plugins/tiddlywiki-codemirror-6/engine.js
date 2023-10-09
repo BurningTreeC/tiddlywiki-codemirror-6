@@ -73,7 +73,7 @@ function CodeMirrorEngine(options) {
 	var autoOpenOnTyping = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autoOpenOnTyping") === "yes";
 	var deleteAutoCompletePrefix = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/deleteAutoCompletePrefix") === "yes";
 
-	this.tiddlerCompletionSource = function tiddlerCompletions(context = CompletionContext) {
+	this.tiddlerCompletionSource = function tiddlerCompletions(context) {
 		var matchBeforeRegex = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
 		var matchBeforePrefix = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegexPrefix").replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && $tw.utils.codemirror.validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/[\w-\/]*/); // /\w*/ or /[\w\s]+/
@@ -129,7 +129,7 @@ function CodeMirrorEngine(options) {
 			var options = [];
 			return {
 				from: word.from,
-				options: self.getTiddlerCompletionOptions(options,context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
+				options: self.getCompletionOptions(context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
 			}
 		}
 	};
@@ -339,13 +339,19 @@ function CodeMirrorEngine(options) {
 	this.cm = new EditorView(editorOptions);
 };
 
-CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(options,context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) {
+CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) {
 	var self = this;
+	var options = [];
 	var tiddlers = this.widget.wiki.filterTiddlers(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteTiddlerFilter"));
 	var matchBeforeSystem = context.matchBefore(new RegExp("\\$:/" + text));
 	var matchBeforeSystemAlmost = context.matchBefore(new RegExp("\\$:" + text));
 	var matchBeforeDollar = context.matchBefore(new RegExp("\\$" + text));
-	var matchBeforeBrackets = context.matchBefore(new RegExp("\\[\\[" + text));
+	var matchBeforeSingleSquareBrackets = context.matchBefore(new RegExp("\\[" + text));
+	var matchBeforeSingleRoundedBrackets = context.matchBefore(new RegExp("\\(" + text));
+	var matchBeforeSingleLoopedBrackets = context.matchBefore(new RegExp("\\{" + text));
+	var matchBeforeDoubleSquareBrackets = context.matchBefore(new RegExp("\\[\\[" + text));
+	var matchBeforeDoubleRoundedBrackets = context.matchBefore(new RegExp("\\(\\(" + text));
+	var matchBeforeDoubleLoopedBrackets = context.matchBefore(new RegExp("\\{\\{" + text));
 	$tw.utils.each(tiddlers,function(tiddler) {
 		options.push({label: tiddler, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
 			var applyFrom,
@@ -363,9 +369,29 @@ CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(options,contex
 				applyFrom = from - 1;
 				apply = completion.label;
 				applyTo = applyFrom + apply.length;
-			} else if(matchBeforeBrackets) {
+			} else if(matchBeforeSingleSquareBrackets && !matchBeforeDoubleSquareBrackets) {
+				applyFrom = from;
+				apply = completion.label + (self.closeBrackets ? "" : "]");
+				applyTo = self.closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
+			} else if(matchBeforeSingleRoundedBrackets && !matchBeforeDoubleRoundedBrackets) {
+				applyFrom = from - 1;
+				apply = completion.label;
+				applyTo = self.closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
+			} else if(matchBeforeSingleLoopedBrackets && !matchBeforeDoubleLoopedBrackets) {
+				applyFrom = from;
+				apply = completion.label + (self.closeBrackets ? "" : "}");
+				applyTo = self.closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
+			} else if(matchBeforeDoubleSquareBrackets) {
 				applyFrom = from;
 				apply = completion.label + (self.closeBrackets ? "" : "]]");
+				applyTo = self.closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
+			} else if(matchBeforeDoubleRoundedBrackets) {
+				applyFrom = from - 2;
+				apply = completion.label;
+				applyTo = self.closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
+			} else if(matchBeforeDoubleLoopedBrackets) {
+				applyFrom = from;
+				apply = completion.label + (self.closeBrackets ? "" : "}}");
 				applyTo = self.closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
 			} else {
 				applyFrom = from;
@@ -385,13 +411,6 @@ CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(options,contex
 			};
 		}}); //section: "Tiddlers"
 	});
-	return options;
-};
-
-CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) {
-	var self = this;
-	var options = [];
-	this.getTiddlerCompletionOptions(options,context,word,text,deleteAutoCompletePrefix,prefixBefore,completeVariables,completeWidgets,completeFilters,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
 	if(completeVariables && isVariableCompletion && !isFilterrunPrefixCompletion && !isWidgetCompletion) {
 		var variableNames = [];
 		var widget = this.widget;
@@ -481,6 +500,7 @@ CodeMirrorEngine.prototype.getCompletionOptions = function(context,word,text,del
 				filterNames.push(name);
 			});
 		});
+		filterNames.splice(filterNames.indexOf("[unknown]"), 1);
 		$tw.utils.each(filterNames,function(filterName) {
 			options.push({label: filterName + "[]", type: "cm-filter", boost: 99, apply: function(view,completion,from,to) {
 				view.dispatch(view.state.changeByRange(function(range) {
