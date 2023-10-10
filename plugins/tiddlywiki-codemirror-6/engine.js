@@ -72,8 +72,9 @@ function CodeMirrorEngine(options) {
 	var completeFilters = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeFilters") === "yes";
 	var autoOpenOnTyping = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autoOpenOnTyping") === "yes";
 	var deleteAutoCompletePrefix = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/deleteAutoCompletePrefix") === "yes";
+	var autoCloseBrackets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/closeBrackets") === "yes";
 
-	this.tiddlerCompletionSource = $tw.utils.codemirror.getTiddlerCompletions(this.widget,this.editorSelection,autoOpenOnTyping,completionMinLength,deleteAutoCompletePrefix);
+	this.tiddlerCompletionSource = $tw.utils.codemirror.getTiddlerCompletions(this.widget,this.editorSelection,autoOpenOnTyping,completionMinLength,deleteAutoCompletePrefix,autoCloseBrackets);
 	this.actionCompletionSource = function(context) {
 		var actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
 		var actionStrings = [];
@@ -221,9 +222,7 @@ function CodeMirrorEngine(options) {
 		editorExtensions.push(EditorState.languageData.of(function() { return [{autocomplete: completeAnyWord}]; }));
 	};
 
-	this.closeBrackets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/closeBrackets") === "yes";
-
-	if(this.closeBrackets) {
+	if(autoCloseBrackets) {
 		editorExtensions.push(closeBrackets());
 	};
 

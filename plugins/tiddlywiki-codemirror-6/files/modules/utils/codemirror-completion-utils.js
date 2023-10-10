@@ -11,7 +11,7 @@ module-type: codemirror-utils
 // TODO: look for configured prefixes for tiddler, widget, filter, maybe variables and filterrunprefix completions first
 // When inserting the completion result, test if the prefix should be removed and test if there's a suffix that should also be removed
 // view.sliceDoc(a,b)
-exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping,completionMinLength,deleteAutoCompletePrefix) {
+exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping,completionMinLength,deleteAutoCompletePrefix,closeBrackets) {
 
 	var tiddlerCompletions = function(context) {
 		var matchBeforeRegex = widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
@@ -24,48 +24,61 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 			prefixString = prefixBefore.text.replace(text,"");
 			prefixBefore.to = (prefixBefore.from + prefixString.length);
 		}
-		var linkPrefixBefore = $tw.utils.codemirror.validateRegex("\\[\\[" + text) ? context.matchBefore(new RegExp("\\[\\[" + text)) : null;
-		var widgetPrefixBeforeOpening = $tw.utils.codemirror.validateRegex("<\\$" + text) ? context.matchBefore(new RegExp("<\\$" + text)) : null;
-		var widgetPrefixBeforeClosing = $tw.utils.codemirror.validateRegex("</\\$" + text) ? context.matchBefore(new RegExp("</\\$" + text)) : null;
-		var variablePrefixBeforeSingle = $tw.utils.codemirror.validateRegex("<" + text) ? context.matchBefore(new RegExp("<" + text)) : null;
-		var variablePrefixBeforeDouble = $tw.utils.codemirror.validateRegex("<<" + text) ? context.matchBefore(new RegExp("<<" + text)) : null;
-		var isFilterCompletion = ((context.matchBefore(new RegExp("\\[" + text)) !== null) || (context.matchBefore(new RegExp("\\]" + text)) !== null) || (context.matchBefore(new RegExp(">" + text)) !== null)),
+		var filterTiddlerCompletionRegex = new RegExp("(filter=\\\"?|{{{)((\\\s*)?([+-]?|:\\\w+(-\\\w+)?)?(\\\[(\\\w+(-\\\w+)?)+(((\\\[.*\\\])|(\\\{.*\\\})|(<.*>))(\\\w+(-\\\w+)?)+)*)+)*(\\\[|{)" + text);
+		console.log(filterTiddlerCompletionRegex);
+		var isLinkCompletion = ($tw.utils.codemirror.validateRegex("\\[\\[" + text) ? context.matchBefore(new RegExp("\\[\\[" + text)) : null) !== null,
+			isTransclusionCompletion = ((context.matchBefore(new RegExp("\\{\\{" + text)) !== null) && (context.matchBefore(new RegExp("\\{\\{\\{" + text)) === null)),
+			isFilterTiddlerCompletion = ((context.matchBefore(filterTiddlerCompletionRegex)) !== null),
+			isFilterCompletion = ((context.matchBefore(new RegExp("\\[" + text)) !== null) || (context.matchBefore(new RegExp("\\]" + text)) !== null) || (context.matchBefore(new RegExp(">" + text)) !== null)),
 			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\$" + text)) !== null) || (context.matchBefore(new RegExp("<\\/\\$" + text)) !== null)),
 			isVariableCompletion = ((context.matchBefore(new RegExp("<" + text)) !== null) || (context.matchBefore(new RegExp("<<" + text)) !== null)),
 			isFilterrunPrefixCompletion = context.matchBefore(new RegExp(":" + text)) !== null;
-		if(word && !prefixBefore && !linkPrefixBefore && !widgetPrefixBeforeOpening && !widgetPrefixBeforeClosing && !variablePrefixBeforeSingle && !variablePrefixBeforeDouble && autoOpenOnTyping) {
+		console.log(isFilterTiddlerCompletion);
+		/*if(word && !prefixBefore && !isLinkCompletion && !isTransclusionCompletion && !isWidgetCompletion && !isVariableCompletion && !isFilterCompletion && !isFilterrunPrefixCompletion && autoOpenOnTyping) {
 			if ((word.text.length <= completionMinLength) && !context.explicit) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
 				return null;
 			} else {
+				console.log("1");
 				return {
 					from: word.from,
 					options: $tw.utils.codemirror.getCompletionOptions(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore,true,true,true,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion) //filter: false
 				}
 			}
-		} else if(word && context.explicit) {
+		} else*/ if(word && context.explicit) {
+			console.log("2");
 			return {
 				from: word.from,
-				options: $tw.utils.codemirror.getCompletionOptions(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore,true,true,true,isFilterCompletion,isWidgetCompletion,isVariableCompletion,isFilterrunPrefixCompletion)
+				options: $tw.utils.codemirror.getCompletionOptions(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore,true,true,true,true,true,true,true)
 			}
 		} else if(word && prefixBefore) {
+			console.log("3");
 			return {
 				from: word.from,
-				options: $tw.utils.codemirror.getTiddlerCompletionOptions(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore)
+				options: $tw.utils.codemirror.getTiddlerCompletionOptions(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore,closeBrackets)
 			}
-		} else if(word && (widgetPrefixBeforeOpening || widgetPrefixBeforeClosing)) {
+		} else if(word && isWidgetCompletion) {
+			console.log("4");
 			return {
 				from: word.from,
 				options: $tw.utils.codemirror.getWidgetCompletionOptions(editorSelection,context,word,text)
 			}
-		} else if(word && (variablePrefixBeforeSingle || variablePrefixBeforeDouble)) {
+		} else if(word && isVariableCompletion) {
+			console.log("5");
 			return {
 				from: word.from,
 				options: $tw.utils.codemirror.getVariableCompletionOptions(widget,editorSelection,context,word,text)
 			}
-		} else if(word && linkPrefixBefore) {
+		} else if(word && !isLinkCompletion && isFilterCompletion && !isFilterTiddlerCompletion) {
+			console.log("6");
 			return {
 				from: word.from,
-				options: $tw.utils.codemirror.getTiddlerCompletionOptions(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore)
+				options: $tw.utils.codemirror.getFilterCompletionOptions(editorSelection,context,word,text)
+			}
+		} else if(word && (isLinkCompletion || isTransclusionCompletion || isFilterTiddlerCompletion)) {
+			console.log("7");
+			return {
+				from: word.from,
+				options: $tw.utils.codemirror.getTiddlerCompletionOptions(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore,closeBrackets)
 			}
 		}
 	};
@@ -73,7 +86,7 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 	return tiddlerCompletions;
 };
 
-exports.getTiddlerCompletionOptions = function(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore) {
+exports.getTiddlerCompletionOptions = function(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore,closeBrackets) {
 	var options = [];
 	var tiddlers = widget.wiki.filterTiddlers(widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteTiddlerFilter"));
 	var matchBeforeSystem = context.matchBefore(new RegExp("\\$:/" + text));
@@ -104,28 +117,28 @@ exports.getTiddlerCompletionOptions = function(widget,editorSelection,context,wo
 				applyTo = applyFrom + apply.length;
 			} else if(matchBeforeSingleSquareBrackets && !matchBeforeDoubleSquareBrackets) {
 				applyFrom = from;
-				apply = completion.label + (self.closeBrackets ? "" : "]");
-				applyTo = self.closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
+				apply = completion.label + (closeBrackets ? "" : "]");
+				applyTo = closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
 			} else if(matchBeforeSingleRoundedBrackets && !matchBeforeDoubleRoundedBrackets) {
 				applyFrom = from - 1;
 				apply = completion.label;
-				applyTo = self.closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
+				applyTo = closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
 			} else if(matchBeforeSingleLoopedBrackets && !matchBeforeDoubleLoopedBrackets) {
 				applyFrom = from;
-				apply = completion.label + (self.closeBrackets ? "" : "}");
-				applyTo = self.closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
+				apply = completion.label + (closeBrackets ? "" : "}");
+				applyTo = closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
 			} else if(matchBeforeDoubleSquareBrackets) {
 				applyFrom = from;
-				apply = completion.label + (self.closeBrackets ? "" : "]]");
-				applyTo = self.closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
+				apply = completion.label + (closeBrackets ? "" : "]]");
+				applyTo = closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
 			} else if(matchBeforeDoubleRoundedBrackets) {
 				applyFrom = from - 2;
 				apply = completion.label;
-				applyTo = self.closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
+				applyTo = closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
 			} else if(matchBeforeDoubleLoopedBrackets) {
 				applyFrom = from;
-				apply = completion.label + (self.closeBrackets ? "" : "}}");
-				applyTo = self.closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
+				apply = completion.label + (closeBrackets ? "" : "}}");
+				applyTo = closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
 			} else {
 				applyFrom = from;
 				apply = completion.label;
