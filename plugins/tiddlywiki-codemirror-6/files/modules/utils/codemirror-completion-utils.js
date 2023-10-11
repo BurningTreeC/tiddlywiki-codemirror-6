@@ -24,7 +24,7 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 			prefixString = prefixBefore.text.replace(text,"");
 			prefixBefore.to = (prefixBefore.from + prefixString.length);
 		}
-		var isTiddlerCompletion = ($tw.utils.codemirror.validateRegex("\\\[([^\\\[\\\]\\\{\\\|])*(\\\[|\\\{)+([^\\\[\\\]\\\{\\\|]*(\\\]|\\\})[^\\\[\\\]\\\{\\\|]*(\\\[|\\\{))*" + text) ? context.matchBefore(new RegExp("\\\[([^\\\[\\\]\\\{\\\|])*(\\\[|\\\{)+([^\\\[\\\]\\\{\\\|]*(\\\]|\\\})[^\\\[\\\]\\\{\\\|]*(\\\[|\\\{))*" + text)) : null) !== null,
+		var isTiddlerCompletion = ($tw.utils.codemirror.validateRegex("\\\[([^\\\[\\\]\\\{\\\|])*(\\\[|\\\{)+([^\\\[\\\]\\\{\\\|]+(\\\]|\\\})[^\\\[\\\]\\\{\\\|]+(\\\[|\\\{))*" + text) ? context.matchBefore(new RegExp("\\\[([^\\\[\\\]\\\{\\\|])*(\\\[|\\\{)+([^\\\[\\\]\\\{\\\|]+(\\\]|\\\})[^\\\[\\\]\\\{\\\|]+(\\\[|\\\{))*" + text)) : null) !== null,
 			isTransclusionCompletion = ((context.matchBefore(new RegExp("\\\{\\\{" + text)) !== null) && (context.matchBefore(new RegExp("\\\{\\\{\\\{" + text)) === null)),
 			isFilterCompletion = ((context.matchBefore(new RegExp("\\\[" + text)) !== null) || (context.matchBefore(new RegExp("\\\]" + text)) !== null) || (context.matchBefore(new RegExp(">" + text)) !== null)),
 			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\\$" + text)) !== null) || (context.matchBefore(new RegExp("<\\\/\\\$" + text)) !== null)),
