@@ -24,7 +24,8 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 			prefixString = prefixBefore.text.replace(text,"");
 			prefixBefore.to = (prefixBefore.from + prefixString.length);
 		}
-		var isTiddlerCompletion = ($tw.utils.codemirror.validateRegex("\\\[([^\\\[\\\]\\\{\\\|])*(\\\[|\\\{)+([^\\\[\\\]\\\{\\\|]+(\\\]|\\\})[^\\\[\\\]\\\{\\\|]+(\\\[|\\\{))*" + text) ? context.matchBefore(new RegExp("\\\[([^\\\[\\\]\\\{\\\|])*(\\\[|\\\{)+([^\\\[\\\]\\\{\\\|]+(\\\]|\\\})[^\\\[\\\]\\\{\\\|]+(\\\[|\\\{))*" + text)) : null) !== null,
+		var isFilterrunTiddlerCompletion = ($tw.utils.codemirror.validateRegex("\\\[([^\\\[\\\]\\\{\\\}\\\|])*(\\\[|\\\{)+([^\\\[\\\]\\\{\\\|]+(\\\]|\\\})[^\\\[\\\]\\\{\\\}\\\|]+(\\\[|\\\{))*" + text) ? context.matchBefore(new RegExp("\\\[([^\\\[\\\]\\\{\\\}\\\|])*(\\\[|\\\{)+([^\\\[\\\]\\\{\\\|]+(\\\]|\\\})[^\\\[\\\]\\\{\\\}\\\|]+(\\\[|\\\{))*" + text)) : null) !== null,
+			isTiddlerCompletion = ($tw.utils.codemirror.validateRegex("\\\[((\\\[[^\\\[\\\]\\\{\\\}\\\|]+\\\|)|\\\[)" + text) ? context.matchBefore(new RegExp("\\\[((\\\[[^\\\[\\\]\\\{\\\}\\\|]+\\\|)|\\\[)" + text)) : null) !== null,
 			isTransclusionCompletion = ((context.matchBefore(new RegExp("\\\{\\\{" + text)) !== null) && (context.matchBefore(new RegExp("\\\{\\\{\\\{" + text)) === null)),
 			isFilterCompletion = ((context.matchBefore(new RegExp("\\\[" + text)) !== null) || (context.matchBefore(new RegExp("\\\]" + text)) !== null) || (context.matchBefore(new RegExp(">" + text)) !== null)),
 			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\\$" + text)) !== null) || (context.matchBefore(new RegExp("<\\\/\\\$" + text)) !== null)),
@@ -52,25 +53,25 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 				from: word.from,
 				options: $tw.utils.codemirror.getTiddlerCompletionOptions(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore,closeBrackets)
 			}
-		} else if(word && !isTiddlerCompletion && !isFilterCompletion && isWidgetCompletion) {
+		} else if(word && !isTiddlerCompletion && !isFilterrunTiddlerCompletion && !isFilterCompletion && isWidgetCompletion) {
 			console.log("4");
 			return {
 				from: word.from,
 				options: $tw.utils.codemirror.getWidgetCompletionOptions(editorSelection,context,word,text)
 			}
-		} else if(word && !isTiddlerCompletion && isVariableCompletion) {
+		} else if(word && !isTiddlerCompletion && !isFilterrunTiddlerCompletion && isVariableCompletion) {
 			console.log("5");
 			return {
 				from: word.from,
 				options: $tw.utils.codemirror.getVariableCompletionOptions(widget,editorSelection,context,word,text)
 			}
-		} else if(word && !isTiddlerCompletion && isFilterCompletion) {
+		} else if(word && !isTiddlerCompletion && !isFilterrunTiddlerCompletion && isFilterCompletion) {
 			console.log("6");
 			return {
 				from: word.from,
 				options: $tw.utils.codemirror.getFilterCompletionOptions(editorSelection,context,word,text)
 			}
-		} else if(word && (isTiddlerCompletion || isTransclusionCompletion)) {
+		} else if(word && (isTiddlerCompletion || isFilterrunTiddlerCompletion || isTransclusionCompletion)) {
 			console.log("7");
 			return {
 				from: word.from,
