@@ -25,17 +25,13 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 			prefixString = prefixBefore.text.replace(text,"");
 			prefixBefore.to = (prefixBefore.from + prefixString.length);
 		}
-		var filterTiddlerCompletionRegex = new RegExp("((filter=(\\\"|\\\"\\\"\\\")?|{{{)\\\s*((?:\\\+|\\\-|~|=|\\\:(\\\w+)(?:\\\:([\\\w\\\:, ]*))?)?)((?:(\\\[)|(?:\\\"([^\\\"]*)\\\")|(?:'([^']*)')|([^\\\s\\\[\\\]]+)).*(\\\w+(\\\[|{}))))" + text);
-		console.log(filterTiddlerCompletionRegex);
-		var isLinkCompletion = ($tw.utils.codemirror.validateRegex("\\[\\[" + text) ? context.matchBefore(new RegExp("\\[\\[" + text)) : null) !== null,
+		var isLinkCompletion = ($tw.utils.codemirror.validateRegex("\\\[([^\\\[\\\]\\\{\\\}\\\|])*(\\\[|\\\{)([^\\\[\\\]])*" + text) ? context.matchBefore(new RegExp("\\\[([^\\\[\\\]\\\{\\\}\\\|])*(\\\[|\\\{)([^\\\[\\\]])*" + text)) : null) !== null,
 			isTransclusionCompletion = ((context.matchBefore(new RegExp("\\{\\{" + text)) !== null) && (context.matchBefore(new RegExp("\\{\\{\\{" + text)) === null)),
-			isFilterTiddlerCompletion = ((context.matchBefore(filterTiddlerCompletionRegex)) !== null),
 			isFilterCompletion = ((context.matchBefore(new RegExp("\\[" + text)) !== null) || (context.matchBefore(new RegExp("\\]" + text)) !== null) || (context.matchBefore(new RegExp(">" + text)) !== null)),
 			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\$" + text)) !== null) || (context.matchBefore(new RegExp("<\\/\\$" + text)) !== null)),
 			isVariableCompletion = ((context.matchBefore(new RegExp("<" + text)) !== null) || (context.matchBefore(new RegExp("<<" + text)) !== null)),
 			isFilterrunPrefixCompletion = context.matchBefore(new RegExp(":" + text)) !== null;
-		console.log(isFilterTiddlerCompletion);
-		console.log(isFilterCompletion);
+		console.log(isLinkCompletion);
 		/*if(word && !prefixBefore && !isLinkCompletion && !isTransclusionCompletion && !isWidgetCompletion && !isVariableCompletion && !isFilterCompletion && !isFilterrunPrefixCompletion && autoOpenOnTyping) {
 			if ((word.text.length <= completionMinLength) && !context.explicit) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
 				return null;
@@ -58,25 +54,25 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 				from: word.from,
 				options: $tw.utils.codemirror.getTiddlerCompletionOptions(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore,closeBrackets)
 			}
-		} else if(word && isWidgetCompletion && !isFilterTiddlerCompletion) {
+		} else if(word && isWidgetCompletion) {
 			console.log("4");
 			return {
 				from: word.from,
 				options: $tw.utils.codemirror.getWidgetCompletionOptions(editorSelection,context,word,text)
 			}
-		} else if(word && isVariableCompletion && !isFilterTiddlerCompletion) {
+		} else if(word && isVariableCompletion) {
 			console.log("5");
 			return {
 				from: word.from,
 				options: $tw.utils.codemirror.getVariableCompletionOptions(widget,editorSelection,context,word,text)
 			}
-		} else if(word && !isLinkCompletion && isFilterCompletion && !isFilterTiddlerCompletion) {
+		} else if(word && !isLinkCompletion && isFilterCompletion) {
 			console.log("6");
 			return {
 				from: word.from,
 				options: $tw.utils.codemirror.getFilterCompletionOptions(editorSelection,context,word,text)
 			}
-		} else if(word && (isLinkCompletion || isTransclusionCompletion || isFilterTiddlerCompletion)) {
+		} else if(word && (isLinkCompletion || isTransclusionCompletion)) {
 			console.log("7");
 			return {
 				from: word.from,
@@ -102,6 +98,7 @@ exports.getTiddlerCompletionOptions = function(widget,editorSelection,context,wo
 	var matchBeforeDoubleLoopedBrackets = context.matchBefore(new RegExp("\\{\\{" + text));
 	$tw.utils.each(tiddlers,function(tiddler) {
 		options.push({label: tiddler, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
+			var docLength = view.state.doc.toString().length;
 			var applyFrom,
 				applyTo,
 				apply;
@@ -118,29 +115,38 @@ exports.getTiddlerCompletionOptions = function(widget,editorSelection,context,wo
 				apply = completion.label;
 				applyTo = applyFrom + apply.length;
 			} else if(matchBeforeSingleSquareBrackets && !matchBeforeDoubleSquareBrackets) {
+				var matchingBracket = (docLength > to && view.state.sliceDoc(to,to + 1) === "]");
 				applyFrom = from;
-				apply = completion.label + (closeBrackets ? "" : "]");
-				applyTo = closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
+				apply = completion.label + (matchingBracket ? "" : "]");
+				applyTo = matchingBracket ? applyFrom + apply.length + 1 : applyFrom + apply.length;
 			} else if(matchBeforeSingleRoundedBrackets && !matchBeforeDoubleRoundedBrackets) {
+				var matchingBracket = (docLength > to && view.state.sliceDoc(to,to + 1) === ")");
 				applyFrom = from - 1;
 				apply = completion.label;
-				applyTo = closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
+				applyTo = matchingBracket ? applyFrom + apply.length + 1 : applyFrom + apply.length;
 			} else if(matchBeforeSingleLoopedBrackets && !matchBeforeDoubleLoopedBrackets) {
+				var matchingBracket = (docLength > to && view.state.sliceDoc(to,to + 1) === "}");
 				applyFrom = from;
-				apply = completion.label + (closeBrackets ? "" : "}");
-				applyTo = closeBrackets ? applyFrom + apply.length + 1 : applyFrom + apply.length;
+				apply = completion.label + (matchingBracket ? "" : "}");
+				applyTo = matchingBracket ? applyFrom + apply.length + 1 : applyFrom + apply.length;
 			} else if(matchBeforeDoubleSquareBrackets) {
+				var matchingSingleBracket = (docLength > to && view.state.sliceDoc(to,to + 1) === "]");
+				var matchingDoubleBracket = (docLength > (to + 1) && view.state.sliceDoc(to,to + 2) === "]]");
 				applyFrom = from;
-				apply = completion.label + (closeBrackets ? "" : "]]");
-				applyTo = closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
+				apply = completion.label + (matchingSingleBracket && matchingDoubleBracket ? "" : matchingSingleBracket ? "]" : "]]");
+				applyTo = matchingSingleBracket && matchingDoubleBracket ? applyFrom + apply.length + 2 : matchingSingleBracket ? applyFrom + apply.length + 1 : applyFrom + apply.length;
 			} else if(matchBeforeDoubleRoundedBrackets) {
+				var matchingSingleBracket = (docLength > to && view.state.sliceDoc(to,to + 1) === ")");
+				var matchingDoubleBracket = (docLength > (to + 1) && view.state.sliceDoc(to,to + 2) === "))");
 				applyFrom = from - 2;
 				apply = completion.label;
-				applyTo = closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
+				applyTo = matchingSingleBracket && matchingDoubleBracket ? applyFrom + apply.length + 2 : matchingSingleBracket ? applyFrom + apply.length + 1 : applyFrom + apply.length;
 			} else if(matchBeforeDoubleLoopedBrackets) {
+				var matchingSingleBracket = (docLength > to && view.state.sliceDoc(to,to + 1) === "}");
+				var matchingDoubleBracket = (docLength > (to + 1) && view.state.sliceDoc(to,to + 2) === "}}");
 				applyFrom = from;
-				apply = completion.label + (closeBrackets ? "" : "}}");
-				applyTo = closeBrackets ? applyFrom + apply.length + 2 : applyFrom + apply.length;
+				apply = completion.label + (matchingSingleBracket && matchingDoubleBracket ? "" : matchingSingleBracket ? "}" : "}}");
+				applyTo = matchingSingleBracket && matchingDoubleBracket ? applyFrom + apply.length + 2 : matchingSingleBracket ? applyFrom + apply.length + 1 : applyFrom + apply.length;
 			} else {
 				applyFrom = from;
 				apply = completion.label;
