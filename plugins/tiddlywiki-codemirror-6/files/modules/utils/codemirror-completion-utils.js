@@ -52,7 +52,7 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 				from: word.from,
 				options: $tw.utils.codemirror.getTiddlerCompletionOptions(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore,closeBrackets)
 			}
-		} else if(word && !isTiddlerCompletion && isWidgetCompletion) {
+		} else if(word && !isTiddlerCompletion && !isFilterCompletion && isWidgetCompletion) {
 			console.log("4");
 			return {
 				from: word.from,

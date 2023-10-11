@@ -3,4 +3,4 @@ caption: Autocomplete ~RegExp
 description: The regular expression used for autocompletion
 settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/input
 
-[\w-/]*
+[\$:\w-/]*
