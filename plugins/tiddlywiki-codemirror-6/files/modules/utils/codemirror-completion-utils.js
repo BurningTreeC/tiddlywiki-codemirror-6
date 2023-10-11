@@ -18,20 +18,18 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 		var matchBeforePrefix = widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegexPrefix").replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && $tw.utils.codemirror.validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/[\w-/]*/); // /\w*/ or /[\w\s]+/
 		var text = word ? word.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
-		console.log(word);
 		var prefixBefore = (matchBeforePrefix && (matchBeforePrefix !== "")) && $tw.utils.codemirror.validateRegex(matchBeforePrefix + text) ? context.matchBefore(new RegExp(matchBeforePrefix + text)) : null;
 		var prefixString;
 		if(prefixBefore) {
 			prefixString = prefixBefore.text.replace(text,"");
 			prefixBefore.to = (prefixBefore.from + prefixString.length);
 		}
-		var isLinkCompletion = ($tw.utils.codemirror.validateRegex("\\\[([^\\\[\\\]\\\{\\\}\\\|])*(\\\[|\\\{)([^\\\[\\\]])*" + text) ? context.matchBefore(new RegExp("\\\[([^\\\[\\\]\\\{\\\}\\\|])*(\\\[|\\\{)([^\\\[\\\]])*" + text)) : null) !== null,
+		var isTiddlerCompletion = ($tw.utils.codemirror.validateRegex("\\\[([^\\\[\\\]\\\{\\\}\\\|])*(\\\[|\\\{)([^\\\[\\\]])*" + text) ? context.matchBefore(new RegExp("\\\[([^\\\[\\\]\\\{\\\}\\\|])*(\\\[|\\\{)([^\\\[\\\]])*" + text)) : null) !== null,
 			isTransclusionCompletion = ((context.matchBefore(new RegExp("\\{\\{" + text)) !== null) && (context.matchBefore(new RegExp("\\{\\{\\{" + text)) === null)),
 			isFilterCompletion = ((context.matchBefore(new RegExp("\\[" + text)) !== null) || (context.matchBefore(new RegExp("\\]" + text)) !== null) || (context.matchBefore(new RegExp(">" + text)) !== null)),
 			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\$" + text)) !== null) || (context.matchBefore(new RegExp("<\\/\\$" + text)) !== null)),
 			isVariableCompletion = ((context.matchBefore(new RegExp("<" + text)) !== null) || (context.matchBefore(new RegExp("<<" + text)) !== null)),
 			isFilterrunPrefixCompletion = context.matchBefore(new RegExp(":" + text)) !== null;
-		console.log(isLinkCompletion);
 		/*if(word && !prefixBefore && !isLinkCompletion && !isTransclusionCompletion && !isWidgetCompletion && !isVariableCompletion && !isFilterCompletion && !isFilterrunPrefixCompletion && autoOpenOnTyping) {
 			if ((word.text.length <= completionMinLength) && !context.explicit) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
 				return null;
@@ -54,25 +52,25 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 				from: word.from,
 				options: $tw.utils.codemirror.getTiddlerCompletionOptions(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore,closeBrackets)
 			}
-		} else if(word && isWidgetCompletion) {
+		} else if(word && !isTiddlerCompletion && isWidgetCompletion) {
 			console.log("4");
 			return {
 				from: word.from,
 				options: $tw.utils.codemirror.getWidgetCompletionOptions(editorSelection,context,word,text)
 			}
-		} else if(word && isVariableCompletion) {
+		} else if(word && !isTiddlerCompletion && isVariableCompletion) {
 			console.log("5");
 			return {
 				from: word.from,
 				options: $tw.utils.codemirror.getVariableCompletionOptions(widget,editorSelection,context,word,text)
 			}
-		} else if(word && !isLinkCompletion && isFilterCompletion) {
+		} else if(word && !isTiddlerCompletion && isFilterCompletion) {
 			console.log("6");
 			return {
 				from: word.from,
 				options: $tw.utils.codemirror.getFilterCompletionOptions(editorSelection,context,word,text)
 			}
-		} else if(word && (isLinkCompletion || isTransclusionCompletion)) {
+		} else if(word && (isTiddlerCompletion || isTransclusionCompletion)) {
 			console.log("7");
 			return {
 				from: word.from,
