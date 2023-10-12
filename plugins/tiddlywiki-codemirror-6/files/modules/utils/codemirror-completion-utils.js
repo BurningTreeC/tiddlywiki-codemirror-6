@@ -17,21 +17,22 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 		var matchBeforeRegex = widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegex");
 		var matchBeforePrefix = widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteRegexPrefix").replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 		var word = (matchBeforeRegex && (matchBeforeRegex !== "") && $tw.utils.codemirror.validateRegex(matchBeforeRegex)) ? context.matchBefore(new RegExp(matchBeforeRegex)) : context.matchBefore(/[\w-/]*/); // /\w*/ or /[\w\s]+/
-		var text = word ? word.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
+		var text = word ? word.text.replace(/[.*+?^${}()|[\]\\]/g, '\\\\$&') : "";
 		var prefixBefore = (matchBeforePrefix && (matchBeforePrefix !== "")) && $tw.utils.codemirror.validateRegex(matchBeforePrefix + text) ? context.matchBefore(new RegExp(matchBeforePrefix + text)) : null;
 		var prefixString;
 		if(prefixBefore) {
 			prefixString = prefixBefore.text.replace(text,"");
 			prefixBefore.to = (prefixBefore.from + prefixString.length);
 		}
-		console.log(text);
-		var isFilterrunTiddlerCompletion = ($tw.utils.codemirror.validateRegex("\\\[([^\\\[\\\]\\\{\\\}\\\|\\\"\\\'])*(\\\[|\\\{)+([^\\\[\\\]\\\{\\\|\\\"\\\']+(\\\]|\\\})[^\\\[\\\]\\\{\\\}\\\|\\\"\\\']+(\\\[|\\\{))*" + text) ? context.matchBefore(new RegExp("\\\[([^\\\[\\\]\\\{\\\}\\\|\\\"\\\'])*(\\\[|\\\{)+([^\\\[\\\]\\\{\\\|\\\"\\\']+(\\\]|\\\})[^\\\[\\\]\\\{\\\}\\\|\\\"\\\']+(\\\[|\\\{))*" + text)) : null) !== null,
+		var isFilterrunTiddlerCompletion = ($tw.utils.codemirror.validateRegex("\\\[([^\\\[\\\]\\\{\\\}\\\|\\\"\\\'\\\s])*(\\\[|\\\{)([^\\\[\\\]\\\{\\\|\\\"\\\']*(\\\]|\\\})[^\\\[\\\]\\\{\\\}\\\|\\\"\\\'\\\s]+(\\\[|\\\{))*" + text) ? context.matchBefore(new RegExp("\\\[([^\\\[\\\]\\\{\\\}\\\|\\\"\\\'\\\s])*(\\\[|\\\{)([^\\\[\\\]\\\{\\\|\\\"\\\']*(\\\]|\\\})[^\\\[\\\]\\\{\\\}\\\|\\\"\\\'\\\s]+(\\\[|\\\{))*" + text)) : null) !== null,
 			isTiddlerCompletion = ($tw.utils.codemirror.validateRegex("\\\[((\\\[[^\\\[\\\]\\\{\\\}\\\|]+\\\|)|\\\[)" + text) ? context.matchBefore(new RegExp("\\\[((\\\[[^\\\[\\\]\\\{\\\}\\\|]+\\\|)|\\\[)" + text)) : null) !== null,
 			isTransclusionCompletion = ((context.matchBefore(new RegExp("\\\{\\\{(([^\\\[\\\]\\\{\\\}\\\|\\\"\\\']*\\\|){2})?" + text)) !== null) && (context.matchBefore(new RegExp("\\\{\\\{\\\{" + text)) === null)),
 			isFilterCompletion = ((context.matchBefore(new RegExp("\\\[" + text)) !== null) || (context.matchBefore(new RegExp("\\\]" + text)) !== null) || (context.matchBefore(new RegExp(">" + text)) !== null)),
 			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\\$[\\\w-]*[^\\\s]*" + text)) !== null) || (context.matchBefore(new RegExp("<\\\/\\\$[\\\w-]*[^\\\s]*" + text)) !== null)),
 			isVariableCompletion = ((context.matchBefore(new RegExp("[^\\\s]<" + text)) !== null) || (context.matchBefore(new RegExp("<<" + text)) !== null)),
 			isFilterrunPrefixCompletion = context.matchBefore(new RegExp("\\\]\\\s*\\\:" + text)) !== null;
+		console.log(isFilterrunTiddlerCompletion);
+		console.log(isTiddlerCompletion);
 		/*if(word && !prefixBefore && !isLinkCompletion && !isTransclusionCompletion && !isWidgetCompletion && !isVariableCompletion && !isFilterCompletion && !isFilterrunPrefixCompletion && autoOpenOnTyping) {
 			if ((word.text.length <= completionMinLength) && !context.explicit) { // || (word.from === word.to && !context.explicit)) { //(word.from === word.to && !context.explicit)) {
 				return null;
