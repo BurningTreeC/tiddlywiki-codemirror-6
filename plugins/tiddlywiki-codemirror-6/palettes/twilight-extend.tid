@@ -10,6 +10,7 @@ cm-search-match-selected: <<colour download-background>>
 cm-selection-match: <<colour notification-background>>
 cm-matching-bracket-outline: <<colour notification-border>>
 cm-tooltip-background: <<colour background>>
+cm-tooltip-foreground: <<colour foreground>>
 cm-selection-background: <<colour primary>>
 cm-selection-foreground: black
 cm-tooltip-selected-background: <<colour primary>>
