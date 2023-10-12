@@ -29,7 +29,7 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 			isTiddlerCompletion = ($tw.utils.codemirror.validateRegex("\\\[((\\\[[^\\\[\\\]\\\{\\\}\\\|]+\\\|)|\\\[)" + text) ? context.matchBefore(new RegExp("\\\[((\\\[[^\\\[\\\]\\\{\\\}\\\|]+\\\|)|\\\[)" + text)) : null) !== null,
 			isTransclusionCompletion = ((context.matchBefore(new RegExp("\\\{\\\{(([^\\\[\\\]\\\{\\\}\\\|\\\"\\\']*\\\|){2})?" + text)) !== null) && (context.matchBefore(new RegExp("\\\{\\\{\\\{" + text)) === null)),
 			isFilterCompletion = ((context.matchBefore(new RegExp("\\\[" + text)) !== null) || (context.matchBefore(new RegExp("\\\]" + text)) !== null) || (context.matchBefore(new RegExp(">" + text)) !== null)),
-			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\\$" + text)) !== null) || (context.matchBefore(new RegExp("<\\\/\\\$" + text)) !== null)),
+			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\\$[\\\w-]*[^\\\s]*" + text)) !== null) || (context.matchBefore(new RegExp("<\\\/\\\$[\\\w-]*[^\\\s]*" + text)) !== null)),
 			isVariableCompletion = ((context.matchBefore(new RegExp("[^\\\s]<" + text)) !== null) || (context.matchBefore(new RegExp("<<" + text)) !== null)),
 			isFilterrunPrefixCompletion = context.matchBefore(new RegExp("\\\]\\\s*\\\:" + text)) !== null;
 		/*if(word && !prefixBefore && !isLinkCompletion && !isTransclusionCompletion && !isWidgetCompletion && !isVariableCompletion && !isFilterCompletion && !isFilterrunPrefixCompletion && autoOpenOnTyping) {
@@ -54,13 +54,13 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 				from: word.from,
 				options: $tw.utils.codemirror.getTiddlerCompletionOptions(widget,editorSelection,context,word,text,deleteAutoCompletePrefix,prefixBefore,closeBrackets)
 			}
-		}*/ else if(word && !isTiddlerCompletion && !isFilterrunTiddlerCompletion && !isFilterCompletion && isWidgetCompletion) {
+		}*/ else if(word && !isTiddlerCompletion && !isFilterrunTiddlerCompletion && !isFilterCompletion && !isVariableCompletion && isWidgetCompletion) {
 			console.log("4");
 			return {
 				from: word.from,
 				options: $tw.utils.codemirror.getWidgetCompletionOptions(editorSelection,context,word,text)
 			}
-		} else if(word && !isTiddlerCompletion && !isFilterrunTiddlerCompletion && isVariableCompletion) {
+		} else if(word && !isTiddlerCompletion && !isFilterrunTiddlerCompletion && !isWidgetCompletion && !isFilterCompletion && isVariableCompletion) {
 			console.log("5");
 			return {
 				from: word.from,
