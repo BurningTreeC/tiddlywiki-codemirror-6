@@ -29,7 +29,7 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 			isTiddlerCompletion = ($tw.utils.codemirror.validateRegex("\\\[((\\\[[^\\\[\\\]\\\{\\\}\\\|]+\\\|)|\\\[)" + text) ? context.matchBefore(new RegExp("\\\[((\\\[[^\\\[\\\]\\\{\\\}\\\|]+\\\|)|\\\[)" + text)) : null) !== null,
 			isTransclusionCompletion = ((context.matchBefore(new RegExp("\\\{\\\{(([^\\\[\\\]\\\{\\\}\\\|\\\"\\\']*\\\|){2})?" + text)) !== null) && (context.matchBefore(new RegExp("\\\{\\\{\\\{" + text)) === null)),
 			isFilterCompletion = ((context.matchBefore(new RegExp("\\\[" + text)) !== null) || (context.matchBefore(new RegExp("\\\]" + text)) !== null) || (context.matchBefore(new RegExp(">" + text)) !== null)),
-			isWidgetCompletion = ((context.matchBefore(new RegExp("\\\<\\\$" + text)) !== null) || (context.matchBefore(new RegExp("\\\<\\\/\\\$" + text)) !== null)),
+			isWidgetCompletion = ((context.matchBefore(new RegExp("<\\\$" + text)) !== null) || (context.matchBefore(new RegExp("<\\\/\\\$" + text)) !== null)),
 			isVariableCompletion = ((context.matchBefore(new RegExp("[^\\\s]<" + text)) !== null) || (context.matchBefore(new RegExp("<<" + text)) !== null)),
 			isFilterrunPrefixCompletion = context.matchBefore(new RegExp("\\\]\\\s*\\\:" + text)) !== null;
 		/*if(word && !prefixBefore && !isLinkCompletion && !isTransclusionCompletion && !isWidgetCompletion && !isVariableCompletion && !isFilterCompletion && !isFilterrunPrefixCompletion && autoOpenOnTyping) {
