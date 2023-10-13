@@ -42,19 +42,6 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 		var lessThanSlashDollarMatch = context.matchBefore(new RegExp("<\\\/\\\$" + textWithoutDollarSlashAndLessThan));
 		var colonMatch = context.matchBefore(new RegExp(":" + textWithoutColon));
 
-		var bracketClosingMatch = context.matchBefore(new RegExp("(\\\[|\\\{])([^\\\[\\\]\\\{\\\}])*(\\\]|\\\})" + textWithoutBrackets));
-
-		if(wordMatch && doubleBracketMatch && !bracketClosingMatch) {
-			return {
-				from: wordMatch.from,
-				options: $tw.utils.codemirror.getTiddlerCompletionOptions(widget,editorSelection,context,deleteAutoCompletePrefix,closeBrackets)
-			}
-		} else if(singleWordMatch && singleBracketMatch) {
-			return {
-				from: singleWordMatch.from,
-				options: $tw.utils.codemirror.getFilterCompletionOptions(editorSelection,context,singleWordText)
-			}
-		}
 	};
 
 	return tiddlerCompletions;
