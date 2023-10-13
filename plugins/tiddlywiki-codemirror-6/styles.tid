@@ -133,7 +133,7 @@ body {
 	overflow: hidden;
 }
 
-.cm-tooltip-autocomplete > ul > li[aria-selected] {
+.cm-tooltip-autocomplete > ul > li[aria-selected], .cm-tooltip-autocomplete > ul > li:hover {
 	background-color: <<colour-extend cm-tooltip-selected-background>> !important;
 	color: <<colour-extend cm-tooltip-selected-foreground>> !important;
 }
