@@ -15,7 +15,7 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 
 	var tiddlerCompletions = function(context) {
 		var wordMatch = context.matchBefore(/[^\[\]\{\}\"\']*/);
-		console.log(wordMatch);
+
 		var singleWordMatch = context.matchBefore(/[\w-]*/);
 		var wordWithoutBrackets = context.matchBefore(/[^\{\[\]\}]*/);
 		var wordWithoutColon = context.matchBefore(/[^\:]*/);
@@ -41,13 +41,18 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 		var lessThanDollarMatch = context.matchBefore(new RegExp("<\\\$" + textWithoutDollarAndLessThan));
 		var lessThanSlashDollarMatch = context.matchBefore(new RegExp("<\\\/\\\$" + textWithoutDollarSlashAndLessThan));
 		var colonMatch = context.matchBefore(new RegExp(":" + textWithoutColon));
-		console.log(lessThanSlashDollarMatch);
 
-		
-		if(wordMatch && doubleBracketMatch) {
+		var bracketClosingMatch = context.matchBefore(new RegExp("(\\\[|\\\{])([^\\\[\\\]\\\{\\\}])*(\\\]|\\\})" + textWithoutBrackets));
+
+		if(wordMatch && doubleBracketMatch && !bracketClosingMatch) {
 			return {
 				from: wordMatch.from,
 				options: $tw.utils.codemirror.getTiddlerCompletionOptions(widget,editorSelection,context,deleteAutoCompletePrefix,closeBrackets)
+			}
+		} else if(singleWordMatch && singleBracketMatch) {
+			return {
+				from: singleWordMatch.from,
+				options: $tw.utils.codemirror.getFilterCompletionOptions(editorSelection,context,singleWordText)
 			}
 		}
 	};
@@ -226,7 +231,7 @@ exports.getVariableCompletionOptions = function(widget,editorSelection,context,w
 	return options;
 };
 
-exports.getFilterCompletionOptions = function(editorSelection,context,word,text) {
+exports.getFilterCompletionOptions = function(editorSelection,context,text) {
 	var options = [];
 	var filterNames = [];
 	$tw.utils.each($tw.modules.types["filteroperator"],function(filteroperator) {
