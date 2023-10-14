@@ -1,5 +1,0 @@
-title: $:/config/codemirror-6/filterrunprefix-completion-icon
-caption: Filterrunprefix completion icon
-description: The icon for filterrunprefix completions
-settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/input
-

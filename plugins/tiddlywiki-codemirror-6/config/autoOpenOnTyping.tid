@@ -1,6 +1,0 @@
-title: $:/config/codemirror-6/autoOpenOnTyping
-caption: Autocompletion open on typing
-description: whether or not the autocompletion popup should automatically open when you type
-settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/input-switch
-
-yes

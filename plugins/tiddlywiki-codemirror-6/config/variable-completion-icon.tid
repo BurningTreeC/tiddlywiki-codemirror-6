@@ -1,5 +1,0 @@
-title: $:/config/codemirror-6/variable-completion-icon
-caption: Variable completion icon
-description: The icon for variable completions
-settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/input
-

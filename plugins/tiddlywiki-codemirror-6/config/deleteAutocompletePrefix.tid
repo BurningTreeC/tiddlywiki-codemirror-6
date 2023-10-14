@@ -1,6 +1,0 @@
-title: $:/config/codemirror-6/deleteAutoCompletePrefix
-caption: Delete autocompletion prefix on autocomplete
-description: whether or not the autocompletion prefix should be deleted on autocompletion
-settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/input-switch
-
-no

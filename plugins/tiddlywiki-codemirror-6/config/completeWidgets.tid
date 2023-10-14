@@ -1,6 +1,0 @@
-title: $:/config/codemirror-6/completeWidgets
-caption: Autocompletion of widgets
-description: whether or not widgets should be shown in the autocompletion-matches
-settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/input-switch
-
-yes
