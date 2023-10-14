@@ -74,7 +74,6 @@ function CodeMirrorEngine(options) {
 	var deleteAutoCompletePrefix = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/deleteAutoCompletePrefix") === "yes";
 	var autoCloseBrackets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/closeBrackets") === "yes";
 
-	this.tiddlerCompletionSource = $tw.utils.codemirror.getTiddlerCompletions(this.widget,this.editorSelection,autoOpenOnTyping,completionMinLength,deleteAutoCompletePrefix,autoCloseBrackets);
 	this.actionCompletionSource = function(context) {
 		var actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
 		var actionStrings = [];
@@ -255,44 +254,44 @@ function CodeMirrorEngine(options) {
 		case "text/vnd.tiddlywiki":
 			var {tiddlywiki,tiddlywikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
 			editorExtensions.push(tiddlywiki());
-			var docCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			var actionCompletions = tiddlywikiLanguage.data.of({autocomplete: this.actionCompletionSource});
-			editorExtensions.push(Prec.high(docCompletions));
 			editorExtensions.push(Prec.high(actionCompletions));
 			break;
 		case "text/html":
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
 			editorExtensions.push(html({selfClosingTags: true}));
-			var docCompletions = htmlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(docCompletions));
+			var actionCompletions = htmlLanguage.data.of({autocomplete: this.actionCompletionSource});
+			editorExtensions.push(Prec.high(actionCompletions));
 			break;
 		case "application/javascript":
 			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
 			editorExtensions.push(javascript());
-			var docCompletions = javascriptLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(docCompletions));
-			/*editorExtensions.push(
+			var actionCompletions = javascriptLanguage.data.of({autocomplete: this.actionCompletionSource});
+			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(
 				javascriptLanguage.data.of({
-					autocomplete: scopeCompletionSource(globalThis)//self.domNode.ownerDocument.defaultView)
+					autocomplete: scopeCompletionSource()
 				})
-			);*/
+			);
 			break;
 		case "application/json":
 			var {json,jsonLanguage} = CM["@codemirror/lang-json"];
 			editorExtensions.push(json());
+			var actionCompletions = jsonLanguage.data.of({autocomplete: this.actionCompletionSource});
+			editorExtensions.push(Prec.high(actionCompletions));
 			break;
 		case "text/css":
 			var {css,cssLanguage} = CM["@codemirror/lang-css"];
 			editorExtensions.push(css());
-			var docCompletions = cssLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(docCompletions));
+			var actionCompletions = cssLanguage.data.of({autocomplete: this.actionCompletionSource});
+			editorExtensions.push(Prec.high(actionCompletions));
 			break;
 		case "text/markdown":
 		case "text/x-markdown":
 			var {markdown,markdownLanguage,markdownKeymap} = CM["@codemirror/lang-markdown"];
 			editorExtensions.push(markdown({base: markdownLanguage}));
-			var docCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(docCompletions));
+			var actionCompletions = markdownLanguage.data.of({autocomplete: this.actionCompletionSource});
+			editorExtensions.push(Prec.high(actionCompletions));
 			editorExtensions.push(Prec.high(keymap.of(markdownKeymap)));
 			break;
 		default:

@@ -10,10 +10,10 @@ module-type: codemirror-utils
 exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping,completionMinLength,deleteAutoCompletePrefix,closeBrackets) {
 
 	var tiddlerCompletions = function(context) {
-		var wordMatch = context.matchBefore(/[^\[\]\{\}\"\']*/);
+		var wordMatch = context.matchBefore(/[^\[\]{}\"\'<>]*/);
 
 		var singleWordMatch = context.matchBefore(/[\w-]*/);
-		var wordWithoutBrackets = context.matchBefore(/[^\{\[\]\}]*/);
+		var wordWithoutBrackets = context.matchBefore(/[^\{\[\]\}<>]*/);
 		var wordWithoutClosingBrackets = context.matchBefore(/[^\]\}>]*/);
 		var wordWithoutColon = context.matchBefore(/[^\:]*/);
 		var wordWithoutLessThan = context.matchBefore(/[^<]*/);
@@ -31,8 +31,8 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 		var textWithoutDollarAndLessThan = wordWithoutDollarAndLessThan ? wordWithoutDollarAndLessThan.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
 		var textWithoutDollarSlashAndLessThan = wordWithoutDollarSlashAndLessThan ? wordWithoutDollarSlashAndLessThan.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
 
-		var singleBracketMatch = context.matchBefore(new RegExp("(\\\[|\\\{])" + textWithoutBrackets));
-		var doubleBracketMatch = context.matchBefore(new RegExp("\\\[([^\\\[\\\]\\\{\\\}])*(\\\[|\\\{])" + textWithoutBrackets));
+		var singleBracketMatch = context.matchBefore(new RegExp("(\\\[|\\\{)" + textWithoutBrackets));
+		var doubleBracketMatch = context.matchBefore(new RegExp("\\\[([^\\\[\\\]\\\{\\\}])*(\\\[|\\\{)" + textWithoutBrackets));
 		var lessThanMatch = context.matchBefore(new RegExp("<" + textWithoutLessThan));
 		var doubleLessThanMatch = context.matchBefore(new RegExp("<<" + textWithoutLessThan));
 		var greaterThanMatch = context.matchBefore(new RegExp(">" + textWithoutGreaterThan));
@@ -41,19 +41,7 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 		var lessThanSlashDollarMatch = context.matchBefore(new RegExp("<\\\/\\\$" + textWithoutDollarSlashAndLessThan));
 		var colonMatch = context.matchBefore(new RegExp(":" + textWithoutColon));
 
-		var withinFilterTiddlerMatch = context.matchBefore(new RegExp("\\\[([^\\\[\\\]\\\{\\\}])*(\\\[|\\\{}])([^\\\[\\\]\\\{\\\}]*(\\\]|\\\})[^\\\[\\\]\\\{\\\}]+(\\\[|\\\{}]))*" + wordText));
-		var withinFilterTerminationMatch = context.matchBefore(new RegExp("(\\\]|\\\}|>)\\\]\\\s*(\\\[)?" + wordText));
-		var filterTerminationMatch = context.matchBefore(new RegExp("(\\\]|\\\}|>)\\\]\\\s*(\\\"|(\\\"\\\"\\\")|\\\')?(>)?" + wordText));
-
-		console.log(withinFilterTiddlerMatch);
-		console.log(withinFilterTerminationMatch);
-
-		if(withinFilterTiddlerMatch && !withinFilterTerminationMatch && !filterTerminationMatch) {
-			return {
-				from: wordMatch.from,
-				options: $tw.utils.codemirror.getTiddlerCompletionOptions(widget,editorSelection,context,wordText,deleteAutoCompletePrefix,closeBrackets)
-			}
-		}
+		console.log($tw);
 
 	};
 
