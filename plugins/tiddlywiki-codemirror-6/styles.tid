@@ -177,17 +177,13 @@ body {
 	}
 }
 
-<$list filter="[all[tiddlers]prefix[$:/state/codemirror-6/fullscreen]] +[limit[1]]" variable="fullscreenStateTiddler">
-
-<$list filter="[<fullscreenStateTiddler>get[text]match[yes]]" variable="ignore">
+<$list filter="[all[tiddlers]prefix[$:/state/codemirror-6/fullscreen]] :filter[get[text]match[yes]] +[limit[1]]" variable="fullscreenStateTiddler">
 
 <$let fullscreenTiddler={{{ [<fullscreenStateTiddler>removeprefix[$:/state/codemirror-6/fullscreen/]] }}} cssEscapedTitle={{{ [<fullscreenTiddler>escapecss[]] }}}>
 
 <<make-editor-fullscreen>>
 
 </$let>
-
-</$list>
 
 </$list>
 
