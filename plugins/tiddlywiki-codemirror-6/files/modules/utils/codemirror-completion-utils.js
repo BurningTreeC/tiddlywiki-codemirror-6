@@ -14,14 +14,17 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 
 		var singleWordMatch = context.matchBefore(/[\w-]*/);
 		var wordWithoutBrackets = context.matchBefore(/[^\{\[\]\}]*/);
+		var wordWithoutClosingBrackets = context.matchBefore(/[^\]\}>]*/);
 		var wordWithoutColon = context.matchBefore(/[^\:]*/);
 		var wordWithoutLessThan = context.matchBefore(/[^<]*/);
 		var wordWithoutGreaterThan = context.matchBefore(/[^>]*/);
 		var wordWithoutDollarAndLessThan = context.matchBefore(/[^\$<]*/);
 		var wordWithoutDollarSlashAndLessThan = context.matchBefore(/[^\/\$<]*/);
 
+		var wordText = wordMatch ? wordMatch.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
 		var singleWordText = singleWordMatch ? singleWordMatch.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
 		var textWithoutBrackets = wordWithoutBrackets ? wordWithoutBrackets.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
+		var textWithoutClosingBrackets = wordWithoutClosingBrackets ? wordWithoutClosingBrackets.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
 		var textWithoutColon = wordWithoutColon ? wordWithoutColon.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
 		var textWithoutLessThan = wordWithoutLessThan ? wordWithoutLessThan.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
 		var textWithoutGreaterThan = wordWithoutGreaterThan ? wordWithoutGreaterThan.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
@@ -37,6 +40,20 @@ exports.getTiddlerCompletions = function(widget,editorSelection,autoOpenOnTyping
 		var lessThanDollarMatch = context.matchBefore(new RegExp("<\\\$" + textWithoutDollarAndLessThan));
 		var lessThanSlashDollarMatch = context.matchBefore(new RegExp("<\\\/\\\$" + textWithoutDollarSlashAndLessThan));
 		var colonMatch = context.matchBefore(new RegExp(":" + textWithoutColon));
+
+		var withinFilterTiddlerMatch = context.matchBefore(new RegExp("\\\[([^\\\[\\\]\\\{\\\}])*(\\\[|\\\{}])([^\\\[\\\]\\\{\\\}]*(\\\]|\\\})[^\\\[\\\]\\\{\\\}]+(\\\[|\\\{}]))*" + wordText));
+		var withinFilterTerminationMatch = context.matchBefore(new RegExp("(\\\]|\\\}|>)\\\]\\\s*(\\\[)?" + wordText));
+		var filterTerminationMatch = context.matchBefore(new RegExp("(\\\]|\\\}|>)\\\]\\\s*(\\\"|(\\\"\\\"\\\")|\\\')?(>)?" + wordText));
+
+		console.log(withinFilterTiddlerMatch);
+		console.log(withinFilterTerminationMatch);
+
+		if(withinFilterTiddlerMatch && !withinFilterTerminationMatch && !filterTerminationMatch) {
+			return {
+				from: wordMatch.from,
+				options: $tw.utils.codemirror.getTiddlerCompletionOptions(widget,editorSelection,context,wordText,deleteAutoCompletePrefix,closeBrackets)
+			}
+		}
 
 	};
 
