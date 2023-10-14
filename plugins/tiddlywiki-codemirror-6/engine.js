@@ -66,12 +66,6 @@ function CodeMirrorEngine(options) {
 	var solarizedHighlightStyle = this.widget.wiki.getTiddler(this.widget.wiki.getTiddlerText("$:/palette")).fields["color-scheme"] === "light" ? this.solarizedLightHighlightStyle : this.solarizedDarkHighlightStyle;
 
 	var {CompletionContext,completeAnyWord} = CM["@codemirror/autocomplete"];
-	var completionMinLength = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completionMinLength") || 3);
-	var completeVariables = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeVariables") === "yes";
-	var completeWidgets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeWidgets") === "yes";
-	var completeFilters = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeFilters") === "yes";
-	var autoOpenOnTyping = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autoOpenOnTyping") === "yes";
-	var deleteAutoCompletePrefix = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/deleteAutoCompletePrefix") === "yes";
 	var autoCloseBrackets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/closeBrackets") === "yes";
 
 	this.actionCompletionSource = function(context) {
