@@ -262,11 +262,11 @@ function CodeMirrorEngine(options) {
 			editorExtensions.push(javascript());
 			var actionCompletions = javascriptLanguage.data.of({autocomplete: this.actionCompletionSource});
 			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(
+			/*editorExtensions.push(
 				javascriptLanguage.data.of({
-					autocomplete: scopeCompletionSource()
+					autocomplete: scopeCompletionSource(globalThis)
 				})
-			);
+			);*/
 			break;
 		case "application/json":
 			var {json,jsonLanguage} = CM["@codemirror/lang-json"];
