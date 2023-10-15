@@ -222,7 +222,8 @@ body {
 .tc-tiddler-edit-frame .tc-dropzone-editor > div > div.tc-tiddler-preview > .tc-tiddler-preview-preview {
 	grid-area: preview;
 	width: 100%;
-	word-break: break-word;
+	overflow-wrap: anywhere;
+	word-break: normal;
 	margin: 4px 0 4px 0;
 }
 
