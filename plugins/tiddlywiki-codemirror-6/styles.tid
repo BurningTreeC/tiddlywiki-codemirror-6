@@ -209,6 +209,7 @@ body {
 
 .tc-tiddler-frame .tc-tiddler-editor.tc-tiddler-preview .tc-tiddler-preview-preview {
 	grid-area: preview;
+	width: calc(100% - 3px);
 	overflow-wrap: anywhere;
 	word-break: normal;
 	border: 1px solid <<colour tiddler-editor-border>>;
@@ -219,6 +220,7 @@ body {
 .tc-tiddler-frame .tc-tiddler-editor.tc-tiddler-preview .tc-edit-texteditor,
 .tc-tiddler-frame .tc-tiddler-editor.tc-tiddler-preview-hidden .tc-edit-texteditor {
 	grid-area: editor;
+	width: 100%;
 }
 
 .tc-tiddler-frame .tc-tiddler-editor.tc-tiddler-preview canvas.tc-edit-bitmapeditor,
