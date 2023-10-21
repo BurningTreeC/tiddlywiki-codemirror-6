@@ -34,16 +34,13 @@ function CodeMirrorEngine(options) {
 	this.parentNode.insertBefore(this.domNode,this.nextSibling);
 	this.widget.domNodes.push(this.domNode);
 
-	var {minimalSetup,basicSetup} = CM["codemirror"];
 	var {EditorView,dropCursor,keymap,highlightSpecialChars,drawSelection,highlightActiveLine,rectangularSelection,crosshairCursor,lineNumbers,highlightActiveLineGutter,placeholder,tooltips} = CM["@codemirror/view"];
 	var {defaultKeymap,standardKeymap,indentWithTab,history,historyKeymap,undo,redo} = CM["@codemirror/commands"];
-	var {language,indentUnit,defaultHighlightStyle,syntaxHighlighting,syntaxTree,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
-	var {Extension,EditorState,Compartment,EditorSelection,Prec} = CM["@codemirror/state"];
+	var {indentUnit,defaultHighlightStyle,syntaxHighlighting,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
+	var {EditorState,EditorSelection,Prec} = CM["@codemirror/state"];
 	var {searchKeymap,highlightSelectionMatches,openSearchPanel,closeSearchPanel} = CM["@codemirror/search"];
-	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus,acceptCompletion} = CM["@codemirror/autocomplete"];
+	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus,acceptCompletion,completeAnyWord} = CM["@codemirror/autocomplete"];
 	var {lintKeymap} = CM["@codemirror/lint"];
-
-	var {Tree,Parser} = CM["@lezer/common"];
 
 	this.editorSelection = EditorSelection;
 	this.completionStatus = completionStatus;
@@ -56,8 +53,8 @@ function CodeMirrorEngine(options) {
 	this.solarizedLightTheme = EditorView.theme({},{dark:false});
 	this.solarizedDarkTheme = EditorView.theme({},{dark:true});
 
-	var {styleTags,tags} = CM["@lezer/highlight"];
-	var {HighlightStyle,TagStyle,syntaxHighlighting} = CM["@codemirror/language"];
+	var {tags} = CM["@lezer/highlight"];
+	var {HighlightStyle,syntaxHighlighting} = CM["@codemirror/language"];
 
 	this.solarizedLightHighlightStyle = $tw.utils.codemirror.getSolarizedLightHighlightStyle(HighlightStyle,tags);
 	this.solarizedDarkHighlightStyle = $tw.utils.codemirror.getSolarizedDarkHighlightStyle(HighlightStyle,tags);
@@ -65,7 +62,6 @@ function CodeMirrorEngine(options) {
 	var solarizedTheme = this.widget.wiki.getTiddler(this.widget.wiki.getTiddlerText("$:/palette")).fields["color-scheme"] === "light" ? this.solarizedLightTheme : this.solarizedDarkTheme;
 	var solarizedHighlightStyle = this.widget.wiki.getTiddler(this.widget.wiki.getTiddlerText("$:/palette")).fields["color-scheme"] === "light" ? this.solarizedLightHighlightStyle : this.solarizedDarkHighlightStyle;
 
-	var {CompletionContext,completeAnyWord} = CM["@codemirror/autocomplete"];
 	var autoCloseBrackets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/closeBrackets") === "yes";
 
 	this.actionCompletionSource = function(context) {
@@ -168,7 +164,6 @@ function CodeMirrorEngine(options) {
 		tooltips({
 			parent: self.domNode.ownerDocument.body
 		}),
-		//basicSetup,
 		highlightSpecialChars(),
 		history(), //{newGroupDelay: 0, joinToEvent: function() { return false; }}),
 		drawSelection(),
@@ -296,6 +291,7 @@ function CodeMirrorEngine(options) {
 		parent: this.domNode,
 		state: state
 	};
+
 	this.cm = new EditorView(editorOptions);
 };
 
@@ -364,8 +360,6 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 Set the text of the engine if it doesn't currently have focus
 */
 CodeMirrorEngine.prototype.setText = function(text,type) {
-	//var {Compartment} = CM["@codemirror/state"];
-	//var languageCompartment = new Compartment();
 	if(!this.cm.hasFocus) {
 		this.updateDomNodeText(text);
 	}
