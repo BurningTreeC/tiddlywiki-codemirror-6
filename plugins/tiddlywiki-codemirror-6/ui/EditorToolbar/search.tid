@@ -5,7 +5,17 @@ caption: Search
 description: toggle the visibility of the search panel
 condition: [<targetTiddler>!has[type]] [<targetTiddler>get[type]!prefix[image/]] [<targetTiddler>get[type]match[image/svg+xml]]
 
+\define get-focus-selector()
+[data-tiddler-title="$(cssEscapedTitle)$"].tc-tiddler-edit-frame .cm-panel.cm-search input
+\end
+
 <$action-sendmessage
 	$message="tm-edit-text-operation"
 	$param="search"
 />
+<$set name="cssEscapedTitle" value={{{ [<targetTiddler>escapecss[]] }}}>
+<$action-sendmessage
+	$message="tm-focus-selector"
+	$param=<<get-focus-selector>>
+/>
+</$set>
