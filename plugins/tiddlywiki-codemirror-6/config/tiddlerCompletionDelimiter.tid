@@ -1,0 +1,6 @@
+title: $:/config/codemirror-6/tiddlerMatchDelimiter
+caption: Tiddler completion delimiter
+description: The (literal) delimiter used to trigger tiddler autocompletion
+settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/input
+
+??

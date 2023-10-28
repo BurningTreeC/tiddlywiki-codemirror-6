@@ -90,6 +90,23 @@ function CodeMirrorEngine(options) {
 		});
 	};
 
+	this.tiddlerCompletionSource = function(context) {
+		var delimiter = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/tiddlerMatchDelimiter");
+		var delimiterRegex = $tw.utils.codemirror.validateRegex(delimiter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) ? new RegExp(delimiter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) : null;
+		if(delimiterRegex) {
+			var followingRegex = new RegExp("[^\\\s]*");
+			var completeRegex = new RegExp(delimiterRegex.source + followingRegex.source);
+			var completeMatch = context.matchBefore(completeRegex);
+			if(completeMatch) {
+				var tiddlers = self.widget.wiki.filterTiddlers(self.widget.wiki.getTiddlerText("$:/config/codemirror-6/tiddlerFilter"));
+				return {
+					from: completeMatch.from + delimiter.length,
+					options: self.getTiddlerCompletionOptions(tiddlers,completeMatch.text.length - (completeMatch.text.length - delimiter.length))
+				}
+			}
+		}
+	};
+
 	var selectOnOpen = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/selectOnOpen") === "yes";
 	var autocompleteIcons = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteIcons") === "yes";
 	var maxRenderedOptions = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/maxRenderedOptions"));
@@ -244,19 +261,25 @@ function CodeMirrorEngine(options) {
 			var {tiddlywiki,tiddlywikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
 			editorExtensions.push(tiddlywiki());
 			var actionCompletions = tiddlywikiLanguage.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
 			break;
 		case "text/html":
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
 			editorExtensions.push(html({selfClosingTags: true}));
 			var actionCompletions = htmlLanguage.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = htmlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
 			break;
 		case "application/javascript":
 			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
 			editorExtensions.push(javascript());
 			var actionCompletions = javascriptLanguage.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = javascriptLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
 			/*editorExtensions.push(
 				javascriptLanguage.data.of({
 					autocomplete: scopeCompletionSource(globalThis)
@@ -267,20 +290,26 @@ function CodeMirrorEngine(options) {
 			var {json,jsonLanguage} = CM["@codemirror/lang-json"];
 			editorExtensions.push(json());
 			var actionCompletions = jsonLanguage.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = jsonLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
 			break;
 		case "text/css":
 			var {css,cssLanguage} = CM["@codemirror/lang-css"];
 			editorExtensions.push(css());
 			var actionCompletions = cssLanguage.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = cssLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
 			break;
 		case "text/markdown":
 		case "text/x-markdown":
 			var {markdown,markdownLanguage,markdownKeymap} = CM["@codemirror/lang-markdown"];
 			editorExtensions.push(markdown({base: markdownLanguage}));
 			var actionCompletions = markdownLanguage.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
 			editorExtensions.push(Prec.high(keymap.of(markdownKeymap)));
 			break;
 		default:
@@ -293,6 +322,27 @@ function CodeMirrorEngine(options) {
 	};
 
 	this.cm = new EditorView(editorOptions);
+};
+
+CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(tiddlers,prefixLength) {
+	var self = this;
+	var options = [];
+	$tw.utils.each(tiddlers,function(tiddler) {
+		options.push({label: tiddler, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
+			var applyFrom = from - prefixLength;
+			var apply = completion.label;
+			var applyTo = applyFrom + completion.label.length;
+			view.dispatch(view.state.changeByRange(function(range) {
+				var editorChanges = [{from:  applyFrom, to: to, insert: apply}];
+				var selectionRange = self.editorSelection.range(applyTo,applyTo);
+				return {
+					changes: editorChanges,
+					range: selectionRange
+				}
+			}));
+		}});
+	});
+	return options;
 };
 
 CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {

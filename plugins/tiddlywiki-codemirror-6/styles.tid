@@ -415,3 +415,7 @@ color: #495057;
     outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
 }
+
+.cm-completionIcon.cm-completionIcon-cm-tiddler:after {
+	content: '{{$:/config/codemirror-6/tiddlerCompletionIcon}}';
+}

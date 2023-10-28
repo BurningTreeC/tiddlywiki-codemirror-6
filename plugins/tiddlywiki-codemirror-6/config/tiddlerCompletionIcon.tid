@@ -1,0 +1,6 @@
+title: $:/config/codemirror-6/tiddlerCompletionIcon
+caption: Tiddler completion icon
+description: The icon used for tiddler completions
+settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/input
+
+🐟
