@@ -253,6 +253,7 @@ function CodeMirrorEngine(options) {
 	editorExtensions.push(indentUnit.of(cmIndentUnit));
 
 	var mode = this.widget.editType;
+	console.log(mode);
 	if(mode === "") {
 		mode = "text/vnd.tiddlywiki";
 	}
