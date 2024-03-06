@@ -58,6 +58,7 @@ body {
 
 .cm-scroller {
 	font-family: {{$:/themes/tiddlywiki/vanilla/settings/editorfontfamily}} !important;
+	scroll-behavior: smooth;
 }
 
 .cm-activeLine, .cm-activeLineGutter {
