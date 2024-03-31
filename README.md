@@ -37,6 +37,6 @@ git clone --depth=1 git@github.com:BurningTreeC/tiddlywiki-codemirror-6 $TIDDLYW
 "plugins": [
 	"plugins/first-plugin",
 	"plugins/second-plugin",
-	"tiddlywiki-codemirror-6/plugins/tiddlywiki-codemirror-6"
+	"tiddlywiki-codemirror-6/tiddlywiki-codemirror-6"
 	]
 ```
