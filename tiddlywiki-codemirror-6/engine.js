@@ -312,6 +312,38 @@ function CodeMirrorEngine(options) {
 			editorExtensions.push(Prec.high(tiddlerCompletions));
 			editorExtensions.push(Prec.high(keymap.of(markdownKeymap)));
 			break;
+		case "text/python":
+			var {python,pythonLanguage} = CM["@codemirror/lang-python"];
+			editorExtensions.push(python());
+			var actionCompletions = pythonLanguage.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = pythonLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
+			break;
+		case "text/php":
+			var {php,phpLanguage} = CM["@codemirror/lang-php"];
+			editorExtensions.push(php());
+			var actionCompletions = phpLanguage.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = phpLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
+			break;
+		case "text/rust":
+			var {rust,rustLanguage} = CM["@codemirror/lang-rust"];
+			editorExtensions.push(rust());
+			var actionCompletions = rustLanguage.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = rustLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
+			break;
+		case "text/yaml":
+			var {yaml,yamlLanguage} = CM["@codemirror/lang-yaml"];
+			editorExtensions.push(yaml());
+			var actionCompletions = yamlLanguage.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = yamlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
+			break;
 		default:
 			break;
 	};

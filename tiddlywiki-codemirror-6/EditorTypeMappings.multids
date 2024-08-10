@@ -10,3 +10,7 @@ text/vnd.tiddlywiki: codemirror-6
 text/x-markdown: codemirror-6
 text/markdown: codemirror-6
 text/x-tiddlywiki: codemirror-6
+text/python: codemirror-6
+text/rust: codemirror-6
+text/php: codemirror-6
+text/yaml: codemirror-6
