@@ -400,13 +400,13 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 		this.dragCancel = false;
 		return true;
 	}
-	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && this.closeSearchPanel(this.cm)) {
-		var deleteTiddler = this.widget.getVariable("qualifiedSearchPanelState");
-		this.widget.wiki.deleteTiddler(deleteTiddler);
+	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && (this.completionStatus(this.cm.state) === "active")) {
 		event.stopPropagation();
 		return false;
 	}
-	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && (this.completionStatus(this.cm.state) === "active")) {
+	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && this.closeSearchPanel(this.cm)) {
+		var deleteTiddler = this.widget.getVariable("qualifiedSearchPanelState");
+		this.widget.wiki.deleteTiddler(deleteTiddler);
 		event.stopPropagation();
 		return false;
 	}
