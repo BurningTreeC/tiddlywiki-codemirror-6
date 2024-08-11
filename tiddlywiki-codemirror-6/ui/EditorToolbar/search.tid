@@ -4,6 +4,7 @@ icon: $:/core/images/advanced-search-button
 caption: Search
 description: toggle the visibility of the search panel
 condition: [<targetTiddler>!has[type]] [<targetTiddler>get[type]!prefix[image/]] [<targetTiddler>get[type]match[image/svg+xml]]
+shortcuts: ((editor-search))
 
 \define get-focus-selector()
 [data-tiddler-title="$(cssEscapedTitle)$"].tc-tiddler-edit-frame .cm-panel.cm-search input
@@ -19,3 +20,8 @@ condition: [<targetTiddler>!has[type]] [<targetTiddler>get[type]!prefix[image/]]
 	$param=<<get-focus-selector>>
 />
 </$set>
+<%if [<qualifiedSearchPanelState>is[missing]] %>
+	<$action-setfield $tiddler=<<qualifiedSearchPanelState>> text="yes"/>
+<% else %>
+	<$action-deletetiddler $tiddler=<<qualifiedSearchPanelState>>/>
+<% endif %>

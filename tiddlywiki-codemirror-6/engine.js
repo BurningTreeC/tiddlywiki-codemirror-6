@@ -187,7 +187,7 @@ function CodeMirrorEngine(options) {
 		EditorState.allowMultipleSelections.of(true),
 		indentOnInput(),
 		syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
-		autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip"}, selectOnOpen: selectOnOpen, icons: autocompleteIcons, maxRenderedOptions: maxRenderedOptions}), //{activateOnTyping: false, closeOnBlur: false}),
+		autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip" }, selectOnOpen: selectOnOpen, icons: autocompleteIcons, maxRenderedOptions: maxRenderedOptions}), //{activateOnTyping: false, closeOnBlur: false}),
 		rectangularSelection(),
 		crosshairCursor(),
 		highlightSelectionMatches(),
