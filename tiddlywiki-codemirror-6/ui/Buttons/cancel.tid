@@ -5,6 +5,7 @@ description: {{$:/language/Buttons/Cancel/Hint}}
 
 \procedure cancel-tiddler-button-actions()
 <<delete-edittemplate-state-tiddlers>>
+<$action-deletetiddler $tiddler=<<qualifiedSearchPanelState>>/>
 <$action-sendmessage $message="tm-cancel-tiddler"/>
 \end
 \whitespace trim
