@@ -38,7 +38,7 @@ function CodeMirrorEngine(options) {
 	var {defaultKeymap,standardKeymap,indentWithTab,history,historyKeymap,undo,redo} = CM["@codemirror/commands"];
 	var {indentUnit,defaultHighlightStyle,syntaxHighlighting,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
 	var {EditorState,EditorSelection,Prec} = CM["@codemirror/state"];
-	var {searchKeymap,highlightSelectionMatches,openSearchPanel,closeSearchPanel} = CM["@codemirror/search"];
+	var {search,SearchQuery,searchKeymap,highlightSelectionMatches,openSearchPanel,closeSearchPanel,searchPanelOpen} = CM["@codemirror/search"];
 	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus,acceptCompletion,completeAnyWord} = CM["@codemirror/autocomplete"];
 	var {lintKeymap} = CM["@codemirror/lint"];
 
@@ -48,7 +48,15 @@ function CodeMirrorEngine(options) {
 	this.undo = undo;
 	this.redo = redo;
 	this.openSearchPanel = openSearchPanel;
-	this.closeSearchPanel = closeSearchPanel;
+
+	var cSP = function() {
+		closeSearchPanel(self.cm);
+	};
+	this.closeSearchPanel = function() {
+		var deleteTiddler = self.widget.getVariable("qualifiedSearchPanelState");
+		self.widget.wiki.deleteTiddler(deleteTiddler);
+		cSP();
+	};
 
 	this.solarizedLightTheme = EditorView.theme({},{dark:false});
 	this.solarizedDarkTheme = EditorView.theme({},{dark:true});
@@ -181,6 +189,7 @@ function CodeMirrorEngine(options) {
 		tooltips({
 			parent: self.domNode.ownerDocument.body
 		}),
+		search(),
 		highlightSpecialChars(),
 		history(), //{newGroupDelay: 0, joinToEvent: function() { return false; }}),
 		drawSelection(),
@@ -212,7 +221,7 @@ function CodeMirrorEngine(options) {
 				var text = self.cm.state.doc.toString();
 				self.widget.saveChanges(text);
 			}
-		}),
+		})
 	];
 
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes") {
@@ -347,12 +356,11 @@ function CodeMirrorEngine(options) {
 		default:
 			break;
 	};
-	var state = EditorState.create({doc: options.value,extensions: editorExtensions});
+	this.editorState = EditorState.create({doc: options.value,extensions: editorExtensions});
 	var editorOptions = {
 		parent: this.domNode,
-		state: state
+		state: this.editorState
 	};
-
 	this.cm = new EditorView(editorOptions);
 };
 
