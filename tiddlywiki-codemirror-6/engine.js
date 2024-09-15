@@ -108,15 +108,14 @@ function CodeMirrorEngine(options) {
 			if(completeMatch) {
 				var tiddlers = self.widget.wiki.filterTiddlers(self.widget.wiki.getTiddlerText("$:/config/codemirror-6/tiddlerFilter"));
 				var userTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/AutoComplete]!is[draft]]");
-				var userTiddlerEntries = [];
+				var userCompletions = [];
 				$tw.utils.each(userTiddlers,function(userTiddler) {
-					var userTiddlerEntry = self.widget.wiki.getTiddlerText(userTiddler);
-					userTiddlerEntries.push(userTiddlerEntry);
+					var userCompletion = self.widget.wiki.getTiddlerText(userTiddler);
+					userCompletions.push(userCompletion);
 				});
-				tiddlers = tiddlers.concat(userTiddlerEntries);
 				return {
 					from: completeMatch.from + delimiter.length,
-					options: self.getTiddlerCompletionOptions(tiddlers,completeMatch.text.length - (completeMatch.text.length - delimiter.length))
+					options: self.getTiddlerCompletionOptions(tiddlers,userCompletions,completeMatch.text.length - (completeMatch.text.length - delimiter.length))
 				}
 			}
 		}
@@ -371,22 +370,30 @@ function CodeMirrorEngine(options) {
 	this.cm = new EditorView(editorOptions);
 };
 
-CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(tiddlers,prefixLength) {
+CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(tiddlers,userCompletions,prefixLength) {
 	var self = this;
 	var options = [];
+	function applyCompletion(view,completion,from,to) {
+		var applyFrom = from - prefixLength;
+		var apply = completion.label;
+		var applyTo = applyFrom + completion.label.length;
+		view.dispatch(view.state.changeByRange(function(range) {
+			var editorChanges = [{from:  applyFrom, to: to, insert: apply}];
+			var selectionRange = self.editorSelection.range(applyTo,applyTo);
+			return {
+				changes: editorChanges,
+				range: selectionRange
+			}
+		}));
+	}
 	$tw.utils.each(tiddlers,function(tiddler) {
 		options.push({label: tiddler, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
-			var applyFrom = from - prefixLength;
-			var apply = completion.label;
-			var applyTo = applyFrom + completion.label.length;
-			view.dispatch(view.state.changeByRange(function(range) {
-				var editorChanges = [{from:  applyFrom, to: to, insert: apply}];
-				var selectionRange = self.editorSelection.range(applyTo,applyTo);
-				return {
-					changes: editorChanges,
-					range: selectionRange
-				}
-			}));
+			applyCompletion(view,completion,from,to);
+		}});
+	});
+	$tw.utils.each(userCompletions,function(userCompletion) {
+		options.push({label: userCompletion, type: "cm-user-completion", boost: 99, apply: function(view,completion,from,to) {
+			applyCompletion(view,completion,from,to);
 		}});
 	});
 	return options;

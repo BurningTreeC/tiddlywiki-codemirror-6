@@ -373,3 +373,7 @@ color: #495057;
 .cm-completionIcon.cm-completionIcon-cm-tiddler:after {
 	content: '{{$:/config/codemirror-6/tiddlerCompletionIcon}}';
 }
+
+.cm-completionIcon.cm-completionIcon-cm-user-completion:after {
+	content: '{{$:/config/codemirror-6/userCompletionIcon}}';
+}
