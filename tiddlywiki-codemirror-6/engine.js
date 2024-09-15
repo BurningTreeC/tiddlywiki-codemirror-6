@@ -107,6 +107,13 @@ function CodeMirrorEngine(options) {
 			var completeMatch = context.matchBefore(completeRegex);
 			if(completeMatch) {
 				var tiddlers = self.widget.wiki.filterTiddlers(self.widget.wiki.getTiddlerText("$:/config/codemirror-6/tiddlerFilter"));
+				var userTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/AutoComplete]!is[draft]]");
+				var userTiddlerEntries = [];
+				$tw.utils.each(userTiddlers,function(userTiddler) {
+					var userTiddlerEntry = self.widget.wiki.getTiddlerText(userTiddler);
+					userTiddlerEntries.push(userTiddlerEntry);
+				});
+				tiddlers = tiddlers.concat(userTiddlerEntries);
 				return {
 					from: completeMatch.from + delimiter.length,
 					options: self.getTiddlerCompletionOptions(tiddlers,completeMatch.text.length - (completeMatch.text.length - delimiter.length))
