@@ -14,3 +14,6 @@ text/python: codemirror-6
 text/rust: codemirror-6
 text/php: codemirror-6
 text/yaml: codemirror-6
+text/go: codemirror-6
+text/sql: codemirror-6
+text/cpp: codemirror-6

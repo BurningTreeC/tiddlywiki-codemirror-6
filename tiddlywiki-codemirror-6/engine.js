@@ -385,10 +385,26 @@ function CodeMirrorEngine(options) {
 			editorExtensions.push(Prec.high(tiddlerCompletions));
 			break;
 		case "text/cpp":
-			var {cpp,cppLanguage} = CM["@codemirror/lang-go"];
+			var {cpp,cppLanguage} = CM["@codemirror/lang-cpp"];
 			editorExtensions.push(cpp());
 			var actionCompletions = cppLanguage.data.of({autocomplete: this.actionCompletionSource});
 			var tiddlerCompletions = cppLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
+			break;
+		case "text/xml":
+			var {xml,xmlLanguage} = CM["@codemirror/lang-xml"];
+			editorExtensions.push(xml());
+			var actionCompletions = xmlLanguage.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = xmlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
+			break;
+		case "text/sql":
+			var {sql,StandardSQL,PostgreSQL,MySQL,MariaSQL,MSSQL,SQLite,Cassandra,PLSQL} = CM["@codemirror/lang-sql"];
+			editorExtensions.push(sql({ dialect: StandardSQL }));
+			var actionCompletions = StandardSQL.language.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = StandardSQL.language.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(actionCompletions));
 			editorExtensions.push(Prec.high(tiddlerCompletions));
 			break;
