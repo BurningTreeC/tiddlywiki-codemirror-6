@@ -402,9 +402,39 @@ function CodeMirrorEngine(options) {
 			break;
 		case "text/sql":
 			var {sql,StandardSQL,PostgreSQL,MySQL,MariaSQL,MSSQL,SQLite,Cassandra,PLSQL} = CM["@codemirror/lang-sql"];
-			editorExtensions.push(sql({ dialect: StandardSQL }));
-			var actionCompletions = StandardSQL.language.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = StandardSQL.language.data.of({autocomplete: this.tiddlerCompletionSource});
+			var userSQLDialect;
+			switch(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/sqlDialect")) {
+				case "StandardSQL":
+					userSQLDialect = StandardSQL;
+					break;
+				case "PostgreSQL":
+					userSQLDialect = PostgreSQL;
+					break;
+				case "MySQL":
+					userSQLDialect = MySQL;
+					break;
+				case "MariaSQL":
+					userSQLDialect = MariaSQL;
+					break;
+				case "MSSQL":
+					userSQLDialect = MSSQL;
+					break;
+				case "SQLite":
+					userSQLDialect = SQLite;
+					break;
+				case "Cassandra":
+					userSQLDialect = Cassandra;
+					break;
+				case "PLSQL":
+					userSQLDialect = PLSQL;
+					break;
+				default:
+					userSQLDialect = StandardSQL;
+					break;
+			}
+			editorExtensions.push(sql({ dialect: userSQLDialect }));
+			var actionCompletions = userSQLDialect.language.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = userSQLDialect.language.data.of({autocomplete: this.tiddlerCompletionSource});
 			editorExtensions.push(Prec.high(actionCompletions));
 			editorExtensions.push(Prec.high(tiddlerCompletions));
 			break;

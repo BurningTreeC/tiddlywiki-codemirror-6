@@ -1,0 +1,8 @@
+title: $:/config/codemirror-6/sqlDialect
+caption: SQL Dialect
+description: The SQL Dialect used for SQL Tiddlers
+settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/select
+option-names: StandardSQL PostgreSQL MySQL MariaSQL MSSQL SQLite Cassandra PLSQL
+option-values: StandardSQL PostgreSQL MySQL MariaSQL MSSQL SQLite Cassandra PLSQL
+
+StandardSQL
