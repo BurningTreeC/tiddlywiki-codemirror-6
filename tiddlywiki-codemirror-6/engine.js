@@ -264,7 +264,24 @@ function CodeMirrorEngine(options) {
 		editorExtensions.push(placeholder(self.widget.editPlaceholder));
 	};
 
-	var cmIndentUnit = "	";
+	var cmIndentUnit = "",
+		cmIndentUnitValue;
+	var indentUnitValue = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentUnit");
+	switch(indentUnitValue) {
+		case "spaces":
+			cmIndentUnitValue = " ";
+			break;
+		case "tabs":
+			cmIndentUnitValue = "	";
+			break;
+		default:
+			cmIndentUnitValue = "	";
+			break;
+	};
+	var indentUnitMultiplier = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentUnitMultiplier"));
+	for(var i=0; i<indentUnitMultiplier; i++) {
+		cmIndentUnit += cmIndentUnitValue;
+	}
 	editorExtensions.push(indentUnit.of(cmIndentUnit));
 
 	var mode = this.widget.editType;

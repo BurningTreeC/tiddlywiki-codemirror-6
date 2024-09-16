@@ -1,0 +1,8 @@
+title: $:/config/codemirror-6/indentUnitMultiplier
+caption: Indent Unit Multiplier
+description: The Multiplier for the Unit used for Indentation
+settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/select
+option-names: 1 2 3 4 5 6 7 8 9 10 11 12
+option-values: 1 2 3 4 5 6 7 8 9 10 11 12
+
+1
