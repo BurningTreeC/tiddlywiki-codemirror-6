@@ -376,6 +376,22 @@ function CodeMirrorEngine(options) {
 			editorExtensions.push(Prec.high(actionCompletions));
 			editorExtensions.push(Prec.high(tiddlerCompletions));
 			break;
+		case "text/go":
+			var {go,goLanguage} = CM["@codemirror/lang-go"];
+			editorExtensions.push(go());
+			var actionCompletions = goLanguage.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = goLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
+			break;
+		case "text/cpp":
+			var {cpp,cppLanguage} = CM["@codemirror/lang-go"];
+			editorExtensions.push(cpp());
+			var actionCompletions = cppLanguage.data.of({autocomplete: this.actionCompletionSource});
+			var tiddlerCompletions = cppLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+			editorExtensions.push(Prec.high(actionCompletions));
+			editorExtensions.push(Prec.high(tiddlerCompletions));
+			break;
 		default:
 			break;
 	};
