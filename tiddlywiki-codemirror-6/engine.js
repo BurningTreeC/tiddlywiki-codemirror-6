@@ -150,6 +150,7 @@ function CodeMirrorEngine(options) {
 				self.dragCancel = true;
 				if(self.widget.isFileDropEnabled && ($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length)) {
 					event.preventDefault();
+					event.stopPropagation();
 					return true;
 				}
 				return false;
