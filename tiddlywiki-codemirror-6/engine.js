@@ -194,7 +194,7 @@ function CodeMirrorEngine(options) {
 			}
 		})),
 		tooltips({
-			parent: self.domNode.ownerDocument.body
+			//parent: self.domNode.ownerDocument.body
 		}),
 		search(),
 		highlightSpecialChars(),
