@@ -180,7 +180,7 @@ function CodeMirrorEngine(options) {
 				}
 				return false;
 			},
-			keydown(event,view) {
+			input(event,view) {
 				return self.handleKeydownEvent(event,view);
 			},
 			focus(event,view) {
