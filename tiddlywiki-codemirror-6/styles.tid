@@ -7,13 +7,25 @@ body {
 	overflow: hidden;
 }
 
+.tc-tiddlyflex-top-toolbar, .tc-tiddlyflex-footer, .tc-tiddlyflex-leftbar {
+	display: none;
+}
+
+.tc-tiddlyflex-sidebar, .tc-tiddlyflex-sidebar-resizer {
+	z-index: -1;
+}
+
+.tc-tiddlyflex-story-river-wrapper {
+	flex-basis: auto;
+}
+
 .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] {
 	position: fixed;
 	top: 0;
 	left: 0;
 	height: 100vh;
 	width: 100vw;
-	z-index: 1000;
+	z-index: 10000;
 }
 
 .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor {
@@ -22,7 +34,7 @@ body {
 	left: 0;
 	height: 100vh;
 	width: 100vw;
-	z-index: 1000;
+	z-index: 10000;
 	background-color: <<colour tiddler-background>>;
 }
 
@@ -41,6 +53,7 @@ body {
 .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div, .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div.tc-tiddler-preview,
 .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div:not(.tc-tiddler-preview), .tc-tiddler-edit-frame[data-tiddler-title="$(cssEscapedTitle)$"] .tc-dropzone-editor > div > div > div .cm-editor {
 	height: 100%;
+	width: 100%;
 }
 
 \end
@@ -178,7 +191,7 @@ body {
 	}
 }
 
-<$list filter="[all[tiddlers]prefix[$:/state/codemirror-6/fullscreen]] :filter[get[text]match[yes]] +[limit[1]]" variable="fullscreenStateTiddler">
+<$list filter="[all[tiddlers]prefix[$:/state/codemirror-6/fullscreen/]] :filter[get[text]match[yes]] +[limit[1]]" variable="fullscreenStateTiddler">
 
 <$let fullscreenTiddler={{{ [<fullscreenStateTiddler>removeprefix[$:/state/codemirror-6/fullscreen/]] }}} cssEscapedTitle={{{ [<fullscreenTiddler>escapecss[]] }}}>
 
