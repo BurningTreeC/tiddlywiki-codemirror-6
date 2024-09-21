@@ -114,15 +114,38 @@ function CodeMirrorEngine(options) {
 			var completeMatch = context.matchBefore(completeRegex);
 			if(completeMatch) {
 				var tiddlers = self.widget.wiki.filterTiddlers(self.widget.wiki.getTiddlerText("$:/config/codemirror-6/tiddlerFilter"));
+				var tiddlerCompletions = [];
+				var tiddlerCaptions = [];
+				$tw.utils.each(tiddlers,function(tiddler) {
+					var tid = self.widget.wiki.getTiddler(tiddler);
+					var tiddlerCompletion = tid.fields.title;
+					tiddlerCompletions.push(tiddlerCompletion);
+					var tiddlerCaption = tid.fields.caption || tiddlerCompletion;
+					tiddlerCaptions.push(tiddlerCaption);
+				});
 				var userTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/AutoComplete]!is[draft]]");
+				var userSnippets = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Snippet]!is[draft]]");
 				var userCompletions = [];
+				var userDescriptions = [];
 				$tw.utils.each(userTiddlers,function(userTiddler) {
-					var userCompletion = self.widget.wiki.getTiddlerText(userTiddler);
+					var tiddler = self.widget.wiki.getTiddler(userTiddler);
+					var userCompletion = tiddler.fields.text;
 					userCompletions.push(userCompletion);
+					var userDescription = tiddler.fields.description || userCompletion;
+					userDescriptions.push(userDescription);
+				});
+				$tw.utils.each(userSnippets,function(userSnippet) {
+					var tiddler = self.widget.wiki.getTiddler(userSnippet);
+					var userCompletion = tiddler.fields.text;
+					console.log(userCompletion);
+					userCompletions.push(userCompletion);
+					var userDescription = tiddler.fields.description || userCompletion;
+					console.log(userDescription);
+					userDescriptions.push(userDescription);
 				});
 				return {
 					from: completeMatch.from + delimiter.length,
-					options: self.getTiddlerCompletionOptions(tiddlers,userCompletions,completeMatch.text.length - (completeMatch.text.length - delimiter.length))
+					options: self.getTiddlerCompletionOptions(tiddlers,tiddlerCaptions,userCompletions,userDescriptions,completeMatch.text.length - (completeMatch.text.length - delimiter.length))
 				}
 			}
 		}
@@ -457,13 +480,12 @@ function CodeMirrorEngine(options) {
 	this.cm = new EditorView(editorOptions);
 };
 
-CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(tiddlers,userCompletions,prefixLength) {
+CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(tiddlers,tiddlerCaptions,userCompletions,userDescriptions,prefixLength) {
 	var self = this;
 	var options = [];
-	function applyCompletion(view,completion,from,to) {
+	function applyCompletion(view,completion,apply,from,to) {
 		var applyFrom = from - prefixLength;
-		var apply = completion.label;
-		var applyTo = applyFrom + completion.label.length;
+		var applyTo = applyFrom + apply.length;
 		view.dispatch(view.state.changeByRange(function(range) {
 			var editorChanges = [{from:  applyFrom, to: to, insert: apply}];
 			var selectionRange = self.editorSelection.range(applyTo,applyTo);
@@ -473,16 +495,20 @@ CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(tiddlers,userC
 			}
 		}));
 	}
-	$tw.utils.each(tiddlers,function(tiddler) {
-		options.push({label: tiddler, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
-			applyCompletion(view,completion,from,to);
+	for(var i=0; i<tiddlers.length; i++) {
+		var tiddlerCompletion = tiddlers[i],
+			tiddlerCaption = tiddlerCaptions[i];
+		options.push({label: tiddlerCaption, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
+			applyCompletion(view,completion,tiddlerCompletion,from,to);
 		}});
-	});
-	$tw.utils.each(userCompletions,function(userCompletion) {
-		options.push({label: userCompletion, type: "cm-user-completion", boost: 99, apply: function(view,completion,from,to) {
-			applyCompletion(view,completion,from,to);
+	};
+	for(i=0; i<userCompletions.length; i++) {
+		var userCompletion = userCompletions[i],
+			userDescription = userDescriptions[i];
+		options.push({label: userDescription, type: "cm-user-completion", boost: 99, apply: function(view,completion,from,to) {
+			applyCompletion(view,completion,userCompletion,from,to);
 		}});
-	});
+	};
 	return options;
 };
 
