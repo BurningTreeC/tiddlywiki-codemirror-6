@@ -47,15 +47,22 @@ function CodeMirrorEngine(options) {
 
 	this.undo = undo;
 	this.redo = redo;
-	this.openSearchPanel = openSearchPanel;
 
+	var oSP = function() {
+		return openSearchPanel(self.cm);
+	}
 	var cSP = function() {
-		closeSearchPanel(self.cm);
+		return closeSearchPanel(self.cm);
 	};
+	this.openSearchPanel = function() {
+		var searchPanelStateTiddler = self.widget.getVariable("qualifiedSearchPanelState");
+		self.widget.wiki.setText(searchPanelStateTiddler,"text",null,"yes");
+		return oSP();
+	}
 	this.closeSearchPanel = function() {
 		var deleteTiddler = self.widget.getVariable("qualifiedSearchPanelState");
 		self.widget.wiki.deleteTiddler(deleteTiddler);
-		cSP();
+		return cSP();
 	};
 
 	this.solarizedLightTheme = EditorView.theme({},{dark:false});
