@@ -22,6 +22,4 @@ shortcuts: ((editor-search))
 </$set>
 <%if [<qualifiedSearchPanelState>is[missing]] %>
 	<$action-setfield $tiddler=<<qualifiedSearchPanelState>> text="yes"/>
-<% else %>
-	<$action-deletetiddler $tiddler=<<qualifiedSearchPanelState>>/>
 <% endif %>
