@@ -483,8 +483,9 @@ function CodeMirrorEngine(options) {
 CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(tiddlers,tiddlerCaptions,userCompletions,userDescriptions,prefixLength) {
 	var self = this;
 	var options = [];
-	function applyCompletion(view,completion,apply,from,to) {
+	function applyCompletion(view,completion,from,to) {
 		var applyFrom = from - prefixLength;
+		var apply = completion.label;
 		var applyTo = applyFrom + apply.length;
 		view.dispatch(view.state.changeByRange(function(range) {
 			var editorChanges = [{from:  applyFrom, to: to, insert: apply}];
@@ -494,19 +495,19 @@ CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(tiddlers,tiddl
 				range: selectionRange
 			}
 		}));
-	}
+	};
 	for(var i=0; i<tiddlers.length; i++) {
 		var tiddlerCompletion = tiddlers[i],
 			tiddlerCaption = tiddlerCaptions[i];
-		options.push({label: tiddlerCaption, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
-			applyCompletion(view,completion,tiddlerCompletion,from,to);
+		options.push({displayLabel: tiddlerCaption, label: tiddlerCompletion, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
+			applyCompletion(view,completion,from,to);
 		}});
 	};
 	for(i=0; i<userCompletions.length; i++) {
 		var userCompletion = userCompletions[i],
 			userDescription = userDescriptions[i];
-		options.push({label: userDescription, type: "cm-user-completion", boost: 99, apply: function(view,completion,from,to) {
-			applyCompletion(view,completion,userCompletion,from,to);
+		options.push({displayLabel: userDescription, label: userCompletion, type: "cm-user-completion", boost: 99, apply: function(view,completion,from,to) {
+			applyCompletion(view,completion,from,to);
 		}});
 	};
 	return options;
