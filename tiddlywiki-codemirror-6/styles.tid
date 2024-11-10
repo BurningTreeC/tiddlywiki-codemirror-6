@@ -63,6 +63,9 @@ body {
 	color-scheme: {{{ [[$:/palette]get[text]!is[blank]] ~[[$:/palettes/vanilla]] +[get[color-scheme]] ~light }}};
 	background-color: <<colour tiddler-background>> !important;
 	color: <<colour foreground>> !important;
+	outline: none !important;
+	min-height: 100px;
+	box-shadow: inset 0 0 1px <<colour foreground>>;
 }
 
 .cm-content {
@@ -389,4 +392,9 @@ color: #495057;
 
 .cm-completionIcon.cm-completionIcon-cm-user-completion:after {
 	content: '{{$:/config/codemirror-6/userCompletionIcon}}';
+}
+
+.tc-tiddler-frame .tc-tiddler-editor.tc-tiddler-preview .tc-tiddler-preview-preview {
+	border: none;
+	box-shadow: inset 0 0 1px <<colour foreground>>;
 }

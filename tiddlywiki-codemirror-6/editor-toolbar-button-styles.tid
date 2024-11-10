@@ -1,0 +1,78 @@
+title: $:/plugins/BTC/tiddlywiki-codemirror-6/editor-toolbar-button-styles
+tags: $:/tags/Stylesheet
+
+\define box-shadow-light() rgba(45, 35, 66, 0.4) 0 2px 4px,rgba(45, 35, 66, 0.3) 0 7px 13px -3px,<<colour muted-foreground>> 0 -3px 0 inset
+\define box-shadow-dark() rgba(145, 135, 166, 0.4) 0 2px 4px,rgba(145, 135, 166, 0.3) 0 7px 13px -3px,<<colour muted-foreground>> 0 -3px 0 inset
+\define box-shadow-light-focus() <<colour muted-foreground>> 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, <<colour background>> 0 -3px 0 inset
+\define box-shadow-dark-focus() <<colour muted-foreground>> 0 0 0 1.5px inset, rgba(145, 135, 166, 0.4) 0 2px 4px, rgba(145, 135, 166, 0.3) 0 7px 13px -3px, <<colour background>> 0 -3px 0 inset
+\define box-shadow-light-hover() rgba(45, 35, 66, 0.4) 0 4px 8px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, <<colour muted-foreground>> 0 -3px 0 inset
+\define box-shadow-dark-hover() rgba(145, 135, 166, 0.4) 0 4px 8px, rgba(145, 135, 166, 0.3) 0 7px 13px -3px, <<colour muted-foreground>> 0 -3px 0 inset
+
+<$wikify name="box-shadow" text={{{ [{$:/palette}get[color-scheme]match[dark]then<box-shadow-dark>] :else[<box-shadow-light>] }}}>
+
+	.tc-text-editor-toolbar-item-wrapper button.tc-btn-invisible {
+		align-items: center;
+		appearance: none;
+		background-color: <<colour tiddler-background>>;
+		border-radius: 4px;
+		border-width: 0;
+		box-shadow: <<box-shadow>>;
+		box-sizing: border-box;
+		color: <<colour foreground>>;
+		cursor: pointer;
+		display: inline-flex;
+		font-family: "JetBrains Mono",monospace;
+		height: 32px;
+		justify-content: center;
+		line-height: 1;
+		list-style: none;
+		overflow: hidden;
+		padding-left: 8px;
+		padding-right: 8px;
+		position: relative;
+		text-align: left;
+		text-decoration: none;
+		transition: box-shadow .15s,transform .15s;
+		user-select: none;
+		-webkit-user-select: none;
+		touch-action: manipulation;
+		white-space: nowrap;
+		will-change: box-shadow,transform;
+		font-size: 16px;
+		fill: <<colour foreground>>;
+	}
+
+</$wikify>
+
+.tc-text-editor-toolbar-item-wrapper button.tc-btn-invisible.tc-text-editor-toolbar-item-adjunct {
+	padding-left: 3px;
+	padding-right: 3px;
+}
+
+<$wikify name="box-shadow" text={{{ [{$:/palette}get[color-scheme]match[dark]then<box-shadow-dark-focus>] :else[<box-shadow-light-focus>] }}}>
+
+	.tc-text-editor-toolbar-item-wrapper button.tc-btn-invisible:focus {
+		box-shadow: <<box-shadow>>;
+		fill: <<colour foreground>>;
+	}
+
+</$wikify>
+
+<$wikify name="box-shadow" text={{{ [{$:/palette}get[color-scheme]match[dark]then<box-shadow-dark-hover>] :else[<box-shadow-light-hover>] }}}>
+
+	.tc-text-editor-toolbar-item-wrapper button.tc-btn-invisible:hover {
+		box-shadow: <<box-shadow>>;
+		transform: translateY(-2px);
+		fill: <<colour foreground>>;
+	}
+
+</$wikify>
+
+.tc-text-editor-toolbar-item-wrapper button.tc-btn-invisible:active {
+	box-shadow: <<colour muted-foreground>> 0 3px 7px inset;
+	transform: translateY(2px);
+}
+
+.tc-text-editor-toolbar-item-wrapper .tc-drop-down button.tc-btn-invisible:hover svg {
+	fill: <<colour foreground>>;
+}
