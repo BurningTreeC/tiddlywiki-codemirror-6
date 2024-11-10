@@ -394,6 +394,10 @@ color: #495057;
 	content: '{{$:/config/codemirror-6/userCompletionIcon}}';
 }
 
+.tc-tiddler-frame .tc-edit-texteditor {
+	margin-bottom: 3px;
+}
+
 .tc-tiddler-frame .tc-tiddler-editor.tc-tiddler-preview .tc-tiddler-preview-preview {
 	border: none;
 	box-shadow: inset 0 0 1px <<colour foreground>>;
