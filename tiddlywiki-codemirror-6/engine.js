@@ -30,7 +30,7 @@ function CodeMirrorEngine(options) {
 	if(this.widget.editClass) {
 		this.domNode.className = this.widget.editClass;
 	}
-	this.domNode.style.display = "inline-block";
+	//this.domNode.style.display = "inline-block";
 	this.parentNode.insertBefore(this.domNode,this.nextSibling);
 	this.widget.domNodes.push(this.domNode);
 
@@ -511,6 +511,10 @@ CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(tiddlers,tiddl
 		}});
 	};
 	return options;
+};
+
+CodeMirrorEngine.prototype.assignDomNodeClasses = function() {
+	this.domNode.className = this.widget.getAttribute("class","");
 };
 
 CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {
