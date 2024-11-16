@@ -59,6 +59,9 @@ exports.prototype.refresh = function(changedTiddlers) {
 		this.refreshSelf();
 		return true;
 	}
+	if(changedAttributes["class"]) {
+		this.engine.assignDomNodeClasses();
+	}
 	// Call the base class refresh function
 	Object.getPrototypeOf(Object.getPrototypeOf(this)).refresh.call(this,changedTiddlers);
 };
