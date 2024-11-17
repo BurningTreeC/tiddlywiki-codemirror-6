@@ -261,6 +261,25 @@ function CodeMirrorEngine(options) {
 		})
 	];
 
+	var shortcutTiddlers = this.widget.wiki.getTiddlersWithTag("$:/tags/KeyboardShortcut/CodeMirror");
+	$tw.utils.each(shortcutTiddlers,function(shortcutTiddler) {
+		var tiddler = self.widget.wiki.getTiddler(shortcutTiddler);
+		var key = self.getPrintableShortcuts($tw.keyboardManager.parseKeyDescriptors(tiddler.fields.key))[0];
+		console.log(key);
+		var command = tiddler.fields.text;
+		var runCommand = CM["@codemirror/search"][command] || CM["@codemirror/commands"][command];
+		console.log(runCommand);
+		if(runCommand) {
+			editorExtensions.push(
+				Prec.highest(
+					keymap.of([
+						{ key: key, run: runCommand }
+					])
+				)
+			);
+		}
+	});
+
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes") {
 		editorExtensions.push(
 			keymap.of([
@@ -478,6 +497,20 @@ function CodeMirrorEngine(options) {
 		state: this.editorState
 	};
 	this.cm = new EditorView(editorOptions);
+};
+
+CodeMirrorEngine.prototype.getPrintableShortcuts = function(keyInfoArray) {
+	var result = [];
+	$tw.utils.each(keyInfoArray,function(keyInfo) {
+		if(keyInfo) {
+			result.push((keyInfo.ctrlKey ? "ctrl-" : "") + 
+					(keyInfo.shiftKey ? "shift-" : "") + 
+					(keyInfo.altKey ? "alt-" : "") + 
+					(keyInfo.metaKey ? self.metaKeyName : "") + 
+					(keyInfo.key));
+		}
+	});
+	return result;
 };
 
 CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(tiddlers,tiddlerCaptions,userCompletions,userDescriptions,prefixLength) {

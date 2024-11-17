@@ -7,6 +7,8 @@ module-type: codemirror-utils
 
 (function() {
 
+"use strict";
+
 exports.validateRegex = function(regex) {
 	try {
 		new RegExp(regex);

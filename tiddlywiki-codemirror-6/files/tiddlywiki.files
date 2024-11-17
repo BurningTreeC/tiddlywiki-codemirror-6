@@ -29,6 +29,13 @@
 				"module-type": "codemirror-utils"
 			}
 		},{
+			"file": "modules/keyboard.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/core/modules/keyboard.js",
+				"module-type": "global"
+			}
+		},{
 			"file": "modules/editor/operations/excise.js",
 			"fields": {
 				"type": "application/javascript",
@@ -124,6 +131,13 @@
 			"fields": {
 				"type": "application/javascript",
 				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/subclasses/editor/edit-codemirror-6.js",
+				"module-type": "widget-subclass"
+			}
+		},{
+			"file": "modules/subclasses/edit-shortcut.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/subclasses/edit-shortcut.js",
 				"module-type": "widget-subclass"
 			}
 		},{
