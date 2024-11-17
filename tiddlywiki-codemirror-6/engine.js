@@ -503,14 +503,11 @@ CodeMirrorEngine.prototype.getPrintableShortcuts = function(keyInfoArray) {
 	var result = [];
 	$tw.utils.each(keyInfoArray,function(keyInfo) {
 		if(keyInfo) {
-			var key;
-			if($tw.keyboardManager.conversionKeys[keyInfo.key]) {
-				key = Object.keys($tw.keyboardManager.conversionKeys).find(function(objectKey) {
-					return $tw.keyboardManager.conversionKeys[objectKey] === keyInfo.key;
-				});
-			} else {
-				key = keyInfo.key;
-			}
+			var key = Object.keys($tw.keyboardManager.conversionKeys).find(function(objectKey) {
+				return $tw.keyboardManager.conversionKeys[objectKey] === keyInfo.key;
+			});
+			key = key || keyInfo.key;
+			console.log(key);
 			result.push((keyInfo.ctrlKey ? "ctrl-" : "") + 
 					(keyInfo.shiftKey ? "shift-" : "") + 
 					(keyInfo.altKey ? "alt-" : "") + 
