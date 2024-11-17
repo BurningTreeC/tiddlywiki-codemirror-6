@@ -507,7 +507,6 @@ CodeMirrorEngine.prototype.getPrintableShortcuts = function(keyInfoArray) {
 				return $tw.keyboardManager.conversionKeys[objectKey] === keyInfo.key;
 			});
 			key = key || keyInfo.key;
-			console.log(key);
 			result.push((keyInfo.ctrlKey ? "ctrl-" : "") + 
 					(keyInfo.shiftKey ? "shift-" : "") + 
 					(keyInfo.altKey ? "alt-" : "") + 
