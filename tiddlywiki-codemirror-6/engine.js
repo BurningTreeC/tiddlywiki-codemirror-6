@@ -137,10 +137,8 @@ function CodeMirrorEngine(options) {
 				$tw.utils.each(userSnippets,function(userSnippet) {
 					var tiddler = self.widget.wiki.getTiddler(userSnippet);
 					var userCompletion = tiddler.fields.text;
-					console.log(userCompletion);
 					userCompletions.push(userCompletion);
 					var userDescription = tiddler.fields.description || userCompletion;
-					console.log(userDescription);
 					userDescriptions.push(userDescription);
 				});
 				return {
@@ -265,10 +263,8 @@ function CodeMirrorEngine(options) {
 	$tw.utils.each(shortcutTiddlers,function(shortcutTiddler) {
 		var tiddler = self.widget.wiki.getTiddler(shortcutTiddler);
 		var key = self.getPrintableShortcuts($tw.keyboardManager.parseKeyDescriptors(tiddler.fields.key))[0];
-		console.log(key);
 		var command = tiddler.fields.text;
 		var runCommand = CM["@codemirror/search"][command] || CM["@codemirror/commands"][command];
-		console.log(runCommand);
 		if(runCommand) {
 			editorExtensions.push(
 				Prec.highest(
@@ -504,7 +500,7 @@ CodeMirrorEngine.prototype.getPrintableShortcuts = function(keyInfoArray) {
 	$tw.utils.each(keyInfoArray,function(keyInfo) {
 		if(keyInfo) {
 			var key = Object.keys($tw.keyboardManager.conversionKeys).find(function(objectKey) {
-				return $tw.keyboardManager.conversionKeys[objectKey] === keyInfo.key;
+				return $tw.keyboardManager.conversionKeys[objectKey] === $tw.keyboardManager.upperCaseKey(keyInfo.key);
 			});
 			key = key || keyInfo.key;
 			result.push((keyInfo.ctrlKey ? "ctrl-" : "") + 
