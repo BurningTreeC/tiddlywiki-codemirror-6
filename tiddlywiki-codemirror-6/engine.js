@@ -584,19 +584,26 @@ function CodeMirrorEngine(options) {
 
 	this.updateKeymap = function() {
 		var commands = this.widget.shortcutActionList;
-		for(var i=0; i<commands.length; i++) {
-			var command = commands[i];
-			var runCommand = CM["@codemirror/search"][command] || CM["@codemirror/commands"][command];
-			removeShortcut(runCommand);
-			var keyInfoArray = this.widget.shortcutParsedList[i];
-			for(var k=0; k<keyInfoArray.length; k++) {
-				var kbShortcut = this.getPrintableShortcuts(keyInfoArray)[k];
-				if(runCommand) {
-					var shortcut = {
-						key: kbShortcut,
-						run: runCommand
+		if(commands) {
+			for(var i=0; i<commands.length; i++) {
+				var command = commands[i];
+				var runCommand = CM["@codemirror/search"][command] || CM["@codemirror/commands"][command];
+				removeShortcut(runCommand);
+				var keyInfoArray = this.widget.shortcutParsedList[i];
+				if(keyInfoArray) {
+					for(var k=0; k<keyInfoArray.length; k++) {
+						var kbShortcutArray = this.getPrintableShortcuts(keyInfoArray);
+						if(kbShortcutArray.length) {
+							var kbShortcut = kbShortcutArray[k] || "";
+							if(runCommand) {
+								var shortcut = {
+									key: kbShortcut,
+									run: runCommand
+								}
+								addShortcut(shortcut,runCommand);
+							}
+						}
 					}
-					addShortcut(shortcut,runCommand);
 				}
 			}
 		}
