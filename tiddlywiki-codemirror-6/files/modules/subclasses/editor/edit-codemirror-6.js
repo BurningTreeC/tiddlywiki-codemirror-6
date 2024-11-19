@@ -20,6 +20,53 @@ exports.constructor = function(parseTreeNode,options) {
 
 exports.prototype = {};
 
+exports.prototype.render = function(parent,nextSibling) {
+	// Call the base class render function
+	Object.getPrototypeOf(Object.getPrototypeOf(this)).render.call(this,parent,nextSibling);
+	this.shortcutKeysList = [], // Stores the shortcut-key descriptors
+	this.shortcutActionList = [], // Stores the corresponding action strings
+	this.shortcutParsedList = []; // Stores the parsed key descriptors
+	this.shortcutPriorityList = []; // Stores the parsed shortcut priority
+	this.updateShortcutLists(this.getShortcutTiddlerList());
+	this.engine.updateKeymap();
+};
+
+exports.prototype.getShortcutTiddlerList = function() {
+	return this.wiki.getTiddlersWithTag("$:/tags/KeyboardShortcut/CodeMirror");
+};
+
+exports.prototype.detectNewShortcuts = function(changedTiddlers) {
+	var shortcutConfigTiddlers = [],
+		handled = false;
+	$tw.utils.each($tw.keyboardManager.lookupNames,function(platformDescriptor) {
+		var descriptorString = "$:/config/" + platformDescriptor + "/";
+		Object.keys(changedTiddlers).forEach(function(configTiddler) {
+			var configString = configTiddler.substr(0, configTiddler.lastIndexOf("/") + 1);
+			if(configString === descriptorString) {
+				shortcutConfigTiddlers.push(configTiddler);
+				handled = true;
+			}
+		});
+	});
+	if(handled) {
+		return $tw.utils.hopArray(changedTiddlers,shortcutConfigTiddlers);
+	} else {
+		return false;
+	}
+};
+
+exports.prototype.updateShortcutLists = function(tiddlerList) {
+	this.shortcutTiddlers = tiddlerList;
+	for(var i=0; i<tiddlerList.length; i++) {
+		var title = tiddlerList[i],
+			tiddlerFields = $tw.wiki.getTiddler(title).fields;
+		this.shortcutKeysList[i] = tiddlerFields.key !== undefined ? tiddlerFields.key : undefined;
+		this.shortcutActionList[i] = tiddlerFields.text;
+		this.shortcutParsedList[i] = this.shortcutKeysList[i] !== undefined ? $tw.keyboardManager.parseKeyDescriptors(this.shortcutKeysList[i]) : undefined;
+		this.shortcutPriorityList[i] = tiddlerFields.priority === "yes" ? true : false;
+	}
+};
+
 exports.prototype.execute = function() {
 	this.editType = this.getAttribute("type");
 	Object.getPrototypeOf(Object.getPrototypeOf(this)).execute.call(this);
@@ -61,6 +108,16 @@ exports.prototype.refresh = function(changedTiddlers) {
 	}
 	if(changedAttributes["class"]) {
 		this.engine.assignDomNodeClasses();
+	}
+	var newList = this.getShortcutTiddlerList();
+	var hasChanged = $tw.utils.hopArray(changedTiddlers,this.shortcutTiddlers) ? true :
+		($tw.utils.hopArray(changedTiddlers,newList) ? true :
+		(this.detectNewShortcuts(changedTiddlers))
+	);
+	// Re-cache shortcuts if something changed
+	if(hasChanged) {
+		this.updateShortcutLists(newList);
+		this.engine.updateKeymap();
 	}
 	// Call the base class refresh function
 	Object.getPrototypeOf(Object.getPrototypeOf(this)).refresh.call(this,changedTiddlers);

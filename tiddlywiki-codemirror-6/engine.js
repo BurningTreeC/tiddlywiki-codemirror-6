@@ -11,7 +11,7 @@ Text editor engine based on a CodeMirror instance
 /*jslint node: true, browser: true */
 /*global $tw: false */
 "use strict";
-	
+
 // Install CodeMirror
 if($tw.browser && !window.CM) {
 	require("$:/plugins/BTC/tiddlywiki-codemirror-6/lib/codemirror.js");
@@ -34,19 +34,43 @@ function CodeMirrorEngine(options) {
 	this.parentNode.insertBefore(this.domNode,this.nextSibling);
 	this.widget.domNodes.push(this.domNode);
 
-	var {EditorView,dropCursor,keymap,highlightSpecialChars,drawSelection,highlightActiveLine,rectangularSelection,crosshairCursor,lineNumbers,highlightActiveLineGutter,placeholder,tooltips} = CM["@codemirror/view"];
+	var {EditorView,ViewPlugin,dropCursor,keymap,highlightSpecialChars,drawSelection,highlightActiveLine,rectangularSelection,crosshairCursor,lineNumbers,highlightActiveLineGutter,placeholder,tooltips,showPanel,getPanel} = CM["@codemirror/view"];
 	var {defaultKeymap,standardKeymap,indentWithTab,history,historyKeymap,undo,redo} = CM["@codemirror/commands"];
 	var {indentUnit,defaultHighlightStyle,syntaxHighlighting,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
-	var {EditorState,EditorSelection,Prec} = CM["@codemirror/state"];
-	var {search,SearchQuery,searchKeymap,highlightSelectionMatches,openSearchPanel,closeSearchPanel,searchPanelOpen} = CM["@codemirror/search"];
+	var {EditorState,EditorSelection,Prec,Facet,StateField,StateEffect,Compartment} = CM["@codemirror/state"];
+	var {search,SearchQuery,searchKeymap,highlightSelectionMatches,openSearchPanel,closeSearchPanel,searchPanelOpen,gotoLine} = CM["@codemirror/search"];
 	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus,acceptCompletion,completeAnyWord} = CM["@codemirror/autocomplete"];
 	var {lintKeymap} = CM["@codemirror/lint"];
+
+	this.EditorView = EditorView;
+	this.EditorState = EditorState;
+	this.Prec = Prec;
+	this.keymap = keymap;
+
+	var keymapCompartment = new Compartment();
 
 	this.editorSelection = EditorSelection;
 	this.completionStatus = completionStatus;
 
 	this.undo = undo;
 	this.redo = redo;
+
+	this.showPanel = showPanel;
+	this.getPanel = getPanel;
+
+	var customKeymap = [];
+
+	var previousPanelState = [];
+
+	var cmCloseBracketsKeymap = closeBracketsKeymap,
+		cmDefaultKeymap = defaultKeymap,
+		cmSearchKeymap = searchKeymap,
+		cmHistoryKeymap = historyKeymap,
+		cmFoldKeymap = foldKeymap,
+		cmCompletionKeymap = completionKeymap,
+		cmLintKeymap = lintKeymap;
+
+	var cmKeymaps = [cmCloseBracketsKeymap,cmDefaultKeymap,cmSearchKeymap,cmHistoryKeymap,cmFoldKeymap,cmCompletionKeymap,cmLintKeymap,customKeymap];
 
 	var oSP = function() {
 		return openSearchPanel(self.cm);
@@ -55,15 +79,18 @@ function CodeMirrorEngine(options) {
 		return closeSearchPanel(self.cm);
 	};
 	this.openSearchPanel = function() {
-		var searchPanelStateTiddler = self.widget.getVariable("qualifiedSearchPanelState");
-		self.widget.wiki.setText(searchPanelStateTiddler,"text",null,"yes");
 		return oSP();
 	}
 	this.closeSearchPanel = function() {
-		var deleteTiddler = self.widget.getVariable("qualifiedSearchPanelState");
-		self.widget.wiki.deleteTiddler(deleteTiddler);
-		return cSP();
+		var state = cSP();
+		var cancelEditTiddlerStateTiddler = self.widget.getVariable("cancelEditTiddlerStateTiddler");
+		this.widget.wiki.deleteTiddler(cancelEditTiddlerStateTiddler);
+		return state;
 	};
+
+	this.searchPanelOpen = searchPanelOpen;
+
+	this.editorPanelState = [];
 
 	this.solarizedLightTheme = EditorView.theme({},{dark:false});
 	this.solarizedDarkTheme = EditorView.theme({},{dark:true});
@@ -235,15 +262,16 @@ function CodeMirrorEngine(options) {
 		rectangularSelection(),
 		crosshairCursor(),
 		highlightSelectionMatches(),
-		keymap.of([
-			...closeBracketsKeymap,
-			...defaultKeymap,
-			...searchKeymap,
-			...historyKeymap,
-			...foldKeymap,
-			...completionKeymap,
-			...lintKeymap
-		]),
+		keymapCompartment.of(keymap.of([
+			...cmCloseBracketsKeymap,
+			...cmDefaultKeymap,
+			...cmSearchKeymap,
+			...cmHistoryKeymap,
+			...cmFoldKeymap,
+			...cmCompletionKeymap,
+			...cmLintKeymap,
+			...customKeymap
+		])),
 		Prec.high(keymap.of({key: "Tab", run: acceptCompletion})),
 		EditorView.lineWrapping,
 		EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
@@ -251,30 +279,33 @@ function CodeMirrorEngine(options) {
 		EditorView.contentAttributes.of({autocorrect: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocorrect") === "yes"}),
 		EditorView.contentAttributes.of({translate: self.widget.wiki.getTiddlerText("$:/state/codemirror-6/translate/" + self.widget.editTitle) === "yes" ? "yes" : "no"}),
 		EditorView.perLineTextDirection.of(true),
-		EditorView.updateListener.of(function(v) {
-			if(v.docChanged) {
+		EditorView.updateListener.of(function(update) {
+			if(update.docChanged) {
 				var text = self.cm.state.doc.toString();
 				self.widget.saveChanges(text);
 			}
+			var panelState = update.view.state.facet(showPanel);
+			if(panelState !== previousPanelState) {
+				previousPanelState = panelState;
+				var panelStateLength = self.countPanelStateLength(panelState);
+				if(panelStateLength) {
+					self.editorPanelState = panelState;
+					var editorPanelStateTiddler = self.widget.getVariable("editorPanelStateTiddler");
+					if(!self.widget.wiki.tiddlerExists(editorPanelStateTiddler) || self.widget.wiki.getTiddlerText(editorPanelStateTiddler) !== panelStateLength) {
+						self.widget.wiki.setText(editorPanelStateTiddler,"text",null,panelStateLength);
+					}
+				} else {
+					self.editorPanelState = panelState;
+					var editorPanelStateTiddler = self.widget.getVariable("editorPanelStateTiddler");
+					var cancelEditTiddlerStateTiddler = self.widget.getVariable("cancelEditTiddlerStateTiddler");
+					if(self.widget.wiki.tiddlerExists(editorPanelStateTiddler)) {
+						self.widget.wiki.deleteTiddler(editorPanelStateTiddler);
+						self.widget.wiki.setText(cancelEditTiddlerStateTiddler,"text",null,"yes");
+					}
+				}
+			}
 		})
 	];
-
-	var shortcutTiddlers = this.widget.wiki.getTiddlersWithTag("$:/tags/KeyboardShortcut/CodeMirror");
-	$tw.utils.each(shortcutTiddlers,function(shortcutTiddler) {
-		var tiddler = self.widget.wiki.getTiddler(shortcutTiddler);
-		var key = self.getPrintableShortcuts($tw.keyboardManager.parseKeyDescriptors(tiddler.fields.key))[0];
-		var command = tiddler.fields.text;
-		var runCommand = CM["@codemirror/search"][command] || CM["@codemirror/commands"][command];
-		if(runCommand) {
-			editorExtensions.push(
-				Prec.highest(
-					keymap.of([
-						{ key: key, run: runCommand }
-					])
-				)
-			);
-		}
-	});
 
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes") {
 		editorExtensions.push(
@@ -296,12 +327,12 @@ function CodeMirrorEngine(options) {
 		editorExtensions.push(bracketMatching());
 	};
 
-	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes") {
+	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes" && this.widget.editClass.indexOf("tc-edit-texteditor-body") !== -1) {
 		editorExtensions.push(lineNumbers());
 		editorExtensions.push(foldGutter());
 	};
 
-	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLine") === "yes") {
+	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLine") === "yes" && this.widget.editClass.indexOf("tc-edit-texteditor-body") !== -1) {
 		editorExtensions.push(highlightActiveLine());
 		editorExtensions.push(highlightActiveLineGutter());
 	};
@@ -493,6 +524,93 @@ function CodeMirrorEngine(options) {
 		state: this.editorState
 	};
 	this.cm = new EditorView(editorOptions);
+
+	function addShortcut(shortcut,command) {
+		customKeymap = [...customKeymap,shortcut];
+		var updatedKeymap = keymap.of([
+			...cmCloseBracketsKeymap,
+			...cmDefaultKeymap,
+			...cmSearchKeymap,
+			...cmHistoryKeymap,
+			...cmFoldKeymap,
+			...cmCompletionKeymap,
+			...cmLintKeymap,
+			...customKeymap
+		]);
+		self.cm.dispatch({
+			effects: keymapCompartment.reconfigure(updatedKeymap)
+		});
+	};
+
+	function removeShortcut(command) {
+		cmCloseBracketsKeymap = cmCloseBracketsKeymap.filter(function(shortcut) {
+			return shortcut.run !== command;
+		});
+		cmDefaultKeymap = cmDefaultKeymap.filter(function(shortcut) {
+			return shortcut.run !== command;
+		});
+		cmSearchKeymap = cmSearchKeymap.filter(function(shortcut) {
+			return shortcut.run !== command;
+		});
+		cmHistoryKeymap = cmHistoryKeymap.filter(function(shortcut) {
+			return shortcut.run !== command;
+		});
+		cmFoldKeymap = cmFoldKeymap.filter(function(shortcut) {
+			return shortcut.run !== command;
+		});
+		cmCompletionKeymap = cmCompletionKeymap.filter(function(shortcut) {
+			return shortcut.run !== command;
+		});
+		cmLintKeymap = cmLintKeymap.filter(function(shortcut) {
+			return shortcut.run !== command;
+		});
+		customKeymap = customKeymap.filter(function(shortcut) {
+			return shortcut.run !== command;
+		});
+		var updatedKeymap = keymap.of([
+			...cmCloseBracketsKeymap,
+			...cmDefaultKeymap,
+			...cmSearchKeymap,
+			...cmHistoryKeymap,
+			...cmFoldKeymap,
+			...cmCompletionKeymap,
+			...cmLintKeymap,
+			...customKeymap
+		]);
+		self.cm.dispatch({
+			effects: keymapCompartment.reconfigure(updatedKeymap)
+		});
+	};
+
+	this.updateKeymap = function() {
+		var commands = this.widget.shortcutActionList;
+		for(var i=0; i<commands.length; i++) {
+			var command = commands[i];
+			var runCommand = CM["@codemirror/search"][command] || CM["@codemirror/commands"][command];
+			removeShortcut(runCommand);
+			var keyInfoArray = this.widget.shortcutParsedList[i];
+			for(var k=0; k<keyInfoArray.length; k++) {
+				var kbShortcut = this.getPrintableShortcuts(keyInfoArray)[k];
+				if(runCommand) {
+					var shortcut = {
+						key: kbShortcut,
+						run: runCommand
+					}
+					addShortcut(shortcut,runCommand);
+				}
+			}
+		}
+	}
+};
+
+CodeMirrorEngine.prototype.countPanelStateLength = function(array) {
+	var count = 0;
+	for(var i=0; i<array.length; i++) {
+		if(array[i]) {
+			count++;
+		}
+	}
+	return count;
 };
 
 CodeMirrorEngine.prototype.getPrintableShortcuts = function(keyInfoArray) {
@@ -569,6 +687,7 @@ CodeMirrorEngine.prototype.handleDragEnterEvent = function(event) {
 };
 
 CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
+	var self = this;
 	if($tw.keyboardManager.handleKeydownEvent(event,{onlyPriority: true})) {
 		this.dragCancel = false;
 		return true;
@@ -577,11 +696,26 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 		event.stopPropagation();
 		return false;
 	}
-	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && this.closeSearchPanel(this.cm)) {
-		var deleteTiddler = this.widget.getVariable("qualifiedSearchPanelState");
-		this.widget.wiki.deleteTiddler(deleteTiddler);
-		event.stopPropagation();
-		return false;
+	var panelStateLength = this.countPanelStateLength(this.editorPanelState);
+	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && panelStateLength) {
+		var lineDialogOpen = false;
+		if(panelStateLength === 1) {
+			lineDialogOpen = this.editorPanelState.some(function(fun) {
+				return fun && (fun.name === "createLineDialog");
+			});
+			if(lineDialogOpen) {
+				var editorPanelStateTiddler = this.widget.getVariable("editorPanelStateTiddler");
+				var cancelEditTiddlerStateTiddler = this.widget.getVariable("cancelEditTiddlerStateTiddler");
+				if(this.widget.wiki.tiddlerExists(editorPanelStateTiddler)) {
+					this.widget.wiki.deleteTiddler(editorPanelStateTiddler);
+					this.widget.wiki.setText(cancelEditTiddlerStateTiddler,"text",null,"lineDialogOpen");
+				}
+			}
+		}
+		if(!lineDialogOpen) {
+			event.stopPropagation();
+			return false;
+		}
 	}
 	var widget = this.widget;
 	var keyboardWidgets = [];
@@ -728,7 +862,7 @@ CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 	} else if(operations.type && (operations.type === "redo")) {
 		this.redo(this.cm);
 	} else if(operations.type && (operations.type === "search")) {
-		this.closeSearchPanel(this.cm) || this.openSearchPanel(this.cm);
+		this.closeSearchPanel() || this.openSearchPanel();
 	} else if((operations.type !== "focus-editor") && operations && operations.length) {
 		var ranges = this.cm.state.selection.ranges;
 		this.cm.dispatch(this.cm.state.changeByRange(function(range) {

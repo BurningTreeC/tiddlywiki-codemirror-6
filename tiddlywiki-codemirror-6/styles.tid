@@ -64,8 +64,15 @@ body {
 	background-color: <<colour tiddler-background>> !important;
 	color: <<colour foreground>> !important;
 	outline: none !important;
-	min-height: 100px;
 	box-shadow: inset 0 0 1px <<colour foreground>>;
+}
+
+.tc-edit-texteditor.tc-edit-texteditor-body .cm-editor {
+	min-height: 100px;
+}
+
+.tc-control-panel table .cm-panels input {
+	width: inherit;
 }
 
 .cm-content {
@@ -171,9 +178,13 @@ body {
 	color: <<colour cm-fold-placeholder-foreground>> !important;
 }
 
+input.cm-textfield {
+	font-size: 1em !important;
+}
+
 <$list filter="[{$:/config/TextEditor/EditorHeight/Mode}match[fixed]]" variable="ignore">
 
-.cm-editor {
+.tc-edit-texteditor.tc-edit-texteditor-body .cm-editor {
 	height: {{$:/config/TextEditor/EditorHeight/Height}};
 }
 

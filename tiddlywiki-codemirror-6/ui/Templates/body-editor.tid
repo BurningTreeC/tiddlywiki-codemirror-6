@@ -2,6 +2,8 @@ title: $:/core/ui/EditTemplate/body/editor
 
 \whitespace trim
 
+<$keyboard key="((cancel-edit-tiddler))" actions=<<editor-cancel-panel-actions>>>
+
 <$edit
 
   field="text"
@@ -43,3 +45,5 @@ title: $:/core/ui/EditTemplate/body/editor
 	variable="list-condition"
 ><$transclude/>
 </$list></$list></$set></$edit>
+
+</$keyboard>

@@ -105,11 +105,19 @@ KeyboardManager.prototype.parseKeyDescriptor = function(keyDescriptor,options) {
 };
 
 KeyboardManager.prototype.lowerCaseKey = function(key) {
-	return key.charAt(0).toLowerCase() + key.slice(1);
+	if(key) {
+		return key.charAt(0).toLowerCase() + key.slice(1);
+	} else {
+		return null;
+	}
 };
 
 KeyboardManager.prototype.upperCaseKey = function(key) {
-	return key.charAt(0).toUpperCase() + key.slice(1);
+	if(key) {
+		return key.charAt(0).toUpperCase() + key.slice(1);
+	} else {
+		return null;
+	}
 };
 
 KeyboardManager.prototype.getKeyComponent = function(info,components) {

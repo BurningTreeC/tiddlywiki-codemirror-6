@@ -20,6 +20,3 @@ shortcuts: ((editor-search))
 	$param=<<get-focus-selector>>
 />
 </$set>
-<%if [<qualifiedSearchPanelState>is[missing]] %>
-	<$action-setfield $tiddler=<<qualifiedSearchPanelState>> text="yes"/>
-<% endif %>

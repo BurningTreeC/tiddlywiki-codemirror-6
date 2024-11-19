@@ -3,7 +3,7 @@ title: $:/core/ui/EditTemplate
 
 \define delete-edittemplate-state-tiddlers()
 <$set name="safeNewFieldValueTiddlerPrefix" value=<<newFieldValueTiddlerPrefix>> emptyValue=<<qualify "$:/temp/NewFieldValue">> >
-	<$action-deletetiddler $filter="[<newFieldNameTiddler>] [prefix[$:/temp/NewFieldValue]prefix<safeNewFieldValueTiddlerPrefix>] [<newFieldNameInputTiddler>] [<newFieldNameSelectionTiddler>] [<newTagNameTiddler>] [<newTagNameInputTiddler>] [<newTagNameSelectionTiddler>] [<typeInputTiddler>] [<typeSelectionTiddler>] [prefix[$:/state/codemirror-6/fullscreen/]]"/>
+	<$action-deletetiddler $filter="[<newFieldNameTiddler>] [prefix[$:/temp/NewFieldValue]prefix<safeNewFieldValueTiddlerPrefix>] [<newFieldNameInputTiddler>] [<newFieldNameSelectionTiddler>] [<newTagNameTiddler>] [<newTagNameInputTiddler>] [<newTagNameSelectionTiddler>] [<typeInputTiddler>] [<typeSelectionTiddler>] [<editorPanelStateTiddler>] [<cancelEditTiddlerStateTiddler>]"/>
 </$set>
 \end
 
@@ -21,11 +21,15 @@ title: $:/core/ui/EditTemplate
 
 \define cancel-delete-tiddler-actions(message)
 \whitespace trim
-<%if [<qualifiedSearchPanelState>is[missing]] %>
-	<<delete-edittemplate-state-tiddlers>>
-	<$action-sendmessage $message="tm-$message$-tiddler"/>
-<% else %>
-	<$action-deletetiddler $tiddler=<<qualifiedSearchPanelState>>/>
+<<delete-edittemplate-state-tiddlers>>
+<$action-sendmessage $message="tm-$message$-tiddler"/>
+\end
+
+\define editor-cancel-panel-actions()
+<%if [<cancelEditTiddlerStateTiddler>get[text]match[yes]] %>
+<$action-deletetiddler $filter="[<cancelEditTiddlerStateTiddler>] [<editorPanelStateTiddler>]"/>
+<%elseif [<editorPanelStateTiddler>is[missing]] %>
+<<cancel-delete-tiddler-actions cancel>>
 <% endif %>
 \end
 
@@ -39,7 +43,8 @@ title: $:/core/ui/EditTemplate
 <$fieldmangler>
 <$vars
 	storyTiddler=<<currentTiddler>>
-	qualifiedSearchPanelState=<<qualify "$:/temp/searchpanel">>
+	editorPanelStateTiddler=<<qualify "$:/temp/EditorPanel">>
+	cancelEditTiddlerStateTiddler=<<qualify "$:/temp/CancelEditTiddler">>
 	newTagNameTiddler=<<qualify "$:/temp/NewTagName">>
 	newFieldNameTiddler=<<qualify "$:/temp/NewFieldName">>
 	newFieldValueTiddlerPrefix=<<qualify "$:/temp/NewFieldValue">>
