@@ -60,7 +60,11 @@ function CodeMirrorEngine(options) {
 
 	var customKeymap = [];
 
-	var previousPanelState = [];
+	this.previousPanelState = [];
+	this.previousFocusState = false;
+	this.editorPanelStateTiddler = this.widget.getVariable("editorPanelStateTiddler");
+	this.cancelEditTiddlerStateTiddler = this.widget.getVariable("cancelEditTiddlerStateTiddler");
+	this.editorFocusStateTiddler = this.widget.getVariable("editorFocusStateTiddler");
 
 	var cmCloseBracketsKeymap = closeBracketsKeymap,
 		cmDefaultKeymap = defaultKeymap,
@@ -69,8 +73,6 @@ function CodeMirrorEngine(options) {
 		cmFoldKeymap = foldKeymap,
 		cmCompletionKeymap = completionKeymap,
 		cmLintKeymap = lintKeymap;
-
-	var cmKeymaps = [cmCloseBracketsKeymap,cmDefaultKeymap,cmSearchKeymap,cmHistoryKeymap,cmFoldKeymap,cmCompletionKeymap,cmLintKeymap,customKeymap];
 
 	var oSP = function() {
 		return openSearchPanel(self.cm);
@@ -285,23 +287,34 @@ function CodeMirrorEngine(options) {
 				self.widget.saveChanges(text);
 			}
 			var panelState = update.view.state.facet(showPanel);
-			if(panelState !== previousPanelState) {
-				previousPanelState = panelState;
+			if(panelState !== self.previousPanelState) {
 				var panelStateLength = self.countPanelStateLength(panelState);
-				if(panelStateLength) {
-					self.editorPanelState = panelState;
-					var editorPanelStateTiddler = self.widget.getVariable("editorPanelStateTiddler");
-					if(!self.widget.wiki.tiddlerExists(editorPanelStateTiddler) || self.widget.wiki.getTiddlerText(editorPanelStateTiddler) !== panelStateLength) {
-						self.widget.wiki.setText(editorPanelStateTiddler,"text",null,panelStateLength);
+				var previousPanelStateLength = self.countPanelStateLength(self.previousPanelState);
+				self.previousPanelState = panelState;
+				self.editorPanelState = panelState;
+				var lineDialogOpen = false;
+				if(panelStateLength === 1) {
+					lineDialogOpen = panelState.some(function(fun) {
+						return fun && (fun.name === "createLineDialog");
+					});
+					if(!lineDialogOpen) {
+						self.widget.wiki.setText(self.editorPanelStateTiddler,"text",null,panelStateLength);
+					} else {
+						self.widget.wiki.setText(self.editorPanelStateTiddler,"text",null,"lineDialogOpen");
 					}
+				} else if(panelStateLength) {
+					self.widget.wiki.setText(self.editorPanelStateTiddler,"text",null,panelStateLength);
 				} else {
-					self.editorPanelState = panelState;
-					var editorPanelStateTiddler = self.widget.getVariable("editorPanelStateTiddler");
-					var cancelEditTiddlerStateTiddler = self.widget.getVariable("cancelEditTiddlerStateTiddler");
-					if(self.widget.wiki.tiddlerExists(editorPanelStateTiddler)) {
-						self.widget.wiki.deleteTiddler(editorPanelStateTiddler);
-						self.widget.wiki.setText(cancelEditTiddlerStateTiddler,"text",null,"yes");
-					}
+					self.widget.wiki.deleteTiddler(self.editorPanelStateTiddler);
+				}
+			}
+			var focusState = update.view.hasFocus;
+			if(focusState !== self.previousFocusState) {
+				self.previousFocusState = focusState;
+				if(focusState) {
+					self.widget.wiki.setText(self.editorFocusStateTiddler,"text",null,"yes");
+				} else {
+					self.widget.wiki.setText(self.editorFocusStateTiddler,"text",null,"no");
 				}
 			}
 		})
@@ -705,21 +718,9 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 	}
 	var panelStateLength = this.countPanelStateLength(this.editorPanelState);
 	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && panelStateLength) {
-		var lineDialogOpen = false;
-		if(panelStateLength === 1) {
-			lineDialogOpen = this.editorPanelState.some(function(fun) {
-				return fun && (fun.name === "createLineDialog");
-			});
-			if(lineDialogOpen) {
-				var editorPanelStateTiddler = this.widget.getVariable("editorPanelStateTiddler");
-				var cancelEditTiddlerStateTiddler = this.widget.getVariable("cancelEditTiddlerStateTiddler");
-				if(this.widget.wiki.tiddlerExists(editorPanelStateTiddler)) {
-					this.widget.wiki.deleteTiddler(editorPanelStateTiddler);
-					this.widget.wiki.setText(cancelEditTiddlerStateTiddler,"text",null,"lineDialogOpen");
-				}
-			}
-		}
-		if(!lineDialogOpen) {
+		var editorPanelState = this.widget.wiki.tiddlerExists(this.editorPanelStateTiddler) && this.widget.wiki.getTiddlerText(this.editorPanelStateTiddler) !== "lineDialogOpen";
+		var cancelEditTiddlerState = this.widget.wiki.getTiddlerText(this.cancelEditTiddlerStateTiddler) === "yes";
+		if(editorPanelState && !cancelEditTiddlerState) {
 			event.stopPropagation();
 			return false;
 		}

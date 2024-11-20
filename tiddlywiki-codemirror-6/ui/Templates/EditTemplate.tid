@@ -3,7 +3,7 @@ title: $:/core/ui/EditTemplate
 
 \define delete-edittemplate-state-tiddlers()
 <$set name="safeNewFieldValueTiddlerPrefix" value=<<newFieldValueTiddlerPrefix>> emptyValue=<<qualify "$:/temp/NewFieldValue">> >
-	<$action-deletetiddler $filter="[<newFieldNameTiddler>] [prefix[$:/temp/NewFieldValue]prefix<safeNewFieldValueTiddlerPrefix>] [<newFieldNameInputTiddler>] [<newFieldNameSelectionTiddler>] [<newTagNameTiddler>] [<newTagNameInputTiddler>] [<newTagNameSelectionTiddler>] [<typeInputTiddler>] [<typeSelectionTiddler>] [<editorPanelStateTiddler>] [<cancelEditTiddlerStateTiddler>]"/>
+	<$action-deletetiddler $filter="[<newFieldNameTiddler>] [prefix[$:/temp/NewFieldValue]prefix<safeNewFieldValueTiddlerPrefix>] [<newFieldNameInputTiddler>] [<newFieldNameSelectionTiddler>] [<newTagNameTiddler>] [<newTagNameInputTiddler>] [<newTagNameSelectionTiddler>] [<typeInputTiddler>] [<typeSelectionTiddler>] [<editorPanelStateTiddler>] [prefix[$:/state/codemirror-6/fullscreen/]]"/>
 </$set>
 \end
 
@@ -26,9 +26,11 @@ title: $:/core/ui/EditTemplate
 \end
 
 \define editor-cancel-panel-actions()
-<%if [<cancelEditTiddlerStateTiddler>get[text]match[yes]] %>
-<$action-deletetiddler $filter="[<cancelEditTiddlerStateTiddler>] [<editorPanelStateTiddler>]"/>
-<%elseif [<editorPanelStateTiddler>is[missing]] %>
+<%if [<event-key>match[Escape]then<modifier>match[normal]] %>
+<%if [<editorFocusStateTiddler>get[text]match[yes]then<cancelEditTiddlerStateTiddler>!is[missing]] [<editorFocusStateTiddler>get[text]match[yes]then<editorPanelStateTiddler>is[missing]] [<editorFocusStateTiddler>get[text]match[yes]then<editorPanelStateTiddler>get[text]match[lineDialogOpen]] %>
+<<cancel-delete-tiddler-actions cancel>>
+<% endif %>
+<% else %>
 <<cancel-delete-tiddler-actions cancel>>
 <% endif %>
 \end
@@ -45,6 +47,7 @@ title: $:/core/ui/EditTemplate
 	storyTiddler=<<currentTiddler>>
 	editorPanelStateTiddler=<<qualify "$:/temp/EditorPanel">>
 	cancelEditTiddlerStateTiddler=<<qualify "$:/temp/CancelEditTiddler">>
+	editorFocusStateTiddler=<<qualify "$:/temp/EditorFocus">>
 	newTagNameTiddler=<<qualify "$:/temp/NewTagName">>
 	newFieldNameTiddler=<<qualify "$:/temp/NewFieldName">>
 	newFieldValueTiddlerPrefix=<<qualify "$:/temp/NewFieldValue">>
