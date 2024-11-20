@@ -69,8 +69,8 @@ exports.prototype.updateShortcutLists = function(tiddlerList) {
 };
 
 exports.prototype.execute = function() {
-	this.editType = this.getAttribute("type");
 	Object.getPrototypeOf(Object.getPrototypeOf(this)).execute.call(this);
+	this.editType = this.getAttribute("type","");
 };
 
 /*

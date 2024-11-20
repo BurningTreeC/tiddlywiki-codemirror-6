@@ -379,12 +379,15 @@ function CodeMirrorEngine(options) {
 	};
 
 	this.updateTiddlerType = function() {
-		var mode = this.widget.editType;
+		var mode = this.widget.getAttribute("type","");
 		if(mode === "") {
 			mode = "text/vnd.tiddlywiki";
 		}
 		switch(mode) {
 			case "text/vnd.tiddlywiki":
+			case "text/vnd.tiddlywiki-multiple":
+			case "text/plain":
+			case "application/x-tiddler-dictionary":
 				this.cm.dispatch({
 					effects: languageCompartment.reconfigure(tiddlywiki())
 				});
