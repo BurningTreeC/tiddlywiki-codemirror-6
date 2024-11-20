@@ -68,9 +68,7 @@ function CodeMirrorEngine(options) {
 
 	this.previousPanelState = [];
 	this.previousFocusState = false;
-	this.editorPanelStateTiddler = this.widget.getVariable("editorPanelStateTiddler");
 	this.cancelEditTiddlerStateTiddler = this.widget.getVariable("cancelEditTiddlerStateTiddler");
-	this.editorFocusStateTiddler = this.widget.getVariable("editorFocusStateTiddler");
 
 	var cmCloseBracketsKeymap = closeBracketsKeymap,
 		cmDefaultKeymap = defaultKeymap,

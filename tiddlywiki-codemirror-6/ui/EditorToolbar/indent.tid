@@ -11,3 +11,4 @@ shortcuts: ((toggle-indent))
 <% else %>
 	<$action-deletetiddler $tiddler="$:/config/codemirror-6/indentWithTab"/>
 <% endif %>
+<$action-sendmessage $message="tm-edit-text-operation" $param="focus-editor"/>

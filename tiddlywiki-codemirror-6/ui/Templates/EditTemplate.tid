@@ -45,9 +45,7 @@ title: $:/core/ui/EditTemplate
 <$fieldmangler>
 <$vars
 	storyTiddler=<<currentTiddler>>
-	editorPanelStateTiddler=<<qualify "$:/temp/EditorPanel">>
 	cancelEditTiddlerStateTiddler=<<qualify "$:/temp/CancelEditTiddler">>
-	editorFocusStateTiddler=<<qualify "$:/temp/EditorFocus">>
 	newTagNameTiddler=<<qualify "$:/temp/NewTagName">>
 	newFieldNameTiddler=<<qualify "$:/temp/NewFieldName">>
 	newFieldValueTiddlerPrefix=<<qualify "$:/temp/NewFieldValue">>
