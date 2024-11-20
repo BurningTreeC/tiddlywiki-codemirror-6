@@ -1,0 +1,15 @@
+title: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/EditorToolbar/spellcheck
+tags: $:/tags/EditorToolbar
+icon: $:/plugins/BTC/tiddlywiki-codemirror-6/icons/spellcheck
+caption: Spellcheck
+description: toggle spellchecking on and off
+condition: [<targetTiddler>!has[type]] [<targetTiddler>get[type]!prefix[image/]] [<targetTiddler>get[type]match[image/svg+xml]]
+shortcuts: ((spellcheck))
+
+<%if [{$:/config/codemirror-6/spellcheck}match[no]] %>
+	<$action-setfield $tiddler="$:/config/codemirror-6/spellcheck" text="yes"/>
+<% else %>
+	<$action-deletetiddler $tiddler="$:/config/codemirror-6/spellcheck"/>
+<% endif %>
+<$action-sendmessage $message="tm-focus-selector" $param=".tc-tiddler-frame.tc-tiddler-edit-frame input"/>
+<$action-sendmessage $message="tm-edit-text-operation" $param="focus-editor"/>

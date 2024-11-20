@@ -52,6 +52,10 @@ function CodeMirrorEngine(options) {
 	var languageCompartment = new Compartment();
 	var actionCompletionsCompartment = new Compartment();
 	var tiddlerCompletionsCompartment = new Compartment();
+	var tabindexCompartment = new Compartment();
+	var spellcheckCompartment = new Compartment();
+	var autocorrectCompartment = new Compartment();
+	var translateCompartment = new Compartment();
 
 	this.editorSelection = EditorSelection;
 	this.completionStatus = completionStatus;
@@ -288,10 +292,10 @@ function CodeMirrorEngine(options) {
 		])),
 		Prec.high(keymap.of({key: "Tab", run: acceptCompletion})),
 		EditorView.lineWrapping,
-		EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""}),
-		EditorView.contentAttributes.of({spellcheck: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/spellcheck") === "yes"}),
-		EditorView.contentAttributes.of({autocorrect: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocorrect") === "yes"}),
-		EditorView.contentAttributes.of({translate: self.widget.wiki.getTiddlerText("$:/state/codemirror-6/translate/" + self.widget.editTitle) === "yes" ? "yes" : "no"}),
+		tabindexCompartment.of(EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""})),
+		spellcheckCompartment.of(EditorView.contentAttributes.of({spellcheck: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/spellcheck") === "yes"})),
+		autocorrectCompartment.of(EditorView.contentAttributes.of({autocorrect: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocorrect") === "yes"})),
+		translateCompartment.of(EditorView.contentAttributes.of({translate: self.widget.wiki.getTiddlerText("$:/state/codemirror-6/translate/" + self.widget.editTitle) === "yes" ? "yes" : "no"})),
 		EditorView.perLineTextDirection.of(true),
 		EditorView.updateListener.of(function(update) {
 			if(update.docChanged) {
@@ -633,6 +637,16 @@ function CodeMirrorEngine(options) {
 			this.updateKeymap();
 		}
 	}
+
+	this.toggleSpellcheck = function(enable) {
+		this.cm.dispatch({
+			effects: spellcheckCompartment.reconfigure(
+				EditorView.contentAttributes.of({
+					spellcheck: enable
+				})
+			)
+		});
+	};
 };
 
 CodeMirrorEngine.prototype.countPanelStateLength = function(array) {
