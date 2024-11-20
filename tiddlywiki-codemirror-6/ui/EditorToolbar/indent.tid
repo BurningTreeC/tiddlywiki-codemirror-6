@@ -1,0 +1,13 @@
+title: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/EditorToolbar/indent
+tags: $:/tags/EditorToolbar
+icon: $:/plugins/BTC/tiddlywiki-codemirror-6/icons/indent
+caption: IndentWithTab
+description: toggle indenting with Tab
+condition: [<targetTiddler>!has[type]] [<targetTiddler>get[type]!prefix[image/]] [<targetTiddler>get[type]match[image/svg+xml]]
+shortcuts: ((toggle-indent))
+
+<%if [{$:/config/codemirror-6/indentWithTab}match[yes]] %>
+	<$action-setfield $tiddler="$:/config/codemirror-6/indentWithTab" text="no"/>
+<% else %>
+	<$action-deletetiddler $tiddler="$:/config/codemirror-6/indentWithTab"/>
+<% endif %>
