@@ -27,7 +27,7 @@ title: $:/core/ui/EditTemplate
 
 \define editor-cancel-panel-actions()
 <%if [<event-key>match[Escape]then<modifier>match[normal]] %>
-<%if [<editorFocusStateTiddler>get[text]match[yes]then<cancelEditTiddlerStateTiddler>!is[missing]] [<editorFocusStateTiddler>get[text]match[yes]then<editorPanelStateTiddler>is[missing]] [<editorFocusStateTiddler>get[text]match[yes]then<editorPanelStateTiddler>get[text]match[lineDialogOpen]] %>
+<%if [<cancelEditTiddlerStateTiddler>get[text]match[yes]] %>
 <<cancel-delete-tiddler-actions cancel>>
 <% endif %>
 <% else %>

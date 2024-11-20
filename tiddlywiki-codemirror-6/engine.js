@@ -90,10 +90,7 @@ function CodeMirrorEngine(options) {
 		return oSP();
 	}
 	this.closeSearchPanel = function() {
-		var state = cSP();
-		var cancelEditTiddlerStateTiddler = self.widget.getVariable("cancelEditTiddlerStateTiddler");
-		this.widget.wiki.deleteTiddler(cancelEditTiddlerStateTiddler);
-		return state;
+		return cSP();
 	};
 
 	this.searchPanelOpen = searchPanelOpen;
@@ -304,35 +301,19 @@ function CodeMirrorEngine(options) {
 				self.widget.saveChanges(text);
 			}
 			var panelState = update.view.state.facet(showPanel);
-			if(panelState !== self.previousPanelState) {
-				var panelStateLength = self.countPanelStateLength(panelState);
-				var previousPanelStateLength = self.countPanelStateLength(self.previousPanelState);
-				self.previousPanelState = panelState;
-				self.editorPanelState = panelState;
-				var lineDialogOpen = false;
-				if(panelStateLength === 1) {
-					lineDialogOpen = panelState.some(function(fun) {
-						return fun && (fun.name === "createLineDialog");
-					});
-					if(!lineDialogOpen) {
-						self.widget.wiki.setText(self.editorPanelStateTiddler,"text",null,panelStateLength);
-					} else {
-						self.widget.wiki.setText(self.editorPanelStateTiddler,"text",null,"lineDialogOpen");
-					}
-				} else if(panelStateLength) {
-					self.widget.wiki.setText(self.editorPanelStateTiddler,"text",null,panelStateLength);
-				} else {
-					self.widget.wiki.deleteTiddler(self.editorPanelStateTiddler);
-				}
+			var panelStateLength = self.countPanelStateLength(panelState);
+			var lineDialogOpen = false;
+			if(panelStateLength === 1) {
+				self.lineDialogOpen = panelState.some(function(fun) {
+					return fun && (fun.name === "createLineDialog");
+				});
 			}
 			var focusState = update.view.hasFocus;
-			if(focusState !== self.previousFocusState) {
-				self.previousFocusState = focusState;
-				if(focusState) {
-					self.widget.wiki.setText(self.editorFocusStateTiddler,"text",null,"yes");
-				} else {
-					self.widget.wiki.setText(self.editorFocusStateTiddler,"text",null,"no");
-				}
+			if((lineDialogOpen && focusState) || (panelStateLength === 0)) {
+				self.editorCanBeClosed = true;
+			} else {
+				self.editorCanBeClosed = false;
+				self.widget.wiki.deleteTiddler(self.cancelEditTiddlerStateTiddler);
 			}
 		})
 	];
@@ -746,14 +727,11 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 		event.stopPropagation();
 		return false;
 	}
-	var panelStateLength = this.countPanelStateLength(this.editorPanelState);
-	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && panelStateLength) {
-		var editorPanelState = this.widget.wiki.tiddlerExists(this.editorPanelStateTiddler) && this.widget.wiki.getTiddlerText(this.editorPanelStateTiddler) !== "lineDialogOpen";
-		var cancelEditTiddlerState = this.widget.wiki.getTiddlerText(this.cancelEditTiddlerStateTiddler) === "yes";
-		if(editorPanelState && !cancelEditTiddlerState) {
-			event.stopPropagation();
-			return false;
-		}
+	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && this.editorCanBeClosed) {
+		self.widget.wiki.setText(self.cancelEditTiddlerStateTiddler,"text",null,"yes");
+	} else if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && !this.editorCanBeClosed) {
+		event.stopPropagation();
+		return false;
 	}
 	var widget = this.widget;
 	var keyboardWidgets = [];
