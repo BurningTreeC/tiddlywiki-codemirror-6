@@ -30,6 +30,12 @@ exports.prototype.render = function(parent,nextSibling) {
 	this.updateShortcutLists(this.getShortcutTiddlerList());
 	this.engine.updateTiddlerType();
 	this.engine.updateKeymaps();
+	var lineNumbers = this.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes" && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
+	this.engine.toggleLineNumbers(lineNumbers);
+	this.engine.toggleFoldGutter(lineNumbers);
+	var highlightActiveLine = this.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLine") === "yes" && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
+	this.engine.toggleHighlightActiveLine(highlightActiveLine);
+	this.engine.toggleHighlightActiveLineGutter(highlightActiveLine);
 };
 
 exports.prototype.getShortcutTiddlerList = function() {
@@ -103,7 +109,19 @@ exports.prototype.handlePasteEvent = function(event) {
 
 exports.prototype.refresh = function(changedTiddlers) {
 	var changedAttributes = this.computeAttributes();
-	if(changedTiddlers["$:/config/codemirror-6/lineNumbers"] || changedTiddlers["$:/config/codemirror-6/highlightActiveLine"] || changedTiddlers["$:/config/codemirror-6/autocorrect"] || changedTiddlers["$:/state/codemirror-6/translate/" + this.editTitle] || changedTiddlers["$:/config/codemirror-6/selectOnOpen"] || changedTiddlers["$:/config/codemirror-6/bracketMatching"] || changedTiddlers["$:/config/codemirror-6/closeBrackets"] || changedTiddlers["$:/config/codemirror-6/completeAnyWord"] || changedTiddlers["$:/config/codemirror-6/autocompleteIcons"] || changedTiddlers["$:/config/codemirror-6/maxRenderedOptions"] || changedTiddlers["$:/config/codemirror-6/tiddlerFilter"] || changedTiddlers["$:/config/codemirror-6/tiddlerMatchDelimiter"] || changedTiddlers["$:/config/codemirror-6/indentUnit"] || changedTiddlers["$:/config/codemirror-6/indentUnitMultiplier"] || changedTiddlers["$:/config/codemirror-6/sqlDialect"]) {
+	if(changedTiddlers["$:/config/codemirror-6/autocorrect"] ||
+		changedTiddlers["$:/state/codemirror-6/translate/" + this.editTitle] ||
+		changedTiddlers["$:/config/codemirror-6/selectOnOpen"] ||
+		changedTiddlers["$:/config/codemirror-6/bracketMatching"] ||
+		changedTiddlers["$:/config/codemirror-6/closeBrackets"] ||
+		changedTiddlers["$:/config/codemirror-6/completeAnyWord"] ||
+		changedTiddlers["$:/config/codemirror-6/autocompleteIcons"] ||
+		changedTiddlers["$:/config/codemirror-6/maxRenderedOptions"] ||
+		changedTiddlers["$:/config/codemirror-6/tiddlerFilter"] ||
+		changedTiddlers["$:/config/codemirror-6/tiddlerMatchDelimiter"] ||
+		changedTiddlers["$:/config/codemirror-6/indentUnit"] ||
+		changedTiddlers["$:/config/codemirror-6/indentUnitMultiplier"] ||
+		changedTiddlers["$:/config/codemirror-6/sqlDialect"]) {
 		this.refreshSelf();
 		return true;
 	}
@@ -128,6 +146,16 @@ exports.prototype.refresh = function(changedTiddlers) {
 	if(changedTiddlers["$:/config/codemirror-6/spellcheck"]) {
 		var spellcheck = this.wiki.getTiddlerText("$:/config/codemirror-6/spellcheck") === "yes";
 		this.engine.toggleSpellcheck(spellcheck);
+	}
+	if(changedTiddlers["$:/config/codemirror-6/lineNumbers"]) {
+		var lineNumbers = this.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes" && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
+		this.engine.toggleLineNumbers(lineNumbers);
+		this.engine.toggleFoldGutter(lineNumbers);
+	}
+	if(changedTiddlers["$:/config/codemirror-6/highlightActiveLine"]) {
+		var highlightActiveLine = this.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLine") === "yes" && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
+		this.engine.toggleHighlightActiveLine(highlightActiveLine);
+		this.engine.toggleHighlightActiveLineGutter(highlightActiveLine);
 	}
 	var newList = this.getShortcutTiddlerList();
 	var hasChanged = $tw.utils.hopArray(changedTiddlers,this.shortcutTiddlers) ? true :

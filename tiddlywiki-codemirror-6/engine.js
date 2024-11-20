@@ -56,6 +56,10 @@ function CodeMirrorEngine(options) {
 	var spellcheckCompartment = new Compartment();
 	var autocorrectCompartment = new Compartment();
 	var translateCompartment = new Compartment();
+	var lineNumbersCompartment = new Compartment();
+	var foldGutterCompartment = new Compartment();
+	var highlightActiveLineCompartment = new Compartment();
+	var highlightActiveLineGutterCompartment = new Compartment();
 
 	this.editorSelection = EditorSelection;
 	this.completionStatus = completionStatus;
@@ -292,9 +296,13 @@ function CodeMirrorEngine(options) {
 		])),
 		Prec.high(keymap.of({key: "Tab", run: acceptCompletion})),
 		EditorView.lineWrapping,
+		lineNumbersCompartment.of([]),
+		foldGutterCompartment.of([]),
+		highlightActiveLineCompartment.of([]),
+		highlightActiveLineGutterCompartment.of([]),
 		tabindexCompartment.of(EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""})),
 		spellcheckCompartment.of(EditorView.contentAttributes.of({spellcheck: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/spellcheck") === "yes"})),
-		autocorrectCompartment.of(EditorView.contentAttributes.of({autocorrect: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocorrect") === "yes"})),
+		autocorrectCompartment.of(EditorView.contentAttributes.of({autocorrect: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocorrect") === "yes" ? "on" : "off"})),
 		translateCompartment.of(EditorView.contentAttributes.of({translate: self.widget.wiki.getTiddlerText("$:/state/codemirror-6/translate/" + self.widget.editTitle) === "yes" ? "yes" : "no"})),
 		EditorView.perLineTextDirection.of(true),
 		EditorView.updateListener.of(function(update) {
@@ -330,16 +338,6 @@ function CodeMirrorEngine(options) {
 
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/bracketMatching") === "yes") {
 		editorExtensions.push(bracketMatching());
-	};
-
-	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes" && this.widget.editClass.indexOf("tc-edit-texteditor-body") !== -1) {
-		editorExtensions.push(lineNumbers());
-		editorExtensions.push(foldGutter());
-	};
-
-	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLine") === "yes" && this.widget.editClass.indexOf("tc-edit-texteditor-body") !== -1) {
-		editorExtensions.push(highlightActiveLine());
-		editorExtensions.push(highlightActiveLineGutter());
 	};
 
 	if(this.widget.editPlaceholder) {
@@ -644,6 +642,38 @@ function CodeMirrorEngine(options) {
 				EditorView.contentAttributes.of({
 					spellcheck: enable
 				})
+			)
+		});
+	};
+
+	this.toggleLineNumbers = function(enable) {
+		this.cm.dispatch({
+			effects: lineNumbersCompartment.reconfigure(
+				enable ? lineNumbers() : []
+			)
+		});
+	};
+
+	this.toggleFoldGutter = function(enable) {
+		this.cm.dispatch({
+			effects: foldGutterCompartment.reconfigure(
+				enable ? foldGutter() : []
+			)
+		});
+	};
+
+	this.toggleHighlightActiveLine = function(enable) {
+		this.cm.dispatch({
+			effects: highlightActiveLineCompartment.reconfigure(
+				enable ? highlightActiveLine() : []
+			)
+		});
+	};
+
+	this.toggleHighlightActiveLineGutter = function(enable) {
+		this.cm.dispatch({
+			effects: highlightActiveLineGutterCompartment.reconfigure(
+				enable ? highlightActiveLineGutter() : []
 			)
 		});
 	};

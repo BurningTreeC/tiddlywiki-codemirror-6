@@ -1,0 +1,14 @@
+title: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/EditorToolbar/lineNumbers
+tags: $:/tags/EditorToolbar
+icon: $:/plugins/BTC/tiddlywiki-codemirror-6/icons/lineNumbers
+caption: LineNumbers
+description: toggle the line numbers off / on
+condition: [<targetTiddler>!has[type]] [<targetTiddler>get[type]!prefix[image/]] [<targetTiddler>get[type]match[image/svg+xml]]
+shortcuts: ((line-numbers))
+
+<%if [{$:/config/codemirror-6/lineNumbers}match[yes]] %>
+	<$action-setfield $tiddler="$:/config/codemirror-6/lineNumbers" text="no"/>
+<% else %>
+	<$action-deletetiddler $tiddler="$:/config/codemirror-6/lineNumbers"/>
+<% endif %>
+<$action-sendmessage $message="tm-edit-text-operation" $param="focus-editor"/>

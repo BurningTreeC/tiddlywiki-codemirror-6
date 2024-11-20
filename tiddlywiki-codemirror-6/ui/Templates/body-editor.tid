@@ -20,7 +20,7 @@ title: $:/core/ui/EditTemplate/body/editor
 
 ><$list
 
-  filter="[all[shadows+tiddlers]tag[$:/tags/EditorToolbar]!has[draft.of]]"
+  filter="[all[shadows+tiddlers]tag[$:/tags/EditorToolbar]!has[draft.of]sort[group-sort]]"
 
 ><$reveal
 
