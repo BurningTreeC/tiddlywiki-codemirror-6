@@ -41,6 +41,7 @@ function CodeMirrorEngine(options) {
 	var {search,SearchQuery,searchKeymap,highlightSelectionMatches,openSearchPanel,closeSearchPanel,searchPanelOpen,gotoLine} = CM["@codemirror/search"];
 	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus,acceptCompletion,completeAnyWord} = CM["@codemirror/autocomplete"];
 	var {lintKeymap} = CM["@codemirror/lint"];
+	var {tiddlywiki,tiddlywikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
 
 	this.EditorView = EditorView;
 	this.EditorState = EditorState;
@@ -48,6 +49,9 @@ function CodeMirrorEngine(options) {
 	this.keymap = keymap;
 
 	var keymapCompartment = new Compartment();
+	var languageCompartment = new Compartment();
+	var actionCompletionsCompartment = new Compartment();
+	var tiddlerCompletionsCompartment = new Compartment();
 
 	this.editorSelection = EditorSelection;
 	this.completionStatus = completionStatus;
@@ -58,7 +62,9 @@ function CodeMirrorEngine(options) {
 	this.showPanel = showPanel;
 	this.getPanel = getPanel;
 
-	var customKeymap = [];
+	this.customKeymap = [];
+	this.markdownKeymap = [];
+	this.indentWithTab = indentWithTab;
 
 	this.previousPanelState = [];
 	this.previousFocusState = false;
@@ -178,11 +184,21 @@ function CodeMirrorEngine(options) {
 		}
 	};
 
+	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes") {
+		this.customKeymap.push(indentWithTab);
+	};
+
 	var selectOnOpen = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/selectOnOpen") === "yes";
 	var autocompleteIcons = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteIcons") === "yes";
 	var maxRenderedOptions = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/maxRenderedOptions"));
 
+	var actionCompletions = tiddlywikiLanguage.data.of({autocomplete: this.actionCompletionSource});
+	var tiddlerCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+
 	var editorExtensions = [
+		languageCompartment.of(tiddlywiki()),
+		actionCompletionsCompartment.of(actionCompletions),
+		tiddlerCompletionsCompartment.of(tiddlerCompletions),
 		dropCursor(),
 		solarizedTheme,
 		Prec.high(syntaxHighlighting(solarizedHighlightStyle)),
@@ -272,7 +288,8 @@ function CodeMirrorEngine(options) {
 			...cmFoldKeymap,
 			...cmCompletionKeymap,
 			...cmLintKeymap,
-			...customKeymap
+			...self.markdownKeymap,
+			...self.customKeymap
 		])),
 		Prec.high(keymap.of({key: "Tab", run: acceptCompletion})),
 		EditorView.lineWrapping,
@@ -320,14 +337,6 @@ function CodeMirrorEngine(options) {
 		})
 	];
 
-	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes") {
-		editorExtensions.push(
-			keymap.of([
-				indentWithTab
-			])
-		);
-	};
-
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeAnyWord") === "yes") {
 		editorExtensions.push(EditorState.languageData.of(function() { return [{autocomplete: completeAnyWord}]; }));
 	};
@@ -374,163 +383,6 @@ function CodeMirrorEngine(options) {
 	}
 	editorExtensions.push(indentUnit.of(cmIndentUnit));
 
-	var mode = this.widget.editType;
-	if(mode === "") {
-		mode = "text/vnd.tiddlywiki";
-	}
-	switch(mode) {
-		case "text/vnd.tiddlywiki":
-			var {tiddlywiki,tiddlywikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
-			editorExtensions.push(tiddlywiki());
-			var actionCompletions = tiddlywikiLanguage.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			break;
-		case "text/html":
-			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
-			editorExtensions.push(html({selfClosingTags: true}));
-			var actionCompletions = htmlLanguage.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = htmlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			break;
-		case "application/javascript":
-			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
-			editorExtensions.push(javascript());
-			var actionCompletions = javascriptLanguage.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = javascriptLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			/*editorExtensions.push(
-				javascriptLanguage.data.of({
-					autocomplete: scopeCompletionSource(globalThis)
-				})
-			);*/
-			break;
-		case "application/json":
-			var {json,jsonLanguage} = CM["@codemirror/lang-json"];
-			editorExtensions.push(json());
-			var actionCompletions = jsonLanguage.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = jsonLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			break;
-		case "text/css":
-			var {css,cssLanguage} = CM["@codemirror/lang-css"];
-			editorExtensions.push(css());
-			var actionCompletions = cssLanguage.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = cssLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			break;
-		case "text/markdown":
-		case "text/x-markdown":
-			var {markdown,markdownLanguage,markdownKeymap} = CM["@codemirror/lang-markdown"];
-			editorExtensions.push(markdown({base: markdownLanguage}));
-			var actionCompletions = markdownLanguage.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			editorExtensions.push(Prec.high(keymap.of(markdownKeymap)));
-			break;
-		case "text/python":
-			var {python,pythonLanguage} = CM["@codemirror/lang-python"];
-			editorExtensions.push(python());
-			var actionCompletions = pythonLanguage.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = pythonLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			break;
-		case "text/php":
-			var {php,phpLanguage} = CM["@codemirror/lang-php"];
-			editorExtensions.push(php());
-			var actionCompletions = phpLanguage.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = phpLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			break;
-		case "text/rust":
-			var {rust,rustLanguage} = CM["@codemirror/lang-rust"];
-			editorExtensions.push(rust());
-			var actionCompletions = rustLanguage.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = rustLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			break;
-		case "text/yaml":
-			var {yaml,yamlLanguage} = CM["@codemirror/lang-yaml"];
-			editorExtensions.push(yaml());
-			var actionCompletions = yamlLanguage.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = yamlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			break;
-		case "text/go":
-			var {go,goLanguage} = CM["@codemirror/lang-go"];
-			editorExtensions.push(go());
-			var actionCompletions = goLanguage.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = goLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			break;
-		case "text/cpp":
-			var {cpp,cppLanguage} = CM["@codemirror/lang-cpp"];
-			editorExtensions.push(cpp());
-			var actionCompletions = cppLanguage.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = cppLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			break;
-		case "text/xml":
-			var {xml,xmlLanguage} = CM["@codemirror/lang-xml"];
-			editorExtensions.push(xml());
-			var actionCompletions = xmlLanguage.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = xmlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			break;
-		case "text/sql":
-			var {sql,StandardSQL,PostgreSQL,MySQL,MariaSQL,MSSQL,SQLite,Cassandra,PLSQL} = CM["@codemirror/lang-sql"];
-			var userSQLDialect;
-			switch(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/sqlDialect")) {
-				case "StandardSQL":
-					userSQLDialect = StandardSQL;
-					break;
-				case "PostgreSQL":
-					userSQLDialect = PostgreSQL;
-					break;
-				case "MySQL":
-					userSQLDialect = MySQL;
-					break;
-				case "MariaSQL":
-					userSQLDialect = MariaSQL;
-					break;
-				case "MSSQL":
-					userSQLDialect = MSSQL;
-					break;
-				case "SQLite":
-					userSQLDialect = SQLite;
-					break;
-				case "Cassandra":
-					userSQLDialect = Cassandra;
-					break;
-				case "PLSQL":
-					userSQLDialect = PLSQL;
-					break;
-				default:
-					userSQLDialect = StandardSQL;
-					break;
-			}
-			editorExtensions.push(sql({ dialect: userSQLDialect }));
-			var actionCompletions = userSQLDialect.language.data.of({autocomplete: this.actionCompletionSource});
-			var tiddlerCompletions = userSQLDialect.language.data.of({autocomplete: this.tiddlerCompletionSource});
-			editorExtensions.push(Prec.high(actionCompletions));
-			editorExtensions.push(Prec.high(tiddlerCompletions));
-			break;
-		default:
-			break;
-	};
 	this.editorState = EditorState.create({doc: options.value,extensions: editorExtensions});
 	var editorOptions = {
 		parent: this.domNode,
@@ -538,8 +390,190 @@ function CodeMirrorEngine(options) {
 	};
 	this.cm = new EditorView(editorOptions);
 
-	function addShortcut(shortcut,command) {
-		customKeymap = [...customKeymap,shortcut];
+	function reconfigureCompletions(actionCompletions,tiddlerCompletions) {
+		self.cm.dispatch({
+			effects: actionCompletionsCompartment.reconfigure(actionCompletions)
+		});
+		self.cm.dispatch({
+			effects: tiddlerCompletionsCompartment.reconfigure(tiddlerCompletions)
+		});
+	};
+
+	this.updateTiddlerType = function() {
+		var mode = this.widget.editType;
+		if(mode === "") {
+			mode = "text/vnd.tiddlywiki";
+		}
+		switch(mode) {
+			case "text/vnd.tiddlywiki":
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(tiddlywiki())
+				});
+				actionCompletions = tiddlywikiLanguage.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				break;
+			case "text/html":
+				var {html,htmlLanguage} = CM["@codemirror/lang-html"];
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(html({selfClosingTags: true}))
+				});
+				actionCompletions = htmlLanguage.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = htmlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				break;
+			case "application/javascript":
+				var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(javascript())
+				});
+				actionCompletions = javascriptLanguage.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = javascriptLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				/*editorExtensions.push(
+					javascriptLanguage.data.of({
+						autocomplete: scopeCompletionSource(globalThis)
+					})
+				);*/
+				break;
+			case "application/json":
+				var {json,jsonLanguage} = CM["@codemirror/lang-json"];
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(json())
+				});
+				actionCompletions = jsonLanguage.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = jsonLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				break;
+			case "text/css":
+				var {css,cssLanguage} = CM["@codemirror/lang-css"];
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(css())
+				});
+				actionCompletions = cssLanguage.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = cssLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				break;
+			case "text/markdown":
+			case "text/x-markdown":
+				var {markdown,markdownLanguage,markdownKeymap} = CM["@codemirror/lang-markdown"];
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(markdown({base: markdownLanguage}))
+				});
+				actionCompletions = markdownLanguage.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				this.markdownKeymap = markdownKeymap;
+				this.updateKeymap();
+				break;
+			case "text/python":
+				var {python,pythonLanguage} = CM["@codemirror/lang-python"];
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(python())
+				});
+				actionCompletions = pythonLanguage.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = pythonLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				break;
+			case "text/php":
+				var {php,phpLanguage} = CM["@codemirror/lang-php"];
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(php())
+				});
+				actionCompletions = phpLanguage.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = phpLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				break;
+			case "text/rust":
+				var {rust,rustLanguage} = CM["@codemirror/lang-rust"];
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(rust())
+				});
+				actionCompletions = rustLanguage.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = rustLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				break;
+			case "text/yaml":
+				var {yaml,yamlLanguage} = CM["@codemirror/lang-yaml"];
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(yaml())
+				});
+				actionCompletions = yamlLanguage.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = yamlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				break;
+			case "text/go":
+				var {go,goLanguage} = CM["@codemirror/lang-go"];
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(go())
+				});
+				actionCompletions = goLanguage.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = goLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				break;
+			case "text/cpp":
+				var {cpp,cppLanguage} = CM["@codemirror/lang-cpp"];
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(cpp())
+				});
+				actionCompletions = cppLanguage.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = cppLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				break;
+			case "text/xml":
+				var {xml,xmlLanguage} = CM["@codemirror/lang-xml"];
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(xml())
+				});
+				actionCompletions = xmlLanguage.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = xmlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				break;
+			case "text/sql":
+				var {sql,StandardSQL,PostgreSQL,MySQL,MariaSQL,MSSQL,SQLite,Cassandra,PLSQL} = CM["@codemirror/lang-sql"];
+				var userSQLDialect;
+				switch(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/sqlDialect")) {
+					case "StandardSQL":
+						userSQLDialect = StandardSQL;
+						break;
+					case "PostgreSQL":
+						userSQLDialect = PostgreSQL;
+						break;
+					case "MySQL":
+						userSQLDialect = MySQL;
+						break;
+					case "MariaSQL":
+						userSQLDialect = MariaSQL;
+						break;
+					case "MSSQL":
+						userSQLDialect = MSSQL;
+						break;
+					case "SQLite":
+						userSQLDialect = SQLite;
+						break;
+					case "Cassandra":
+						userSQLDialect = Cassandra;
+						break;
+					case "PLSQL":
+						userSQLDialect = PLSQL;
+						break;
+					default:
+						userSQLDialect = StandardSQL;
+						break;
+				}
+				this.cm.dispatch({
+					effects: languageCompartment.reconfigure(sql({ dialect: userSQLDialect }))
+				});
+				actionCompletions = userSQLDialect.language.data.of({autocomplete: this.actionCompletionSource});
+				tiddlerCompletions = userSQLDialect.language.data.of({autocomplete: this.tiddlerCompletionSource});
+				reconfigureCompletions(actionCompletions,tiddlerCompletions);
+				break;
+			default:
+				break;
+		};
+	};
+
+	this.updateKeymap = function() {
 		var updatedKeymap = keymap.of([
 			...cmCloseBracketsKeymap,
 			...cmDefaultKeymap,
@@ -548,11 +582,16 @@ function CodeMirrorEngine(options) {
 			...cmFoldKeymap,
 			...cmCompletionKeymap,
 			...cmLintKeymap,
-			...customKeymap
+			...self.markdownKeymap,
+			...self.customKeymap
 		]);
-		self.cm.dispatch({
+		this.cm.dispatch({
 			effects: keymapCompartment.reconfigure(updatedKeymap)
 		});
+	};
+
+	function addShortcut(shortcut) {
+		this.customKeymap = [...self.customKeymap,shortcut];
 	};
 
 	function removeShortcut(command) {
@@ -577,25 +616,15 @@ function CodeMirrorEngine(options) {
 		cmLintKeymap = cmLintKeymap.filter(function(shortcut) {
 			return shortcut.run !== command;
 		});
-		customKeymap = customKeymap.filter(function(shortcut) {
+		this.markdownKeymap = this.markdownKeymap.filter(function(shortcut) {
 			return shortcut.run !== command;
 		});
-		var updatedKeymap = keymap.of([
-			...cmCloseBracketsKeymap,
-			...cmDefaultKeymap,
-			...cmSearchKeymap,
-			...cmHistoryKeymap,
-			...cmFoldKeymap,
-			...cmCompletionKeymap,
-			...cmLintKeymap,
-			...customKeymap
-		]);
-		self.cm.dispatch({
-			effects: keymapCompartment.reconfigure(updatedKeymap)
+		this.customKeymap = this.customKeymap.filter(function(shortcut) {
+			return shortcut.run !== command;
 		});
 	};
 
-	this.updateKeymap = function() {
+	this.updateKeymaps = function() {
 		var commands = this.widget.shortcutActionList;
 		if(commands) {
 			for(var i=0; i<commands.length; i++) {
@@ -613,12 +642,13 @@ function CodeMirrorEngine(options) {
 									key: kbShortcut,
 									run: runCommand
 								}
-								addShortcut(shortcut,runCommand);
+								addShortcut(shortcut);
 							}
 						}
 					}
 				}
 			}
+			this.updateKeymap();
 		}
 	}
 };

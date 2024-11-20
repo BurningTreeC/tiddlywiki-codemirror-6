@@ -28,7 +28,8 @@ exports.prototype.render = function(parent,nextSibling) {
 	this.shortcutParsedList = []; // Stores the parsed key descriptors
 	this.shortcutPriorityList = []; // Stores the parsed shortcut priority
 	this.updateShortcutLists(this.getShortcutTiddlerList());
-	this.engine.updateKeymap();
+	this.engine.updateTiddlerType();
+	this.engine.updateKeymaps();
 };
 
 exports.prototype.getShortcutTiddlerList = function() {
@@ -102,12 +103,27 @@ exports.prototype.handlePasteEvent = function(event) {
 
 exports.prototype.refresh = function(changedTiddlers) {
 	var changedAttributes = this.computeAttributes();
-	if(changedAttributes.type || changedTiddlers["$:/config/codemirror-6/indentWithTab"] || changedTiddlers["$:/config/codemirror-6/lineNumbers"] || changedTiddlers["$:/config/codemirror-6/spellcheck"] || changedTiddlers["$:/config/codemirror-6/highlightActiveLine"] || changedTiddlers["$:/config/codemirror-6/autocorrect"] || changedTiddlers["$:/state/codemirror-6/translate/" + this.editTitle] || changedTiddlers["$:/config/codemirror-6/selectOnOpen"] || changedTiddlers["$:/config/codemirror-6/bracketMatching"] || changedTiddlers["$:/config/codemirror-6/closeBrackets"] || changedTiddlers["$:/config/codemirror-6/completeAnyWord"] || changedTiddlers["$:/config/codemirror-6/autocompleteIcons"] || changedTiddlers["$:/config/codemirror-6/maxRenderedOptions"] || changedTiddlers["$:/config/codemirror-6/tiddlerFilter"] || changedTiddlers["$:/config/codemirror-6/tiddlerMatchDelimiter"] || changedTiddlers["$:/config/codemirror-6/indentUnit"] || changedTiddlers["$:/config/codemirror-6/indentUnitMultiplier"] || changedTiddlers["$:/config/codemirror-6/sqlDialect"]) {
+	if(changedTiddlers["$:/config/codemirror-6/lineNumbers"] || changedTiddlers["$:/config/codemirror-6/spellcheck"] || changedTiddlers["$:/config/codemirror-6/highlightActiveLine"] || changedTiddlers["$:/config/codemirror-6/autocorrect"] || changedTiddlers["$:/state/codemirror-6/translate/" + this.editTitle] || changedTiddlers["$:/config/codemirror-6/selectOnOpen"] || changedTiddlers["$:/config/codemirror-6/bracketMatching"] || changedTiddlers["$:/config/codemirror-6/closeBrackets"] || changedTiddlers["$:/config/codemirror-6/completeAnyWord"] || changedTiddlers["$:/config/codemirror-6/autocompleteIcons"] || changedTiddlers["$:/config/codemirror-6/maxRenderedOptions"] || changedTiddlers["$:/config/codemirror-6/tiddlerFilter"] || changedTiddlers["$:/config/codemirror-6/tiddlerMatchDelimiter"] || changedTiddlers["$:/config/codemirror-6/indentUnit"] || changedTiddlers["$:/config/codemirror-6/indentUnitMultiplier"] || changedTiddlers["$:/config/codemirror-6/sqlDialect"]) {
 		this.refreshSelf();
 		return true;
 	}
 	if(changedAttributes["class"]) {
 		this.engine.assignDomNodeClasses();
+	}
+	if(changedAttributes.type) {
+		this.engine.updateTiddlerType();
+	}
+	if(changedTiddlers["$:/config/codemirror-6/indentWithTab"]) {
+		var indentWithTab = this.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes";
+		if(indentWithTab && this.engine.customKeymap.indexOf(this.engine.indentWithTab) === -1) {
+			this.engine.customKeymap.push(this.engine.indentWithTab);
+		} else {
+			var index = this.engine.customKeymap.indexOf(this.engine.indentWithTab);
+			if(index !== -1) {
+				this.engine.customKeymap.splice(index,1);
+			}
+		}
+		this.engine.updateKeymap();
 	}
 	var newList = this.getShortcutTiddlerList();
 	var hasChanged = $tw.utils.hopArray(changedTiddlers,this.shortcutTiddlers) ? true :
@@ -117,7 +133,7 @@ exports.prototype.refresh = function(changedTiddlers) {
 	// Re-cache shortcuts if something changed
 	if(hasChanged) {
 		this.updateShortcutLists(newList);
-		this.engine.updateKeymap();
+		this.engine.updateKeymaps();
 	}
 	// Call the base class refresh function
 	Object.getPrototypeOf(Object.getPrototypeOf(this)).refresh.call(this,changedTiddlers);
