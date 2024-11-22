@@ -28,6 +28,7 @@ exports.prototype.render = function(parent,nextSibling) {
 	this.shortcutParsedList = []; // Stores the parsed key descriptors
 	this.shortcutPriorityList = []; // Stores the parsed shortcut priority
 	this.updateShortcutLists(this.getShortcutTiddlerList());
+	this.hasStylesheetTag = this.wiki.getTiddler(this.editTitle).hasTag("$:/tags/Stylesheet");
 	this.engine.updateTiddlerType();
 	this.engine.updateKeymaps();
 	var lineNumbers = this.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes" && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
@@ -130,6 +131,11 @@ exports.prototype.refresh = function(changedTiddlers) {
 	var changedAttributes = this.computeAttributes();
 	if(changedAttributes["class"]) {
 		this.engine.assignDomNodeClasses();
+	}
+	var hasStylesheetTag = this.wiki.getTiddler(this.editTitle).hasTag("$:/tags/Stylesheet");
+	if(hasStylesheetTag !== this.hasStylesheetTag) {
+		this.hasStylesheetTag = hasStylesheetTag;
+		this.engine.updateTiddlerType();
 	}
 	if(changedAttributes.type || changedTiddlers["$:/config/codemirror-6/sqlDialect"]) {
 		this.engine.updateTiddlerType();

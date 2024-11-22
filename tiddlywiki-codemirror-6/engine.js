@@ -635,6 +635,9 @@ CodeMirrorEngine.prototype.updateTiddlerType = function() {
 	if(mode === "") {
 		mode = "text/vnd.tiddlywiki";
 	}
+	if(this.widget.hasStylesheetTag) {
+		mode = "text/css";
+	}
 	switch(mode) {
 		case "text/vnd.tiddlywiki":
 		case "text/vnd.tiddlywiki-multiple":
