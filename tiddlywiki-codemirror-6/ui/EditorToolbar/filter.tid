@@ -1,0 +1,8 @@
+title: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/EditorToolbar/filter
+tags: $:/tags/EditorToolbar
+icon: $:/plugins/BTC/tiddlywiki-codemirror-6/icons/filter
+caption: Tiddler filter
+description: choose the filter for tiddler completions
+condition: [<targetTiddler>!has[type]] [<targetTiddler>get[type]!prefix[image/]] [<targetTiddler>get[type]match[image/svg+xml]]
+shortcuts: ((tiddler-filter))
+dropdown: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/EditorToolbar/filter-dropdown

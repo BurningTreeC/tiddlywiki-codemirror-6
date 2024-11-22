@@ -11,5 +11,5 @@ shortcuts: ((spellcheck))
 <% else %>
 	<$action-deletetiddler $tiddler="$:/config/codemirror-6/spellcheck"/>
 <% endif %>
-<$action-sendmessage $message="tm-focus-selector" $param=".tc-tiddler-frame.tc-tiddler-edit-frame input"/>
+<$action-sendmessage $message="tm-focus-selector" $param=".tc-tiddler-frame.tc-tiddler-edit-frame input" preventScroll="true"/>
 <$action-sendmessage $message="tm-edit-text-operation" $param="focus-editor"/>

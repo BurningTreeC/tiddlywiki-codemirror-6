@@ -36,22 +36,21 @@ function CodeMirrorEngine(options) {
 
 	var {EditorView,ViewPlugin,dropCursor,keymap,highlightSpecialChars,drawSelection,highlightActiveLine,rectangularSelection,crosshairCursor,lineNumbers,highlightActiveLineGutter,placeholder,tooltips,showPanel,getPanel} = CM["@codemirror/view"];
 	var {defaultKeymap,standardKeymap,indentWithTab,history,historyKeymap,undo,redo} = CM["@codemirror/commands"];
-	var {indentUnit,defaultHighlightStyle,syntaxHighlighting,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
+	var {language,indentUnit,defaultHighlightStyle,syntaxHighlighting,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
 	var {EditorState,EditorSelection,Prec,Facet,StateField,StateEffect,Compartment} = CM["@codemirror/state"];
 	var {search,SearchQuery,searchKeymap,highlightSelectionMatches,openSearchPanel,closeSearchPanel,searchPanelOpen,gotoLine} = CM["@codemirror/search"];
 	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus,acceptCompletion,completeAnyWord} = CM["@codemirror/autocomplete"];
 	var {lintKeymap} = CM["@codemirror/lint"];
-	var {tiddlywiki,tiddlywikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
 
 	this.EditorView = EditorView;
 	this.EditorState = EditorState;
 	this.Prec = Prec;
 	this.keymap = keymap;
+	this.autocompletion = autocompletion;
 
 	var keymapCompartment = new Compartment();
-	var languageCompartment = new Compartment();
-	var actionCompletionsCompartment = new Compartment();
-	var tiddlerCompletionsCompartment = new Compartment();
+	this.languageCompartment = new Compartment();
+	this.autocompleteCompartment = new Compartment();
 	var tabindexCompartment = new Compartment();
 	var spellcheckCompartment = new Compartment();
 	var autocorrectCompartment = new Compartment();
@@ -60,6 +59,9 @@ function CodeMirrorEngine(options) {
 	var foldGutterCompartment = new Compartment();
 	var highlightActiveLineCompartment = new Compartment();
 	var highlightActiveLineGutterCompartment = new Compartment();
+	var indentUnitCompartment = new Compartment();
+	var bracketMatchingCompartment = new Compartment();
+	var closeBracketsCompartment = new Compartment();
 
 	this.editorSelection = EditorSelection;
 	this.completionStatus = completionStatus;
@@ -103,6 +105,15 @@ function CodeMirrorEngine(options) {
 
 	this.editorPanelState = [];
 
+	this.currentLanguageOptions = {
+		tooltipClass: function() {
+			return "cm-autocomplete-tooltip"
+		},
+		selectOnOpen: false,
+		icons: true,
+		maxRenderedOptions: 100
+	};
+
 	this.solarizedLightTheme = EditorView.theme({},{dark:false});
 	this.solarizedDarkTheme = EditorView.theme({},{dark:true});
 
@@ -141,6 +152,7 @@ function CodeMirrorEngine(options) {
 				}
 			}
 		});
+		return null;
 	};
 
 	this.tiddlerCompletionSource = function(context) {
@@ -185,23 +197,70 @@ function CodeMirrorEngine(options) {
 				}
 			}
 		}
+		return null;
+	};
+
+	this.customCompletionSources = [this.actionCompletionSource,this.tiddlerCompletionSource];
+
+	this.combinedCompletionSource = function(context) {
+		var options = [];
+		var from;
+		$tw.utils.each(self.customCompletionSources,function(source) {
+			var intermediateResult = source(context);
+			if(intermediateResult && intermediateResult.options.length > 0) {
+				from = intermediateResult.from;
+				options.push(...intermediateResult.options);
+			}
+		});
+		if(options.length && from) {
+			return {
+				from: from,
+				options: options
+			};
+		}
+		var languageResults = [];
+		var languageData = context.state.languageDataAt("autocomplete",context.pos);
+		$tw.utils.each(languageData,function(data) {
+			if(typeof data === "function") {
+				var result = data(context);
+				if(result && result.options && result.options.length > 0) {
+					from = result.from;
+					languageResults.push(...result.options);
+				}
+			}
+		});
+/*		if(languageResults.length > 0) {
+			return {
+				from: from,
+				options: languageResults
+			};
+		}*/
+		if(self.autocompletionSource) {
+			var scopeResult = self.autocompletionSource(context);
+			if(scopeResult && scopeResult.options && scopeResult.options.length > 0) {
+				from = scopeResult.from;
+				languageResults.push(...scopeResult.options);
+			}
+		}
+		if(languageResults.length > 0) {
+			return {
+				from: from,
+				options: languageResults
+			};
+		}
+		if(self.completeAnyWord) {
+			return completeAnyWord(context);
+		}
+		return null;
 	};
 
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes") {
 		this.customKeymap.push(indentWithTab);
 	};
 
-	var selectOnOpen = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/selectOnOpen") === "yes";
-	var autocompleteIcons = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteIcons") === "yes";
-	var maxRenderedOptions = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/maxRenderedOptions"));
-
-	var actionCompletions = tiddlywikiLanguage.data.of({autocomplete: this.actionCompletionSource});
-	var tiddlerCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-
 	var editorExtensions = [
-		languageCompartment.of(tiddlywiki()),
-		actionCompletionsCompartment.of(actionCompletions),
-		tiddlerCompletionsCompartment.of(tiddlerCompletions),
+		self.languageCompartment.of([]),
+		self.autocompleteCompartment.of(autocompletion()),
 		dropCursor(),
 		solarizedTheme,
 		Prec.high(syntaxHighlighting(solarizedHighlightStyle)),
@@ -279,7 +338,6 @@ function CodeMirrorEngine(options) {
 		EditorState.allowMultipleSelections.of(true),
 		indentOnInput(),
 		syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
-		autocompletion({tooltipClass: function() { return "cm-autocomplete-tooltip" }, selectOnOpen: selectOnOpen, icons: autocompleteIcons, maxRenderedOptions: maxRenderedOptions}), //{activateOnTyping: false, closeOnBlur: false}),
 		rectangularSelection(),
 		crosshairCursor(),
 		highlightSelectionMatches(),
@@ -296,14 +354,17 @@ function CodeMirrorEngine(options) {
 		])),
 		Prec.high(keymap.of({key: "Tab", run: acceptCompletion})),
 		EditorView.lineWrapping,
+		closeBracketsCompartment.of([]),
+		bracketMatchingCompartment.of([]),
+		indentUnitCompartment.of([]),
 		lineNumbersCompartment.of([]),
 		foldGutterCompartment.of([]),
 		highlightActiveLineCompartment.of([]),
 		highlightActiveLineGutterCompartment.of([]),
 		tabindexCompartment.of(EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""})),
-		spellcheckCompartment.of(EditorView.contentAttributes.of({spellcheck: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/spellcheck") === "yes"})),
-		autocorrectCompartment.of(EditorView.contentAttributes.of({autocorrect: self.widget.wiki.getTiddlerText("$:/config/codemirror-6/autocorrect") === "yes" ? "on" : "off"})),
-		translateCompartment.of(EditorView.contentAttributes.of({translate: self.widget.wiki.getTiddlerText("$:/state/codemirror-6/translate/" + self.widget.editTitle) === "yes" ? "yes" : "no"})),
+		spellcheckCompartment.of([]),
+		autocorrectCompartment.of([]),
+		translateCompartment.of([]),
 		EditorView.perLineTextDirection.of(true),
 		EditorView.updateListener.of(function(update) {
 			if(update.docChanged) {
@@ -328,41 +389,9 @@ function CodeMirrorEngine(options) {
 		})
 	];
 
-	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/completeAnyWord") === "yes") {
-		editorExtensions.push(EditorState.languageData.of(function() { return [{autocomplete: completeAnyWord}]; }));
-	};
-
-	if(autoCloseBrackets) {
-		editorExtensions.push(closeBrackets());
-	};
-
-	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/bracketMatching") === "yes") {
-		editorExtensions.push(bracketMatching());
-	};
-
 	if(this.widget.editPlaceholder) {
 		editorExtensions.push(placeholder(self.widget.editPlaceholder));
 	};
-
-	var cmIndentUnit = "",
-		cmIndentUnitValue;
-	var indentUnitValue = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentUnit");
-	switch(indentUnitValue) {
-		case "spaces":
-			cmIndentUnitValue = " ";
-			break;
-		case "tabs":
-			cmIndentUnitValue = "	";
-			break;
-		default:
-			cmIndentUnitValue = "	";
-			break;
-	};
-	var indentUnitMultiplier = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentUnitMultiplier"));
-	for(var i=0; i<indentUnitMultiplier; i++) {
-		cmIndentUnit += cmIndentUnitValue;
-	}
-	editorExtensions.push(indentUnit.of(cmIndentUnit));
 
 	this.editorState = EditorState.create({doc: options.value,extensions: editorExtensions});
 	var editorOptions = {
@@ -370,192 +399,6 @@ function CodeMirrorEngine(options) {
 		state: this.editorState
 	};
 	this.cm = new EditorView(editorOptions);
-
-	function reconfigureCompletions(actionCompletions,tiddlerCompletions) {
-		self.cm.dispatch({
-			effects: actionCompletionsCompartment.reconfigure(actionCompletions)
-		});
-		self.cm.dispatch({
-			effects: tiddlerCompletionsCompartment.reconfigure(tiddlerCompletions)
-		});
-	};
-
-	this.updateTiddlerType = function() {
-		var mode = this.widget.getAttribute("type","");
-		if(mode === "") {
-			mode = "text/vnd.tiddlywiki";
-		}
-		switch(mode) {
-			case "text/vnd.tiddlywiki":
-			case "text/vnd.tiddlywiki-multiple":
-			case "text/plain":
-			case "application/x-tiddler-dictionary":
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(tiddlywiki())
-				});
-				actionCompletions = tiddlywikiLanguage.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = tiddlywikiLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				break;
-			case "text/html":
-				var {html,htmlLanguage} = CM["@codemirror/lang-html"];
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(html({selfClosingTags: true}))
-				});
-				actionCompletions = htmlLanguage.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = htmlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				break;
-			case "application/javascript":
-				var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(javascript())
-				});
-				actionCompletions = javascriptLanguage.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = javascriptLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				/*editorExtensions.push(
-					javascriptLanguage.data.of({
-						autocomplete: scopeCompletionSource(globalThis)
-					})
-				);*/
-				break;
-			case "application/json":
-				var {json,jsonLanguage} = CM["@codemirror/lang-json"];
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(json())
-				});
-				actionCompletions = jsonLanguage.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = jsonLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				break;
-			case "text/css":
-				var {css,cssLanguage} = CM["@codemirror/lang-css"];
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(css())
-				});
-				actionCompletions = cssLanguage.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = cssLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				break;
-			case "text/markdown":
-			case "text/x-markdown":
-				var {markdown,markdownLanguage,markdownKeymap} = CM["@codemirror/lang-markdown"];
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(markdown({base: markdownLanguage}))
-				});
-				actionCompletions = markdownLanguage.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = markdownLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				this.markdownKeymap = markdownKeymap;
-				this.updateKeymap();
-				break;
-			case "text/python":
-				var {python,pythonLanguage} = CM["@codemirror/lang-python"];
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(python())
-				});
-				actionCompletions = pythonLanguage.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = pythonLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				break;
-			case "text/php":
-				var {php,phpLanguage} = CM["@codemirror/lang-php"];
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(php())
-				});
-				actionCompletions = phpLanguage.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = phpLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				break;
-			case "text/rust":
-				var {rust,rustLanguage} = CM["@codemirror/lang-rust"];
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(rust())
-				});
-				actionCompletions = rustLanguage.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = rustLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				break;
-			case "text/yaml":
-				var {yaml,yamlLanguage} = CM["@codemirror/lang-yaml"];
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(yaml())
-				});
-				actionCompletions = yamlLanguage.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = yamlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				break;
-			case "text/go":
-				var {go,goLanguage} = CM["@codemirror/lang-go"];
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(go())
-				});
-				actionCompletions = goLanguage.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = goLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				break;
-			case "text/cpp":
-				var {cpp,cppLanguage} = CM["@codemirror/lang-cpp"];
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(cpp())
-				});
-				actionCompletions = cppLanguage.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = cppLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				break;
-			case "text/xml":
-				var {xml,xmlLanguage} = CM["@codemirror/lang-xml"];
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(xml())
-				});
-				actionCompletions = xmlLanguage.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = xmlLanguage.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				break;
-			case "text/sql":
-				var {sql,StandardSQL,PostgreSQL,MySQL,MariaSQL,MSSQL,SQLite,Cassandra,PLSQL} = CM["@codemirror/lang-sql"];
-				var userSQLDialect;
-				switch(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/sqlDialect")) {
-					case "StandardSQL":
-						userSQLDialect = StandardSQL;
-						break;
-					case "PostgreSQL":
-						userSQLDialect = PostgreSQL;
-						break;
-					case "MySQL":
-						userSQLDialect = MySQL;
-						break;
-					case "MariaSQL":
-						userSQLDialect = MariaSQL;
-						break;
-					case "MSSQL":
-						userSQLDialect = MSSQL;
-						break;
-					case "SQLite":
-						userSQLDialect = SQLite;
-						break;
-					case "Cassandra":
-						userSQLDialect = Cassandra;
-						break;
-					case "PLSQL":
-						userSQLDialect = PLSQL;
-						break;
-					default:
-						userSQLDialect = StandardSQL;
-						break;
-				}
-				this.cm.dispatch({
-					effects: languageCompartment.reconfigure(sql({ dialect: userSQLDialect }))
-				});
-				actionCompletions = userSQLDialect.language.data.of({autocomplete: this.actionCompletionSource});
-				tiddlerCompletions = userSQLDialect.language.data.of({autocomplete: this.tiddlerCompletionSource});
-				reconfigureCompletions(actionCompletions,tiddlerCompletions);
-				break;
-			default:
-				break;
-		};
-	};
 
 	this.updateKeymap = function() {
 		var updatedKeymap = keymap.of([
@@ -634,13 +477,33 @@ function CodeMirrorEngine(options) {
 			}
 			this.updateKeymap();
 		}
-	}
+	};
 
 	this.toggleSpellcheck = function(enable) {
 		this.cm.dispatch({
 			effects: spellcheckCompartment.reconfigure(
 				EditorView.contentAttributes.of({
 					spellcheck: enable
+				})
+			)
+		});
+	};
+
+	this.toggleAutocorrect = function(enable) {
+		this.cm.dispatch({
+			effects: autocorrectCompartment.reconfigure(
+				EditorView.contentAttributes.of({
+					autocorrect: enable ? "on" : "off"
+				})
+			)
+		});
+	};
+
+	this.toggleTranslate = function(enable) {
+		this.cm.dispatch({
+			effects: translateCompartment.reconfigure(
+				EditorView.contentAttributes.of({
+					translate: enable ? "yes" : "no"
 				})
 			)
 		});
@@ -676,6 +539,195 @@ function CodeMirrorEngine(options) {
 				enable ? highlightActiveLineGutter() : []
 			)
 		});
+	};
+
+	this.toggleAutocompletion = function(selectOnOpen,autocompleteIcons,maxRenderedOptions) {
+		this.updateAutocompletion()
+	};
+
+	this.toggleCompleteAnyWord = function(enable) {
+		this.completeAnyWord = enable;
+	};
+
+	this.updateIndentUnit = function() {
+		var newIndentUnit = this.getIndenUnit();
+		this.cm.dispatch({
+			effects: indentUnitCompartment.reconfigure(indentUnit.of(newIndentUnit))
+		});
+	};
+
+	this.toggleBracketMatching = function(enable) {
+		this.cm.dispatch({
+			effects: bracketMatchingCompartment.reconfigure(
+				enable ? bracketMatching() : []
+			)
+		});
+	};
+
+	this.toggleCloseBrackets = function(enable) {
+		this.cm.dispatch({
+			effects: closeBracketsCompartment.reconfigure(
+				enable ? closeBrackets() : []
+			)
+		});
+	};
+
+};
+
+CodeMirrorEngine.prototype.getIndenUnit = function() {
+	var cmIndentUnit = "",
+		cmIndentUnitValue;
+	var indentUnitValue = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentUnit");
+	switch(indentUnitValue) {
+		case "spaces":
+			cmIndentUnitValue = " ";
+			break;
+		case "tabs":
+			cmIndentUnitValue = "	";
+			break;
+		default:
+			cmIndentUnitValue = "	";
+			break;
+	};
+	var indentUnitMultiplier = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentUnitMultiplier"));
+	for(var i=0; i<indentUnitMultiplier; i++) {
+		cmIndentUnit += cmIndentUnitValue;
+	}
+	return cmIndentUnit;
+};
+
+CodeMirrorEngine.prototype.updateAutocompletion = function(selectOnOpen,autocompleteIcons,maxRenderedOptions) {
+	var self = this;
+	this.cm.dispatch({
+		effects: self.autocompleteCompartment.reconfigure(
+			self.autocompletion({
+				tooltipClass: function() {
+					return "cm-autocomplete-tooltip"
+				},
+				selectOnOpen: selectOnOpen !== undefined ? selectOnOpen : false,
+				icons: autocompleteIcons !== undefined ? autocompleteIcons : true,
+				maxRenderedOptions: maxRenderedOptions || 100,
+				override: [self.combinedCompletionSource]
+			})
+		)
+	});
+};
+
+CodeMirrorEngine.prototype.reconfigureLanguage = function(lang,language,options,keymap,source) {
+	var self = this;
+	var languageExtension = lang(options);
+	this.autocompletionSource = source;
+	this.cm.dispatch({
+		effects: [
+			self.languageCompartment.reconfigure(languageExtension)
+		]
+	});
+	if(keymap) {
+		this.markdownKeymap = keymap;
+	} else {
+		this.markdownKeymap = [];
+	}
+	this.updateKeymap();
+};
+
+CodeMirrorEngine.prototype.updateTiddlerType = function() {
+	var mode = this.widget.getAttribute("type","");
+	if(mode === "") {
+		mode = "text/vnd.tiddlywiki";
+	}
+	switch(mode) {
+		case "text/vnd.tiddlywiki":
+		case "text/vnd.tiddlywiki-multiple":
+		case "text/plain":
+		case "application/x-tiddler-dictionary":
+			var {tiddlywiki,tiddlywikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
+			this.reconfigureLanguage(tiddlywiki,tiddlywikiLanguage);
+			break;
+		case "text/html":
+			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
+			this.reconfigureLanguage(html,htmlLanguage,{selfClosingTags: true})
+			break;
+		case "application/javascript":
+			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
+			this.reconfigureLanguage(javascript,javascriptLanguage,undefined,undefined,scopeCompletionSource(globalThis));
+			break;
+		case "application/json":
+			var {json,jsonLanguage} = CM["@codemirror/lang-json"];
+			this.reconfigureLanguage(json,jsonLanguage)
+			break;
+		case "text/css":
+			var {css,cssLanguage} = CM["@codemirror/lang-css"];
+			this.reconfigureLanguage(css,cssLanguage);
+			break;
+		case "text/markdown":
+		case "text/x-markdown":
+			var {markdown,markdownLanguage,markdownKeymap} = CM["@codemirror/lang-markdown"];
+			this.reconfigureLanguage(markdown,markdownLanguage,{base:markdownLanguage},markdownKeymap);
+			break;
+		case "text/python":
+			var {python,pythonLanguage,globalCompletion} = CM["@codemirror/lang-python"];
+			this.reconfigureLanguage(python,pythonLanguage,undefined,undefined,globalCompletion);
+			break;
+		case "text/php":
+			var {php,phpLanguage} = CM["@codemirror/lang-php"];
+			this.reconfigureLanguage(php,phpLanguage);
+			break;
+		case "text/rust":
+			var {rust,rustLanguage} = CM["@codemirror/lang-rust"];
+			this.reconfigureLanguage(rust,rustLanguage);
+			break;
+		case "text/yaml":
+			var {yaml,yamlLanguage} = CM["@codemirror/lang-yaml"];
+			this.reconfigureLanguage(yaml,yamlLanguage);
+			break;
+		case "text/go":
+			var {go,goLanguage} = CM["@codemirror/lang-go"];
+			this.reconfigureLanguage(go,goLanguage);
+			break;
+		case "text/cpp":
+			var {cpp,cppLanguage} = CM["@codemirror/lang-cpp"];
+			this.reconfigureLanguage(cpp,cppLanguage);
+			break;
+		case "text/xml":
+			var {xml,xmlLanguage} = CM["@codemirror/lang-xml"];
+			this.reconfigureLanguage(xml,xmlLanguage);
+			break;
+		case "text/sql":
+			var {sql,StandardSQL,PostgreSQL,MySQL,MariaSQL,MSSQL,SQLite,Cassandra,PLSQL} = CM["@codemirror/lang-sql"];
+			var userSQLDialect;
+			switch(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/sqlDialect")) {
+				case "StandardSQL":
+					userSQLDialect = StandardSQL;
+					break;
+				case "PostgreSQL":
+					userSQLDialect = PostgreSQL;
+					break;
+				case "MySQL":
+					userSQLDialect = MySQL;
+					break;
+				case "MariaSQL":
+					userSQLDialect = MariaSQL;
+					break;
+				case "MSSQL":
+					userSQLDialect = MSSQL;
+					break;
+				case "SQLite":
+					userSQLDialect = SQLite;
+					break;
+				case "Cassandra":
+					userSQLDialect = Cassandra;
+					break;
+				case "PLSQL":
+					userSQLDialect = PLSQL;
+					break;
+				default:
+					userSQLDialect = StandardSQL;
+					break;
+			}
+			this.reconfigureLanguage(sql,undefined,{dialect:userSQLDialect});
+			break;
+		default:
+			break;
 	};
 };
 

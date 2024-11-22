@@ -1,0 +1,14 @@
+title: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/EditorToolbar/translate
+tags: $:/tags/EditorToolbar
+icon: $:/plugins/BTC/tiddlywiki-codemirror-6/icons/translate
+caption: Translate
+description: toggle the translate attribute on / off
+condition: [<targetTiddler>!has[type]] [<targetTiddler>get[type]!prefix[image/]] [<targetTiddler>get[type]match[image/svg+xml]]
+shortcuts: ((translate))
+
+<%if [[$:/state/codemirror-6/translate/]addsuffix<targetTiddler>get[text]match[yes]] %>
+	<$action-setfield $tiddler={{{ [[$:/state/codemirror-6/translate/]addsuffix<targetTiddler>] }}} text="no"/>
+<% else %>
+	<$action-setfield $tiddler={{{ [[$:/state/codemirror-6/translate/]addsuffix<targetTiddler>] }}} text="yes"/>
+<% endif %>
+<$action-sendmessage $message="tm-edit-text-operation" $param="focus-editor"/>

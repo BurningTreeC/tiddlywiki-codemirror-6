@@ -1,0 +1,21 @@
+title: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/EditorToolbar/filter-dropdown
+
+\procedure escape-key-actions()
+<$action-sendmessage $message="tm-edit-text-operation" $param="focus-editor"/>
+\end
+
+<$keyboard key="Escape" actions=<<escape-key-actions>>>
+
+''Tiddler Filter''
+
+<div>
+<$edit-text tag="input" tiddler="$:/config/codemirror-6/tiddlerFilter" focus="yes"/>
+</div>
+
+''Tiddler Filter Trigger String''
+
+<div>
+<$edit-text tag="input" tiddler="$:/config/codemirror-6/tiddlerMatchDelimiter"/>
+</div>
+
+</$keyboard>
