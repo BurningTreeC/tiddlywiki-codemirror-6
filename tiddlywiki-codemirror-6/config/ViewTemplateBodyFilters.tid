@@ -1,0 +1,5 @@
+title: $:/config/ViewTemplateBodyFilters/CodeMirror6/code-body
+tags: $:/tags/ViewTemplateBodyFilter
+list-before:
+
+[type[text/cpp]] [type[text/go]] [type[text/php]] [type[text/python]] [type[text/rust]] [type[text/sql]] [type[text/xml]] [type[text/yaml]] :then[[$:/core/ui/ViewTemplate/body/code]]
