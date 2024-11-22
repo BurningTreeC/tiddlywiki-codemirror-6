@@ -44,7 +44,8 @@ exports.prototype.render = function(parent,nextSibling) {
 	var selectOnOpen = this.wiki.getTiddlerText("$:/config/codemirror-6/selectOnOpen") === "yes";
 	var autocompleteIcons = this.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteIcons") === "yes";
 	var maxRenderedOptions = parseInt(this.wiki.getTiddlerText("$:/config/codemirror-6/maxRenderedOptions"));
-	this.engine.toggleAutocompletion(selectOnOpen,autocompleteIcons,maxRenderedOptions);
+	var activateOnTyping = this.wiki.getTiddlerText("$:/config/codemirror-6/activateOnTyping") === "yes";
+	this.engine.toggleAutocompletion(selectOnOpen,autocompleteIcons,maxRenderedOptions,activateOnTyping);
 	var completeAnyWord = this.wiki.getTiddlerText("$:/config/codemirror-6/completeAnyWord") === "yes";
 	this.engine.toggleCompleteAnyWord(completeAnyWord);
 	var translate = this.wiki.getTiddlerText("$:/state/codemirror-6/translate/" + this.editTitle) === "yes";
@@ -170,11 +171,12 @@ exports.prototype.refresh = function(changedTiddlers) {
 		var autocorrect = this.wiki.getTiddlerText("$:/config/codemirror-6/autocorrect") === "yes";
 		this.engine.toggleAutocorrect(autocorrect);
 	}
-	if(changedTiddlers["$:/config/codemirror-6/selectOnOpen"] || changedTiddlers["$:/config/codemirror-6/autocompleteIcons"] || changedTiddlers["$:/config/codemirror-6/maxRenderedOptions"]) {
+	if(changedTiddlers["$:/config/codemirror-6/activateOnTyping"] || changedTiddlers["$:/config/codemirror-6/selectOnOpen"] || changedTiddlers["$:/config/codemirror-6/autocompleteIcons"] || changedTiddlers["$:/config/codemirror-6/maxRenderedOptions"]) {
 		var selectOnOpen = this.wiki.getTiddlerText("$:/config/codemirror-6/selectOnOpen") === "yes";
 		var autocompleteIcons = this.wiki.getTiddlerText("$:/config/codemirror-6/autocompleteIcons") === "yes";
 		var maxRenderedOptions = parseInt(this.wiki.getTiddlerText("$:/config/codemirror-6/maxRenderedOptions"));
-		this.engine.toggleAutocompletion(selectOnOpen,autocompleteIcons,maxRenderedOptions);
+		var activateOnTyping = this.wiki.getTiddlerText("$:/config/codemirror-6/activateOnTyping") === "yes";
+		this.engine.toggleAutocompletion(selectOnOpen,autocompleteIcons,maxRenderedOptions,activateOnTyping);
 	}
 	if(changedTiddlers["$:/config/codemirror-6/completeAnyWord"]) {
 		var completeAnyWord = this.wiki.getTiddlerText("$:/config/codemirror-6/completeAnyWord") === "yes";

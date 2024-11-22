@@ -542,7 +542,7 @@ function CodeMirrorEngine(options) {
 	};
 
 	this.toggleAutocompletion = function(selectOnOpen,autocompleteIcons,maxRenderedOptions) {
-		this.updateAutocompletion()
+		this.updateAutocompletion(selectOnOpen,autocompleteIcons,maxRenderedOptions);
 	};
 
 	this.toggleCompleteAnyWord = function(enable) {
@@ -596,7 +596,7 @@ CodeMirrorEngine.prototype.getIndenUnit = function() {
 	return cmIndentUnit;
 };
 
-CodeMirrorEngine.prototype.updateAutocompletion = function(selectOnOpen,autocompleteIcons,maxRenderedOptions) {
+CodeMirrorEngine.prototype.updateAutocompletion = function(selectOnOpen,autocompleteIcons,maxRenderedOptions,activateOnTyping) {
 	var self = this;
 	this.cm.dispatch({
 		effects: self.autocompleteCompartment.reconfigure(
@@ -607,6 +607,7 @@ CodeMirrorEngine.prototype.updateAutocompletion = function(selectOnOpen,autocomp
 				selectOnOpen: selectOnOpen !== undefined ? selectOnOpen : false,
 				icons: autocompleteIcons !== undefined ? autocompleteIcons : true,
 				maxRenderedOptions: maxRenderedOptions || 100,
+				activateOnTyping: activateOnTyping !== undefined ? activateOnTyping : true,
 				override: [self.combinedCompletionSource]
 			})
 		)
@@ -911,7 +912,7 @@ CodeMirrorEngine.prototype.fixHeight = function() {
 Focus the engine node
 */
 CodeMirrorEngine.prototype.focus  = function() {
-	this.cm.focus();
+	this.cm.contentDOM.focus({preventScroll: true});
 }
 
 /*

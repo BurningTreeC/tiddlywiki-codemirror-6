@@ -1,0 +1,6 @@
+title: $:/config/codemirror-6/activateOnTyping
+caption: Activate autocompletion on typing
+description: whether or not autocompletion should be automatically activated on typing
+settings-template: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/templates/settings/input-switch
+
+yes
