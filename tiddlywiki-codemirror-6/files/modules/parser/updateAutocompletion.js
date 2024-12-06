@@ -52,6 +52,14 @@ function debounce(func, delay) {
     };
 }
 
+// Initialize autocompletion data structures
+var widgets = {};
+var filterOperators = {};
+var filterFunctions = {};
+var tiddlers = {};
+var tags = {};
+var attributes = {};
+
 /**
  * Updates the autocompletion lists dynamically by clearing and repopulating them.
  * This function ensures that read-only properties like 'length' are not modified.

@@ -22,7 +22,8 @@ var CodeMirrorDependencies = {
         StateField: CM["@codemirror/state"].StateField,
         StateEffect: CM["@codemirror/state"].StateEffect,
         Compartment: CM["@codemirror/state"].Compartment,
-        allowMultipleSelections: CM["@codemirror/state"].EditorState.allowMultipleSelections
+        allowMultipleSelections: CM["@codemirror/state"].EditorState.allowMultipleSelections,
+        RangeSetBuilder: CM["@codemirror/state"].RangeSetBuilder
     },
     view: {
         EditorView: CM["@codemirror/view"].EditorView,

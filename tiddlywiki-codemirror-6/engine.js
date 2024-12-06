@@ -119,6 +119,7 @@ function CodeMirrorEngine(options) {
 	this.autocompletion = autocompletion;
 	this.linter = linter;
     this.syntaxTree = syntaxTree;
+    this.autocompletion = autocompletion;
 
 	var keymapCompartment = new Compartment();
 	this.languageCompartment = new Compartment();
@@ -136,8 +137,8 @@ function CodeMirrorEngine(options) {
 	var closeBracketsCompartment = new Compartment();
 
 	this.generalUpdateListenerCompartment = new Compartment();
-	this.tw5UpdateListenerCompartment = new Compartment();
-	this.decorationCompartment = new Compartment();
+	this.tiddlyWikiLanguageCompartment = new Compartment();
+	this.tiddlyWikiViewPluginCompartment = new Compartment();
 
 	// Create a general updateListener for other languages
 	function createGeneralUpdateListener() {
@@ -365,8 +366,9 @@ function CodeMirrorEngine(options) {
 
 	var editorExtensions = [
 		self.languageCompartment.of([]),
-		self.decorationCompartment.of([]),
+		self.tiddlyWikiLanguageCompartment.of([]),
 		self.generalUpdateListenerCompartment.of(createGeneralUpdateListener()),
+		self.tiddlyWikiViewPluginCompartment.of([]),
 		self.autocompleteCompartment.of(autocompletion()),
 		dropCursor(),
 		solarizedTheme,
@@ -475,6 +477,21 @@ function CodeMirrorEngine(options) {
 		state: this.editorState
 	};
 	this.cm = new EditorView(editorOptions);
+
+	this.setTWLanguageSupport = function(language,viewplugin) {
+		console.log(language.extension);
+		console.log(language);
+		console.log(viewplugin);
+	    self.cm.dispatch({
+	        effects: [
+	        	self.generalUpdateListenerCompartment.reconfigure([]),
+	        	self.autocompleteCompartment.reconfigure([]),
+	        	self.languageCompartment.reconfigure([]),
+	        	self.tiddlyWikiLanguageCompartment.reconfigure([language]),
+	        	self.tiddlyWikiViewPluginCompartment.reconfigure([viewplugin.extension])
+	        ]
+	    });
+	};
 
 	this.updateKeymaps = function () {
 		console.log("Updating keymaps...");
@@ -714,8 +731,10 @@ CodeMirrorEngine.prototype.reconfigureLanguage = function(lang,language,options,
 	this.autocompletionSource = source;
 	this.cm.dispatch({
 		effects: [
+			self.autocompleteCompartment.of(self.autocompletion()),
+			self.tiddlyWikiLanguageCompartment.reconfigure([]),
+			self.tiddlyWikiViewPluginCompartment.reconfigure([]),
 			self.languageCompartment.reconfigure(languageExtension),
-			self.tw5UpdateListenerCompartment.reconfigure([])
 		]
 	});
 	if(keymap) {
@@ -740,8 +759,9 @@ CodeMirrorEngine.prototype.updateTiddlerType = function() {
 		case "text/vnd.tiddlywiki-multiple":
 		case "text/plain":
 		case "application/x-tiddler-dictionary":
-			var tiddlywiki = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/main.js").TiddlyWikiLanguageSupport;
-			this.reconfigureLanguage(tiddlywiki);
+			var tiddlywikiLanguage = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/main.js").TiddlyWikiLanguageSupport;
+			var viewPlugin = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/main.js").TiddlyWikiViewPlugin;
+			this.setTWLanguageSupport(tiddlywikiLanguage,viewPlugin);
 			break;
 		case "text/html":
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
