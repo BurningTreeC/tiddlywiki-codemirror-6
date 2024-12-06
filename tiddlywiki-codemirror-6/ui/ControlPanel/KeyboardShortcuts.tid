@@ -1,0 +1,184 @@
+title: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/ControlPanel/KeyboardShortcuts
+tags: $:/tags/CodeMirror6/Settings
+caption: {{$:/language/ControlPanel/KeyboardShortcuts/Caption}}
+
+\define lingo-base() $:/language/ControlPanel/KeyboardShortcuts/
+
+\define new-shortcut(title)
+\whitespace trim
+<div class="tc-dropdown-item-plain">
+<$edit-shortcut tiddler="$title$" placeholder={{$:/language/ControlPanel/KeyboardShortcuts/Add/Prompt}} focus="true" style="width:auto;"/>
+&#32;
+<$button>
+<<lingo Add/Caption>>
+<$action-listops
+	$tiddler="$(shortcutTitle)$"
+	$field="text"
+	$subfilter="[{$title$}]"
+/>
+<$action-deletetiddler
+	$tiddler="$title$"
+/>
+<$set name="keyDescriptor" value="(($(shortcutName)$))">
+<$set name="shortcutTiddlersList" filter="[all[tiddlers+shadows]field:key<keyDescriptor>]">
+<$list filter="[enlist<shortcutTiddlersList>]" variable="shortcutTiddler" emptyMessage="""
+<$action-setfield $tiddler="$:/KeyboardShortcut/CodeMirror/$(shortcutName)$" text="$(shortcutName)$" key=<<keyDescriptor>>/>
+<$fieldmangler tiddler="$:/KeyboardShortcut/CodeMirror/$(shortcutName)$">
+<$action-sendmessage $message="tm-add-tag" $param="$:/tags/KeyboardShortcut/CodeMirror"/>
+</$fieldmangler>
+""">
+<%if [<shortcutTiddler>get[text]!match[$(shortcutName)$]] [<shortcutTiddler>!has[text]] %>
+<$action-setfield $tiddler=<<shortcutTiddler>> text="$(shortcutName)$"/>
+<% endif %>
+<$fieldmangler tiddler=<<shortcutTiddler>>>
+<$action-sendmessage $message="tm-add-tag" $param="$:/tags/KeyboardShortcut/CodeMirror"/>
+</$fieldmangler>
+</$list>
+</$set>
+</$set>
+</$button>
+</div>
+\end
+
+\define shortcut-list-item(caption)
+\whitespace trim
+<td>
+</td>
+<td style="text-align:right;font-size:0.7em;">
+<<lingo Platform/$caption$>>
+</td>
+<td>
+<div style="position:relative;">
+<$button popup=<<qualify "$:/state/dropdown/$(shortcutTitle)$">> class="tc-btn-invisible">
+{{$:/core/images/edit-button}}
+</$button>
+&#32;
+<%if [[$caption$]match[Mac]] %>
+<$macrocall $name="display-cm-shortcuts" $output="text/html" shortcuts={{$(shortcutTitle)$}} prefix="<kbd>{{$:/plugins/BTC/tiddlywiki-codemirror-6/icons/mac}}" separator="</kbd> <kbd>" suffix="</kbd>" command="""$(shortcutName)$""" platform="$caption$"/>
+<% else %>
+<$macrocall $name="display-cm-shortcuts" $output="text/html" shortcuts={{$(shortcutTitle)$}} prefix="<kbd>" separator="</kbd> <kbd>" suffix="</kbd>" command="""$(shortcutName)$""" platform="$caption$"/>
+<% endif %>
+
+<$reveal state=<<qualify "$:/state/dropdown/$(shortcutTitle)$">> type="popup" position="below" animate="yes">
+<div class="tc-block-dropdown-wrapper">
+<div class="tc-block-dropdown tc-edit-type-dropdown tc-popup-keep">
+<$list
+	filter="[list[$(shortcutTitle)$!!text]sort[title]]"
+	variable="shortcut"
+	emptyMessage="<div class='tc-dropdown-item-plain'>//<<lingo NoShortcuts/Caption>>//</div>">
+<div class="tc-dropdown-item-plain">
+<$button class="tc-btn-invisible" tooltip={{$:/language/ControlPanel/KeyboardShortcuts/Remove/Hint}}>
+<$action-listops
+	$tiddler="$(shortcutTitle)$"
+	$field="text"
+	$subfilter="+[remove<shortcut>]"
+/>
+<small>{{$:/core/images/close-button}}</small>
+</$button>
+&#32;
+<%if [[$caption$]match[Mac]] %>
+<kbd>{{$:/plugins/BTC/tiddlywiki-codemirror-6/icons/mac}}
+<$macrocall $name="display-cm-shortcuts" $output="text/html" shortcuts=<<shortcut>> command="""$(shortcutName)$""" platform="$caption$"/>
+</kbd>
+<% else %>
+<kbd>
+<$macrocall $name="display-cm-shortcuts" $output="text/html" shortcuts=<<shortcut>> command="""$(shortcutName)$""" platform="$caption$"/>
+</kbd>
+<% endif %>
+</div>
+</$list>
+<hr/>
+<$macrocall $name="new-shortcut" title=<<qualify "$:/state/new-shortcut/$(shortcutTitle)$">>/>
+</div>
+</div>
+</$reveal>
+</div>
+</td>
+\end
+
+\define shortcut-list(caption,prefix)
+\whitespace trim
+<tr>
+<$list filter="[[$prefix$$(shortcutName)$]]" variable="shortcutTitle">
+<<shortcut-list-item "$caption$">>
+</$list>
+</tr>
+\end
+
+\define shortcut-editor()
+\whitespace trim
+<<shortcut-list "All" "$:/config/shortcuts/">>
+<<shortcut-list "Mac" "$:/config/shortcuts-mac/">>
+<<shortcut-list "NonMac" "$:/config/shortcuts-not-mac/">>
+<<shortcut-list "Linux" "$:/config/shortcuts-linux/">>
+<<shortcut-list "NonLinux" "$:/config/shortcuts-not-linux/">>
+<<shortcut-list "Windows" "$:/config/shortcuts-windows/">>
+<<shortcut-list "NonWindows" "$:/config/shortcuts-not-windows/">>
+\end
+
+\define shortcut-preview()
+<%if [[$(platform)$]match[Mac]] %>
+<$macrocall $name="display-cm-shortcuts" $output="text/html" shortcuts={{$(shortcutPrefix)$$(shortcutName)$}} prefix="<kbd>{{$:/plugins/BTC/tiddlywiki-codemirror-6/icons/mac}}" separator="</kbd> <kbd>" suffix="</kbd>" command="""$(shortcutName)$""" platform="$(platform)$"/>
+<% else %>
+<$macrocall $name="display-cm-shortcuts" $output="text/html" shortcuts={{$(shortcutPrefix)$$(shortcutName)$}} prefix="<kbd>" separator="</kbd> <kbd>" suffix="</kbd>" command="""$(shortcutName)$""" platform="$(platform)$"/>
+<% endif %>
+\end
+
+\define shortcut-item-inner()
+\whitespace trim
+<tr>
+<td>
+<$reveal type="nomatch" state=<<dropdownStateTitle>> text="open">
+<$button class="tc-btn-invisible">
+<$action-setfield
+	$tiddler=<<dropdownStateTitle>>
+	$value="open"
+/>
+{{$:/core/images/right-arrow}}
+</$button>
+</$reveal>
+<$reveal type="match" state=<<dropdownStateTitle>> text="open">
+<$button class="tc-btn-invisible">
+<$action-setfield
+	$tiddler=<<dropdownStateTitle>>
+	$value="close"
+/>
+{{$:/core/images/down-arrow}}
+</$button>
+</$reveal>
+&#32;
+''<$text text=<<shortcutName>>/>''
+</td>
+<td>
+<$transclude tiddler="$:/config/ShortcutInfo/$(shortcutName)$"/>
+</td>
+<td>
+<$list filter="$:/config/shortcuts/ $:/config/shortcuts-mac/ $:/config/shortcuts-not-mac/ $:/config/shortcuts-linux/ $:/config/shortcuts-not-linux/ $:/config/shortcuts-windows/ $:/config/shortcuts-not-windows/" variable="shortcutPrefix">
+<$set name="platform" value={{{ [<shortcutPrefix>match[$:/config/shortcuts/]then[All]] [<shortcutPrefix>match[$:/config/shortcuts-mac/]then[Mac]] [<shortcutPrefix>match[$:/config/shortcuts-not-mac/]then[NonMac]] [<shortcutPrefix>match[$:/config/shortcuts-linux/]then[Linux]] [<shortcutPrefix>match[$:/config/shortcuts-not-linux/]then[NonLinux]] [<shortcutPrefix>match[$:/config/shortcuts-windows/]then[Windows]] [<shortcutPrefix>match[$:/config/shortcuts-not-windows/]then[NonWindows]] }}}>
+<<shortcut-preview>>
+</$set>
+</$list>
+</td>
+</tr>
+<$set name="dropdownState" value={{$(dropdownStateTitle)$}}>
+<$list filter="[<dropdownState>match[open]]" variable="listItem">
+<<shortcut-editor>>
+</$list>
+</$set>
+\end
+
+\define shortcut-item()
+\whitespace trim
+<$set name="dropdownStateTitle" value=<<qualify "$:/state/dropdown/keyboardshortcut/$(shortcutName)$">>>
+<<shortcut-item-inner>>
+</$set>
+\end
+\whitespace trim
+
+<table>
+<tbody>
+<$list filter="[[$:/plugins/BTC/tiddlywiki-codemirror-6]plugintiddlers[]removeprefix[$:/config/ShortcutInfo/]]" variable="shortcutName">
+<<shortcut-item>>
+</$list>
+</tbody>
+</table>

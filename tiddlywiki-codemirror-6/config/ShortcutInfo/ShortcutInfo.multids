@@ -1,0 +1,14 @@
+title: $:/config/ShortcutInfo/
+
+cursorCharLeft: Go one character to the left
+cursorGroupLeft: Go one group of characters to the left
+cursorLineStart: Move the cursor to the start of the line
+editor-fullscreen: Toggle the fullscreen view of the editor on / off
+editor-search: Toggle the search panel of the editor on / off
+gotoLine: Open a panel to go to a specified line
+insertNewlineAndIndent: Insert a new line and indent
+lineNumbers: Toggle the line numbers off / on
+redo: Redo the last action in the history
+spellcheck: Toggle spellchecking on and off within the Editor
+toggle-indent: Toggle indenting using <kbd>Tab</kbd> within the Editor
+undo: Undo the last action in the history

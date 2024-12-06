@@ -29,8 +29,7 @@ exports.prototype.render = function(parent,nextSibling) {
 	this.shortcutPriorityList = []; // Stores the parsed shortcut priority
 	this.updateShortcutLists(this.getShortcutTiddlerList());
 	this.hasStylesheetTag = this.wiki.getTiddler(this.editTitle).hasTag("$:/tags/Stylesheet");
-	this.engine.updateTiddlerType();
-	this.engine.updateKeymaps();
+	//this.engine.updateKeymaps();
 	var lineNumbers = this.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes" && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
 	this.engine.toggleLineNumbers(lineNumbers);
 	this.engine.toggleFoldGutter(lineNumbers);
@@ -57,6 +56,7 @@ exports.prototype.render = function(parent,nextSibling) {
 	this.engine.toggleCloseBrackets(closeBrackets);
 	var spellcheck = this.wiki.getTiddlerText("$:/config/codemirror-6/spellcheck") === "yes";
 	this.engine.toggleSpellcheck(spellcheck);
+	this.engine.updateTiddlerType();
 };
 
 exports.prototype.getShortcutTiddlerList = function() {
@@ -138,17 +138,14 @@ exports.prototype.refresh = function(changedTiddlers) {
 		this.hasStylesheetTag = hasStylesheetTag;
 		this.engine.updateTiddlerType();
 	}
-	if(changedAttributes.type || changedTiddlers["$:/config/codemirror-6/sqlDialect"]) {
-		this.engine.updateTiddlerType();
-	}
 	if(changedTiddlers["$:/config/codemirror-6/indentWithTab"]) {
 		var indentWithTab = this.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes";
-		if(indentWithTab && this.engine.customKeymap.indexOf(this.engine.indentWithTab) === -1) {
-			this.engine.customKeymap.push(this.engine.indentWithTab);
+		if(indentWithTab && this.engine.currentKeymap.indexOf(this.engine.indentWithTab) === -1) {
+			this.engine.currentKeymap.push(this.engine.indentWithTab);
 		} else {
-			var index = this.engine.customKeymap.indexOf(this.engine.indentWithTab);
+			var index = this.engine.currentKeymap.indexOf(this.engine.indentWithTab);
 			if(index !== -1) {
-				this.engine.customKeymap.splice(index,1);
+				this.engine.currentKeymap.splice(index,1);
 			}
 		}
 		this.engine.updateKeymap();
@@ -205,7 +202,10 @@ exports.prototype.refresh = function(changedTiddlers) {
 	// Re-cache shortcuts if something changed
 	if(hasChanged) {
 		this.updateShortcutLists(newList);
-		this.engine.updateKeymaps();
+		//this.engine.updateKeymaps();
+	}
+	if(changedAttributes.type || changedTiddlers["$:/config/codemirror-6/sqlDialect"]) {
+		this.engine.updateTiddlerType();
 	}
 	// Call the base class refresh function
 	Object.getPrototypeOf(Object.getPrototypeOf(this)).refresh.call(this,changedTiddlers);

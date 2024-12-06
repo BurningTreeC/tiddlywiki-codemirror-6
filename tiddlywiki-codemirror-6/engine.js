@@ -34,19 +34,91 @@ function CodeMirrorEngine(options) {
 	this.parentNode.insertBefore(this.domNode,this.nextSibling);
 	this.widget.domNodes.push(this.domNode);
 
-	var {EditorView,ViewPlugin,dropCursor,keymap,highlightSpecialChars,drawSelection,highlightActiveLine,rectangularSelection,crosshairCursor,lineNumbers,highlightActiveLineGutter,placeholder,tooltips,showPanel,getPanel} = CM["@codemirror/view"];
-	var {defaultKeymap,standardKeymap,indentWithTab,history,historyKeymap,undo,redo} = CM["@codemirror/commands"];
-	var {language,indentUnit,defaultHighlightStyle,syntaxHighlighting,indentOnInput,bracketMatching,foldGutter,foldKeymap} = CM["@codemirror/language"];
-	var {EditorState,EditorSelection,Prec,Facet,StateField,StateEffect,Compartment} = CM["@codemirror/state"];
-	var {search,SearchQuery,searchKeymap,highlightSelectionMatches,openSearchPanel,closeSearchPanel,searchPanelOpen,gotoLine} = CM["@codemirror/search"];
-	var {autocompletion,completionKeymap,closeBrackets,closeBracketsKeymap,completionStatus,acceptCompletion,completeAnyWord} = CM["@codemirror/autocomplete"];
-	var {lintKeymap} = CM["@codemirror/lint"];
+	// Import CodeMirrorDependencies
+	var CodeMirrorDependencies = require("$:/plugins/BTC/tiddlywiki-codemirror-6/lib/codemirror-dependencies.js").CodeMirrorDependencies;
+
+	// State-related dependencies
+	var EditorState = CodeMirrorDependencies.state.EditorState;
+	var EditorSelection = CodeMirrorDependencies.state.EditorSelection;
+	var Prec = CodeMirrorDependencies.state.Prec;
+	var Facet = CodeMirrorDependencies.state.Facet;
+	var StateField = CodeMirrorDependencies.state.StateField;
+	var StateEffect = CodeMirrorDependencies.state.StateEffect;
+	var Compartment = CodeMirrorDependencies.state.Compartment;
+	var allowMultipleSelections = CodeMirrorDependencies.state.allowMultipleSelections;
+	var multipleSelectionsExtension = allowMultipleSelections.of(true);
+
+	// View-related dependencies
+	var EditorView = CodeMirrorDependencies.view.EditorView;
+	var ViewPlugin = CodeMirrorDependencies.view.ViewPlugin;
+	var dropCursor = CodeMirrorDependencies.view.dropCursor;
+	var keymap = CodeMirrorDependencies.view.keymap;
+	var highlightSpecialChars = CodeMirrorDependencies.view.highlightSpecialChars;
+	var drawSelection = CodeMirrorDependencies.view.drawSelection;
+	var highlightActiveLine = CodeMirrorDependencies.view.highlightActiveLine;
+	var rectangularSelection = CodeMirrorDependencies.view.rectangularSelection;
+	var crosshairCursor = CodeMirrorDependencies.view.crosshairCursor;
+	var lineNumbers = CodeMirrorDependencies.view.lineNumbers;
+	var highlightActiveLineGutter = CodeMirrorDependencies.view.highlightActiveLineGutter;
+	var placeholder = CodeMirrorDependencies.view.placeholder;
+	var tooltips = CodeMirrorDependencies.view.tooltips;
+	var showPanel = CodeMirrorDependencies.view.showPanel;
+	var getPanel = CodeMirrorDependencies.view.getPanel;
+
+	// Command-related dependencies
+	var defaultKeymap = CodeMirrorDependencies.commands.defaultKeymap;
+	var standardKeymap = CodeMirrorDependencies.commands.standardKeymap;
+	var indentWithTab = CodeMirrorDependencies.commands.indentWithTab;
+	var history = CodeMirrorDependencies.commands.history;
+	var historyKeymap = CodeMirrorDependencies.commands.historyKeymap;
+	var undo = CodeMirrorDependencies.commands.undo;
+	var redo = CodeMirrorDependencies.commands.redo;
+
+	// Language-related dependencies
+	var language = CodeMirrorDependencies.language.language;
+	var indentUnit = CodeMirrorDependencies.language.indentUnit;
+	var defaultHighlightStyle = CodeMirrorDependencies.language.defaultHighlightStyle;
+	var syntaxHighlighting = CodeMirrorDependencies.language.syntaxHighlighting;
+	var indentOnInput = CodeMirrorDependencies.language.indentOnInput;
+	var bracketMatching = CodeMirrorDependencies.language.bracketMatching;
+	var foldGutter = CodeMirrorDependencies.language.foldGutter;
+	var foldKeymap = CodeMirrorDependencies.language.foldKeymap;
+	var syntaxTree = CodeMirrorDependencies.language.syntaxTree;
+	var LanguageSupport = CodeMirrorDependencies.language.LanguageSupport;
+	var Language = CodeMirrorDependencies.language.Language;
+	var defineLanguageFacet = CodeMirrorDependencies.language.defineLanguageFacet;
+	var LRLanguage = CodeMirrorDependencies.language.LRLanguage;
+
+	// Search-related dependencies
+	var search = CodeMirrorDependencies.search.search;
+	var SearchQuery = CodeMirrorDependencies.search.SearchQuery;
+	var searchKeymap = CodeMirrorDependencies.search.searchKeymap;
+	var highlightSelectionMatches = CodeMirrorDependencies.search.highlightSelectionMatches;
+	var openSearchPanel = CodeMirrorDependencies.search.openSearchPanel;
+	var closeSearchPanel = CodeMirrorDependencies.search.closeSearchPanel;
+	var searchPanelOpen = CodeMirrorDependencies.search.searchPanelOpen;
+	var gotoLine = CodeMirrorDependencies.search.gotoLine;
+
+	// Autocomplete-related dependencies
+	var autocompletion = CodeMirrorDependencies.autocomplete.autocompletion;
+	var completionKeymap = CodeMirrorDependencies.autocomplete.completionKeymap;
+	var closeBrackets = CodeMirrorDependencies.autocomplete.closeBrackets;
+	var closeBracketsKeymap = CodeMirrorDependencies.autocomplete.closeBracketsKeymap;
+	var completionStatus = CodeMirrorDependencies.autocomplete.completionStatus;
+	var acceptCompletion = CodeMirrorDependencies.autocomplete.acceptCompletion;
+	var completeAnyWord = CodeMirrorDependencies.autocomplete.completeAnyWord;
+
+	// Lint-related dependencies
+	var lintKeymap = CodeMirrorDependencies.lint.lintKeymap;
+	var linter = CodeMirrorDependencies.lint.linter;
 
 	this.EditorView = EditorView;
 	this.EditorState = EditorState;
 	this.Prec = Prec;
 	this.keymap = keymap;
 	this.autocompletion = autocompletion;
+	this.linter = linter;
+    this.syntaxTree = syntaxTree;
 
 	var keymapCompartment = new Compartment();
 	this.languageCompartment = new Compartment();
@@ -62,6 +134,35 @@ function CodeMirrorEngine(options) {
 	var indentUnitCompartment = new Compartment();
 	var bracketMatchingCompartment = new Compartment();
 	var closeBracketsCompartment = new Compartment();
+
+	this.generalUpdateListenerCompartment = new Compartment();
+	this.tw5UpdateListenerCompartment = new Compartment();
+	this.decorationCompartment = new Compartment();
+
+	// Create a general updateListener for other languages
+	function createGeneralUpdateListener() {
+	    return EditorView.updateListener.of(function(update) {
+			if(update.docChanged) {
+				var text = update.state.doc.toString();
+				self.widget.saveChanges(text);
+			}
+			var panelState = update.view.state.facet(showPanel);
+			var panelStateLength = self.countPanelStateLength(panelState);
+			var lineDialogOpen = false;
+			if(panelStateLength === 1) {
+				self.lineDialogOpen = panelState.some(function(fun) {
+					return fun && (fun.name === "createLineDialog");
+				});
+			}
+			var focusState = update.view.hasFocus;
+			if((lineDialogOpen && focusState) || (panelStateLength === 0)) {
+				self.editorCanBeClosed = true;
+			} else {
+				self.editorCanBeClosed = false;
+				self.widget.wiki.deleteTiddler(self.cancelEditTiddlerStateTiddler);
+			}
+	    });
+	}
 
 	this.editorSelection = EditorSelection;
 	this.completionStatus = completionStatus;
@@ -88,6 +189,19 @@ function CodeMirrorEngine(options) {
 		cmCompletionKeymap = completionKeymap,
 		cmLintKeymap = lintKeymap;
 
+	this.originalKeymap = [
+		...closeBracketsKeymap,
+		...defaultKeymap,
+		...searchKeymap,
+		...historyKeymap,
+		...foldKeymap,
+		...completionKeymap,
+		...lintKeymap
+	];
+
+	this.currentKeymap = [];
+	this.additionalKeymap = [];
+
 	var oSP = function() {
 		return openSearchPanel(self.cm);
 	}
@@ -104,15 +218,6 @@ function CodeMirrorEngine(options) {
 	this.searchPanelOpen = searchPanelOpen;
 
 	this.editorPanelState = [];
-
-	this.currentLanguageOptions = {
-		tooltipClass: function() {
-			return "cm-autocomplete-tooltip"
-		},
-		selectOnOpen: false,
-		icons: true,
-		maxRenderedOptions: 100
-	};
 
 	this.solarizedLightTheme = EditorView.theme({},{dark:false});
 	this.solarizedDarkTheme = EditorView.theme({},{dark:true});
@@ -255,11 +360,13 @@ function CodeMirrorEngine(options) {
 	};
 
 	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes") {
-		this.customKeymap.push(indentWithTab);
+		this.currentKeymap.push(indentWithTab);
 	};
 
 	var editorExtensions = [
 		self.languageCompartment.of([]),
+		self.decorationCompartment.of([]),
+		self.generalUpdateListenerCompartment.of(createGeneralUpdateListener()),
 		self.autocompleteCompartment.of(autocompletion()),
 		dropCursor(),
 		solarizedTheme,
@@ -335,23 +442,13 @@ function CodeMirrorEngine(options) {
 		highlightSpecialChars(),
 		history(), //{newGroupDelay: 0, joinToEvent: function() { return false; }}),
 		drawSelection(),
-		EditorState.allowMultipleSelections.of(true),
+		multipleSelectionsExtension,
 		indentOnInput(),
 		syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
 		rectangularSelection(),
 		crosshairCursor(),
 		highlightSelectionMatches(),
-		keymapCompartment.of(keymap.of([
-			...cmCloseBracketsKeymap,
-			...cmDefaultKeymap,
-			...cmSearchKeymap,
-			...cmHistoryKeymap,
-			...cmFoldKeymap,
-			...cmCompletionKeymap,
-			...cmLintKeymap,
-			...self.markdownKeymap,
-			...self.customKeymap
-		])),
+		keymapCompartment.of(keymap.of(self.originalKeymap)),
 		Prec.high(keymap.of({key: "Tab", run: acceptCompletion})),
 		EditorView.lineWrapping,
 		closeBracketsCompartment.of([]),
@@ -366,27 +463,6 @@ function CodeMirrorEngine(options) {
 		autocorrectCompartment.of([]),
 		translateCompartment.of([]),
 		EditorView.perLineTextDirection.of(true),
-		EditorView.updateListener.of(function(update) {
-			if(update.docChanged) {
-				var text = self.cm.state.doc.toString();
-				self.widget.saveChanges(text);
-			}
-			var panelState = update.view.state.facet(showPanel);
-			var panelStateLength = self.countPanelStateLength(panelState);
-			var lineDialogOpen = false;
-			if(panelStateLength === 1) {
-				self.lineDialogOpen = panelState.some(function(fun) {
-					return fun && (fun.name === "createLineDialog");
-				});
-			}
-			var focusState = update.view.hasFocus;
-			if((lineDialogOpen && focusState) || (panelStateLength === 0)) {
-				self.editorCanBeClosed = true;
-			} else {
-				self.editorCanBeClosed = false;
-				self.widget.wiki.deleteTiddler(self.cancelEditTiddlerStateTiddler);
-			}
-		})
 	];
 
 	if(this.widget.editPlaceholder) {
@@ -400,83 +476,89 @@ function CodeMirrorEngine(options) {
 	};
 	this.cm = new EditorView(editorOptions);
 
-	this.updateKeymap = function() {
-		var updatedKeymap = keymap.of([
-			...cmCloseBracketsKeymap,
-			...cmDefaultKeymap,
-			...cmSearchKeymap,
-			...cmHistoryKeymap,
-			...cmFoldKeymap,
-			...cmCompletionKeymap,
-			...cmLintKeymap,
-			...self.markdownKeymap,
-			...self.customKeymap
-		]);
-		this.cm.dispatch({
-			effects: keymapCompartment.reconfigure(updatedKeymap)
-		});
-	};
+	this.updateKeymaps = function () {
+		console.log("Updating keymaps...");
 
-	function addShortcut(shortcut) {
-		this.customKeymap = [...self.customKeymap,shortcut];
-	};
+		var commands = self.widget.shortcutActionList;
 
-	function removeShortcut(command) {
-		cmCloseBracketsKeymap = cmCloseBracketsKeymap.filter(function(shortcut) {
-			return shortcut.run !== command;
-		});
-		cmDefaultKeymap = cmDefaultKeymap.filter(function(shortcut) {
-			return shortcut.run !== command;
-		});
-		cmSearchKeymap = cmSearchKeymap.filter(function(shortcut) {
-			return shortcut.run !== command;
-		});
-		cmHistoryKeymap = cmHistoryKeymap.filter(function(shortcut) {
-			return shortcut.run !== command;
-		});
-		cmFoldKeymap = cmFoldKeymap.filter(function(shortcut) {
-			return shortcut.run !== command;
-		});
-		cmCompletionKeymap = cmCompletionKeymap.filter(function(shortcut) {
-			return shortcut.run !== command;
-		});
-		cmLintKeymap = cmLintKeymap.filter(function(shortcut) {
-			return shortcut.run !== command;
-		});
-		this.markdownKeymap = this.markdownKeymap.filter(function(shortcut) {
-			return shortcut.run !== command;
-		});
-		this.customKeymap = this.customKeymap.filter(function(shortcut) {
-			return shortcut.run !== command;
-		});
-	};
+		if (!commands || commands.length === 0) {
+			console.warn("No commands to process.");
+			return;
+		}
 
-	this.updateKeymaps = function() {
-		var commands = this.widget.shortcutActionList;
-		if(commands) {
-			for(var i=0; i<commands.length; i++) {
-				var command = commands[i];
-				var runCommand = CM["@codemirror/search"][command] || CM["@codemirror/commands"][command];
-				removeShortcut(runCommand);
-				var keyInfoArray = this.widget.shortcutParsedList[i];
-				if(keyInfoArray) {
-					for(var k=0; k<keyInfoArray.length; k++) {
-						var kbShortcutArray = this.getPrintableShortcuts(keyInfoArray);
-						if(kbShortcutArray.length) {
-							var kbShortcut = kbShortcutArray[k] || "";
-							if(runCommand) {
-								var shortcut = {
-									key: kbShortcut,
-									run: runCommand
-								}
-								addShortcut(shortcut);
-							}
-						}
+		if (!self.widget.shortcutParsedList || self.widget.shortcutParsedList.length !== commands.length) {
+			console.warn("shortcutParsedList is not defined or does not match the length of commands.");
+			return;
+		}
+
+		var activeShortcuts = {};
+		var originalBindingsMap = {};
+		for (var i = 0; i < self.originalKeymap.length; i++) {
+			var binding = self.originalKeymap[i];
+			originalBindingsMap[binding.run] = binding;
+		}
+
+		for (var i = 0; i < commands.length; i++) {
+			var commandName = commands[i];
+
+			var runCommand =
+				CM["@codemirror/search"][commandName] ||
+				CM["@codemirror/commands"][commandName] ||
+				CM["@codemirror/lint"][commandName];
+
+			if (!runCommand) {
+				console.warn('Command "' + commandName + '" does not exist.');
+				continue;
+			}
+
+			var keyInfoArray = self.widget.shortcutParsedList[i];
+			if (keyInfoArray && keyInfoArray.length > 0) {
+				var kbShortcutArray = self.getPrintableShortcuts(keyInfoArray);
+				for (var j = 0; j < kbShortcutArray.length; j++) {
+					var kbShortcut = kbShortcutArray[j];
+					if (kbShortcut) {
+						activeShortcuts[kbShortcut] = runCommand;
 					}
 				}
 			}
-			this.updateKeymap();
 		}
+
+		self.currentKeymap = self.currentKeymap.filter(function (keybinding) {
+			if (activeShortcuts[keybinding.key]) {
+				keybinding.run = activeShortcuts[keybinding.key];
+				delete activeShortcuts[keybinding.key];
+				return true;
+			}
+
+			var originalBinding = originalBindingsMap[keybinding.run];
+			if (originalBinding) {
+				keybinding.key = originalBinding.key;
+				keybinding.run = originalBinding.run;
+				return true;
+			}
+
+			// Entferne nicht mehr gültige Shortcuts
+			return false;
+		});
+
+		for (var kbShortcut in activeShortcuts) {
+			if (activeShortcuts.hasOwnProperty(kbShortcut)) {
+				self.currentKeymap.push({
+					key: kbShortcut,
+					run: activeShortcuts[kbShortcut],
+				});
+			}
+		}
+
+		// Füge die zusätzliche Keymap hinzu
+		self.currentKeymap = self.currentKeymap.concat(self.additionalKeymap || []);
+
+		// Aktualisiere die Keymap des Editors
+		self.cm.dispatch({
+			effects: keymapCompartment.reconfigure(keymap.of(self.currentKeymap)),
+		});
+
+		console.log("Keymaps successfully updated:", JSON.stringify(self.currentKeymap, null, 2));
 	};
 
 	this.toggleSpellcheck = function(enable) {
@@ -614,24 +696,38 @@ CodeMirrorEngine.prototype.updateAutocompletion = function(selectOnOpen,autocomp
 	});
 };
 
-CodeMirrorEngine.prototype.reconfigureLanguage = function(lang,language,options,keymap,source) {
+CodeMirrorEngine.prototype.reconfigureLanguage = function(lang,language,options,keymap,source,linter) {
 	var self = this;
-	var languageExtension = lang(options);
+	var languageExtension;
+	if(linter) {
+		languageExtension = [lang(options),this.linter(linter)];
+	} else if(options) {
+		languageExtension = lang(options);
+	} else {
+		languageExtension = lang();
+	}
+    if (!languageExtension) {
+        console.error("Language extension is undefined or invalid.");
+        throw new Error("Cannot reconfigure language: Invalid languageExtension.");
+    }
+    console.log("Reconfiguring language with:", languageExtension);
 	this.autocompletionSource = source;
 	this.cm.dispatch({
 		effects: [
-			self.languageCompartment.reconfigure(languageExtension)
+			self.languageCompartment.reconfigure(languageExtension),
+			self.tw5UpdateListenerCompartment.reconfigure([])
 		]
 	});
 	if(keymap) {
-		this.markdownKeymap = keymap;
+		this.additionalKeymap = keymap;
 	} else {
-		this.markdownKeymap = [];
+		this.additionalKeymap = [];
 	}
-	this.updateKeymap();
+	//this.updateKeymaps();
 };
 
 CodeMirrorEngine.prototype.updateTiddlerType = function() {
+	var self = this;
 	var mode = this.widget.getAttribute("type","");
 	if(mode === "") {
 		mode = "text/vnd.tiddlywiki";
@@ -644,12 +740,12 @@ CodeMirrorEngine.prototype.updateTiddlerType = function() {
 		case "text/vnd.tiddlywiki-multiple":
 		case "text/plain":
 		case "application/x-tiddler-dictionary":
-			var {tiddlywiki,tiddlywikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
-			this.reconfigureLanguage(tiddlywiki,tiddlywikiLanguage);
+			var tiddlywiki = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/main.js").TiddlyWikiLanguageSupport;
+			this.reconfigureLanguage(tiddlywiki);
 			break;
 		case "text/html":
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
-			this.reconfigureLanguage(html,htmlLanguage,{selfClosingTags: true})
+			this.reconfigureLanguage(html,htmlLanguage,{selfClosingTags: true});
 			break;
 		case "application/javascript":
 			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
@@ -865,7 +961,7 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
 		}
 	}
 	this.dragCancel = false;
-	return this.widget.handleKeydownEvent.call(this.widget,event);
+	return this.widget.handleKeydownEvent.call(this.widget,event) || false;
 };
 
 /*
@@ -912,7 +1008,7 @@ CodeMirrorEngine.prototype.fixHeight = function() {
 Focus the engine node
 */
 CodeMirrorEngine.prototype.focus  = function() {
-	this.cm.contentDOM.focus({preventScroll: true});
+	this.cm.focus();
 }
 
 /*

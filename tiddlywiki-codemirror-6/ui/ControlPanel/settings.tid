@@ -1,6 +1,6 @@
 title: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/ControlPanel/settings
-caption: CodeMirror 6
-tags: $:/tags/ControlPanel
+caption: Settings
+tags: $:/tags/CodeMirror6/Settings
 
 \define sortBySettingsGroupFilter()
 [get[settings-group]!is[blank]else[!general]] [get[settings-group-header]!is[blank]else[99]] +[join[]]

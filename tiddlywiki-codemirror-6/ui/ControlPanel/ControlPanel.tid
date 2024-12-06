@@ -1,0 +1,5 @@
+title: $:/plugins/BTC/tiddlywiki-codemirror-6/ui/ControlPanel
+tags: $:/tags/ControlPanel/SettingsTab
+caption: CodeMirror 6
+
+<<tabs "[all[tiddlers+shadows]tag[$:/tags/CodeMirror6/Settings]]" default:"$:/plugins/BTC/tiddlywiki-codemirror-6/ui/ControlPanel/settings">>

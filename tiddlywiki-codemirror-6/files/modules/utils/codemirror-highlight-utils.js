@@ -37,6 +37,7 @@ var slcursor = slbase01;
 exports.getSolarizedLightHighlightStyle = function(HighlightStyle,tags) {
 
 	var highlightStyle = HighlightStyle.define([
+		{ tag: tags.literal, color: slbase00 },
 		{ tag: tags.keyword, color: slbase_green },
 		{
 			tag: [tags.name, tags.deleted, tags.character, tags.propertyName, tags.macroName],
@@ -164,6 +165,7 @@ var sdcursor = sdbase04;
 exports.getSolarizedDarkHighlightStyle = function(HighlightStyle,tags) {
 	
 	var highlightStyle = HighlightStyle.define([
+		{ tag: tags.literal, color: sdbase00 },
 		{ tag: tags.keyword, color: sdbase_green },
 		{
 			tag: [tags.name, tags.deleted, tags.character, tags.propertyName, tags.macroName],

@@ -20,7 +20,9 @@ var conversionKeys = {
 	",": "Comma",
 	";": "Semicolon",
 	".": "Period",
-	":": "Colon"
+	":": "Colon",
+	"PageUp": "Page_up",
+	"PageDown": "Page_down"
 };
 
 function KeyboardManager(options) {
