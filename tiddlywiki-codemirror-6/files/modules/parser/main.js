@@ -30,11 +30,10 @@ Main extension module integrating tokenizer, parser, autocompleter, and highligh
                 view: view,
 
                 // Update function to handle document changes
-                update: function(tr) {
-                    console.log("Update called with transaction:", tr);
-                    if (tr.docChanged) {
+                update: function(viewUpdate) {
+                    if (viewUpdate.transactions.docChanged) {
                         // Re-parse the document to extract tokens
-                        var text = tr.state.doc.toString();
+                        var text = viewUpdate.transactions.state.doc.toString();
                         var sanitizedText = Parser.replaceControlChars(text);
                         var parsedTree = Parser.parseAndSanitize(sanitizedText);
                         Parser.accumulatePositions(parsedTree, 0);
@@ -53,6 +52,8 @@ Main extension module integrating tokenizer, parser, autocompleter, and highligh
                             });
                         });
 
+                        console.log(definitions);
+
                         // Parse and tokenize any filters within 'value' attributes
                         tokens.forEach(function(token) {
                             if (token.type === "tw-set" || token.type === "tw-function-definition" || token.type === "tw-element") {
@@ -69,7 +70,7 @@ Main extension module integrating tokenizer, parser, autocompleter, and highligh
                         });
 
                         // Update tokens in the plugin state
-                        this.tokens = tokens;
+                        //value.tokens = tokens;
                     }
                 },
 
