@@ -23,6 +23,7 @@ var CodeMirrorDependencies = {
         StateEffect: CM["@codemirror/state"].StateEffect,
         Compartment: CM["@codemirror/state"].Compartment,
         allowMultipleSelections: CM["@codemirror/state"].EditorState.allowMultipleSelections,
+        RangeSet: CM["@codemirror/state"].RangeSet,
         RangeSetBuilder: CM["@codemirror/state"].RangeSetBuilder
     },
     view: {
@@ -42,8 +43,8 @@ var CodeMirrorDependencies = {
         showPanel: CM["@codemirror/view"].showPanel,
         getPanel: CM["@codemirror/view"].getPanel,
         Decoration: CM["@codemirror/view"].Decoration,
-        WidgetType: CM["@codemirror/view"].WidgetType,
-        decorations: CM["@codemirror/view"].EditorView.decorations
+        DecorationSet: CM["@codemirror/view"].DecorationSet,
+        WidgetType: CM["@codemirror/view"].WidgetType
     },
     commands: {
         defaultKeymap: CM["@codemirror/commands"].defaultKeymap,

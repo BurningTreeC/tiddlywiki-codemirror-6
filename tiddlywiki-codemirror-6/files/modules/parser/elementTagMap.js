@@ -1,0 +1,138 @@
+/*\
+title: $:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/elementTagMap.js
+type: application/javascript
+module-type: library
+
+Mapping of HTML element tags to specific token types for syntax highlighting.
+
+\*/
+(function() {
+    "use strict";
+
+    /**
+     * Mapping of HTML element tags to specific token types.
+     * Extend this object to handle more HTML elements as needed.
+     */
+    var elementTagMap = {
+        "html": "tw-html-element",
+        "head": "tw-head-element",
+        "title": "tw-title-element",
+        "base": "tw-base-element",
+        "link": "tw-link-element",
+        "meta": "tw-meta-element",
+        "style": "tw-style-element",
+        "script": "tw-script-element",
+        "noscript": "tw-noscript-element",
+        "body": "tw-body-element",
+        "section": "tw-section-element",
+        "nav": "tw-nav-element",
+        "article": "tw-article-element",
+        "aside": "tw-aside-element",
+        "h1": "tw-h1-element",
+        "h2": "tw-h2-element",
+        "h3": "tw-h3-element",
+        "h4": "tw-h4-element",
+        "h5": "tw-h5-element",
+        "h6": "tw-h6-element",
+        "header": "tw-header-element",
+        "footer": "tw-footer-element",
+        "address": "tw-address-element",
+        "main": "tw-main-element",
+        "p": "tw-p-element",
+        "hr": "tw-hr-element",
+        "pre": "tw-pre-element",
+        "blockquote": "tw-blockquote-element",
+        "ol": "tw-ol-element",
+        "ul": "tw-ul-element",
+        "li": "tw-li-element",
+        "dl": "tw-dl-element",
+        "dt": "tw-dt-element",
+        "dd": "tw-dd-element",
+        "figure": "tw-figure-element",
+        "figcaption": "tw-figcaption-element",
+        "div": "tw-div-element",
+        "a": "tw-a-element",
+        "em": "tw-em-element",
+        "strong": "tw-strong-element",
+        "small": "tw-small-element",
+        "s": "tw-s-element",
+        "cite": "tw-cite-element",
+        "q": "tw-q-element",
+        "dfn": "tw-dfn-element",
+        "abbr": "tw-abbr-element",
+        "data": "tw-data-element",
+        "time": "tw-time-element",
+        "code": "tw-code-element",
+        "var": "tw-var-element",
+        "samp": "tw-samp-element",
+        "kbd": "tw-kbd-element",
+        "sub": "tw-sub-element",
+        "sup": "tw-sup-element",
+        "i": "tw-i-element",
+        "b": "tw-b-element",
+        "u": "tw-u-element",
+        "mark": "tw-mark-element",
+        "ruby": "tw-ruby-element",
+        "rt": "tw-rt-element",
+        "rp": "tw-rp-element",
+        "bdi": "tw-bdi-element",
+        "bdo": "tw-bdo-element",
+        "span": "tw-span-element",
+        "br": "tw-br-element",
+        "wbr": "tw-wbr-element",
+        "ins": "tw-ins-element",
+        "del": "tw-del-element",
+        "img": "tw-img-element",
+        "iframe": "tw-iframe-element",
+        "embed": "tw-embed-element",
+        "object": "tw-object-element",
+        "param": "tw-param-element",
+        "video": "tw-video-element",
+        "audio": "tw-audio-element",
+        "source": "tw-source-element",
+        "track": "tw-track-element",
+        "canvas": "tw-canvas-element",
+        "map": "tw-map-element",
+        "area": "tw-area-element",
+        "svg": "tw-svg-element",
+        "math": "tw-math-element",
+        "table": "tw-table-element",
+        "caption": "tw-caption-element",
+        "colgroup": "tw-colgroup-element",
+        "col": "tw-col-element",
+        "tbody": "tw-tbody-element",
+        "thead": "tw-thead-element",
+        "tfoot": "tw-tfoot-element",
+        "tr": "tw-tr-element",
+        "td": "tw-td-element",
+        "th": "tw-th-element",
+        "form": "tw-form-element",
+        "fieldset": "tw-fieldset-element",
+        "legend": "tw-legend-element",
+        "label": "tw-label-element",
+        "input": "tw-input-element",
+        "button": "tw-button-element",
+        "select": "tw-select-element",
+        "datalist": "tw-datalist-element",
+        "optgroup": "tw-optgroup-element",
+        "option": "tw-option-element",
+        "textarea": "tw-textarea-element",
+        "output": "tw-output-element",
+        "progress": "tw-progress-element",
+        "meter": "tw-meter-element",
+        "details": "tw-details-element",
+        "summary": "tw-summary-element",
+        "dialog": "tw-dialog-element",
+        "template": "tw-template-element",
+        "slot": "tw-slot-element",
+        "picture": "tw-picture-element",
+        "portal": "tw-portal-element"
+        // Add more tags if necessary
+    };
+
+    /**
+     * Export the elementTagMap for external use.
+     */
+    exports.elementTagMap = elementTagMap;
+
+})();

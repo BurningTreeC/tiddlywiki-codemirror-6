@@ -3,485 +3,241 @@ title: $:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/parser.js
 type: application/javascript
 module-type: library
 
-Parser module for processing TW5 text and extracting definitions, filters, widgets, transclusions, media elements, and more.
+Parser module for converting TiddlyWiki content into a parse tree for tokenization.
 
 \*/
 (function() {
     "use strict";
 
-    // Require necessary modules
-    var Tokenizer = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/tokenizer.js");
-    var Sanitizer = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/sanitizer.js");
-    var Dependencies = require("$:/plugins/BTC/tiddlywiki-codemirror-6/lib/codemirror-dependencies.js").CodeMirrorDependencies;
-
     /**
-     * Parses and sanitizes the input text.
-     * @param {String} text - The raw TW5 text.
-     * @returns {Array} - The sanitized and parsed syntax tree.
-     */
-    function parseAndSanitize(text) {
-        var sanitizedText = replaceControlChars(text);
-        // Parse the sanitized text into a syntax tree
-        // The second parameter can include parsing options; adjust as needed
-        return $tw.wiki.parseText(sanitizedText, { parseAsInline: false });
-    }
-
-    /**
-     * Replaces control characters like \n and \t with spaces.
-     * @param {String} text - The input text.
-     * @returns {String} - The text with control characters replaced.
+     * Replaces control characters in the text with their escaped equivalents.
+     * @param {String} text - The input text to sanitize.
+     * @returns {String} - The sanitized text.
      */
     function replaceControlChars(text) {
-        return text.replace(/\\n/g, ' ').replace(/\\t/g, ' ');
+        return text.replace(/[\r\n]+/g, ' ');
     }
 
     /**
-     * Accumulates start and end positions for nested nodes.
-     * This ensures that child nodes have their positions relative to the entire document.
-     * @param {Array} tree - The syntax tree.
-     * @param {Number} parentStart - The starting position of the parent node.
+     * Parses and sanitizes the given text into a parse tree.
+     * @param {String} text - The TiddlyWiki content to parse.
+     * @returns {Array} - The sanitized parse tree.
      */
-    function accumulatePositions(tree, parentStart) {
-        if (!tree || typeof parentStart !== "number") return;
+    function parseAndSanitize(text) {
+        var parsedTree = $tw.wiki.parseText("text/vnd.tiddlywiki", text, null, {}).tree;
+        return sanitizeParseTree(parsedTree);
+    }
+
+    /**
+     * Sanitizes the parse tree by removing unwanted nodes and normalizing it.
+     * @param {Array|Object} tree - The raw parse tree.
+     * @returns {Array} - The sanitized parse tree.
+     */
+    function sanitizeParseTree(tree) {
+        var sanitized = [];
+
+        function traverse(node) {
+            if (Array.isArray(node)) {
+                node.forEach(function(child) {
+                    traverse(child);
+                });
+            } else if (typeof node === "object" && node !== null) {
+                if (node.type === "comment") return; // Skip comments
+                sanitized.push(node);
+                if (node.children && Array.isArray(node.children)) {
+                    traverse(node.children);
+                }
+            }
+        }
+
+        traverse(tree);
+        return sanitized;
+    }
+
+    /**
+     * Preprocesses the parse tree by adding additional flags or modifying nodes as needed.
+     * @param {Array} tree - The sanitized parse tree.
+     */
+    function preprocessParseTree(tree) {
         tree.forEach(function(node) {
-            node.start += parentStart;
-            node.end += parentStart;
-            if (node.children && node.children.length > 0) {
-                accumulatePositions(node.children, node.start);
+            if (node.type === "set") {
+                if (node.isMacroDefinition) {
+                    node.isMacroDefinition = true;
+                } else if (node.isFunctionDefinition) {
+                    node.isFunctionDefinition = true;
+                } else if (node.isWidgetDefinition) {
+                    node.isWidgetDefinition = true;
+                } else if (node.isProcedureDefinition) {
+                    node.isProcedureDefinition = true;
+                }
+            }
+
+            // Recursively preprocess child nodes
+            if (node.children && Array.isArray(node.children)) {
+                preprocessParseTree(node.children);
             }
         });
     }
 
     /**
-     * Parses filter expressions and extracts tokens.
-     * @param {String} filterText - The filter expression.
-     * @param {Array} tokens - The array to accumulate tokens.
+     * Assigns positions to an attribute object.
+     * @param {Object} attrObj - The attribute object.
+     * @param {String} attr - The attribute key.
+     * @param {Number} currentPos - The current character position in the document.
+     * @returns {Number} - The updated current position.
      */
-    function parseAndTokenizeFilter(filterText, tokens) {
-        var sanitizedFilter = Sanitizer.sanitizer.sanitizeHTML(filterText);
-        var parsedFilter;
-        try {
-            parsedFilter = $tw.utils.parseFilter(sanitizedFilter); // Direct usage of parseFilter()
-        } catch(e) {
-            console.error("Filter parsing error:", e);
-            tokens.push({
-                type: "tw-filter-error",
-                value: e.toString(),
-                start: null,
-                end: null
+    function assignAttributePositions(attrObj, attr, currentPos) {
+        if (!attrObj.name) {
+            console.warn("Attribute missing 'name'. Assigning default name.");
+            attrObj.name = attr || "unknown";
+        }
+        if (typeof attrObj.value === "undefined") {
+            console.warn("Attribute '" + attrObj.name + "' missing 'value'. Assigning empty string.");
+            attrObj.value = "";
+        }
+
+        attrObj.start = currentPos;
+        currentPos += attrObj.name.length + 1; // attr=
+        attrObj.valueStart = currentPos + 1; // Opening quote
+        currentPos += attrObj.value.length; // Attribute value
+        attrObj.valueEnd = attrObj.valueStart + attrObj.value.length;
+        attrObj.end = currentPos + 1; // Closing quote
+        currentPos += 1;
+
+        return currentPos;
+    }
+
+    /**
+     * Assigns positions to parameters within parentheses for "set" nodes.
+     * @param {Object} node - The node containing parameters.
+     * @param {Number} currentPos - The current character position.
+     * @returns {Number} - The updated current position.
+     */
+    function assignParameterPositions(node, currentPos) {
+        if (Array.isArray(node.params) && node.params.length > 0) {
+            var paramsValue = node.params.join(", "); // Convert array to a comma-separated string
+            node.paramsStart = currentPos;
+            node.paramsEnd = currentPos + paramsValue.length;
+            console.log(
+                "Parameters '" + paramsValue + "' assigned start: " + node.paramsStart + ", end: " + node.paramsEnd
+            );
+            currentPos = node.paramsEnd;
+        }
+        return currentPos;
+    }
+
+    function assignParameterPositions(node, currentPos) {
+        if (Array.isArray(node.params)) {
+            node.params.forEach(function(param, index) {
+                // Assign positions to each parameter
+                param.start = currentPos;
+                currentPos += param.length; // Assume param.length exists or calculate length dynamically
+                param.end = currentPos;
+
+                console.log(`Assigned parameter: ${param} start: ${param.start}, end: ${param.end}`);
             });
-            return;
         }
-        extractFilterTokens(parsedFilter, tokens);
+        return currentPos;
     }
 
     /**
-     * Extracts tokens from the filter parse tree.
-     * @param {Array} filterParseTree - The parsed filter operations.
-     * @param {Array} tokens - The array to accumulate tokens.
+     * Accumulates positional information in the parse tree.
+     * @param {Array} tree - The sanitized parse tree.
+     * @param {Number} baseStart - The base start position.
      */
-    function extractFilterTokens(filterParseTree, tokens) {
-        if (!filterParseTree) return;
+    function accumulatePositions(tree, baseStart) {
+        var currentPos = baseStart;
 
-        /**
-         * Traverses the filter parse tree recursively to extract tokens.
-         * @param {Object} node - The current node in the filter parse tree.
-         */
         function traverse(node) {
-            if (!node) return;
+            if (Array.isArray(node)) {
+                node.forEach(traverse);
+            } else if (typeof node === "object" && node !== null) {
+                node.start = currentPos;
 
-            switch(node.type) {
-                case "operator":
-                    tokens.push({
-                        type: "tw-filter-operator",
-                        value: node.name,
-                        start: node.start,
-                        end: node.end
-                    });
-                    break;
+                if (node.type === "text") {
+                    currentPos += node.text.length;
+                } else if (node.type === "set") {
+                    var defKeyword = node.isMacroDefinition
+                        ? "\\define"
+                        : node.isFunctionDefinition
+                        ? "\\function"
+                        : node.isWidgetDefinition
+                        ? "\\widget"
+                        : node.isProcedureDefinition
+                        ? "\\procedure"
+                        : "";
 
-                case "function":
-                    tokens.push({
-                        type: "tw-filter-function",
-                        value: node.name,
-                        start: node.start,
-                        end: node.end
-                    });
-                    // Traverse arguments
-                    if (node.args && node.args.length > 0) {
-                        node.args.forEach(function(arg) {
-                            traverse(arg);
+                    if (defKeyword) {
+                        node.defKeywordStart = currentPos;
+                        currentPos += defKeyword.length;
+                        node.defKeywordEnd = currentPos;
+
+                        // Handle parameters
+                        if (Array.isArray(node.params)) {
+                            node.params.forEach(function (param) {
+                                param.start = currentPos;
+                                var paramValue = param.value || param.name || "";
+                                currentPos += paramValue.length;
+                                param.end = currentPos;
+                            });
+                        }
+
+                        // Handle multi-line `value` with `\end`
+                        if (node.attributes && node.attributes.value) {
+                            var valueAttr = node.attributes.value;
+                            valueAttr.start = currentPos;
+
+                            if (valueAttr.value.includes("\\end")) {
+                                var lines = valueAttr.value.split("\n");
+                                lines.forEach(function (line) {
+                                    currentPos += line.length + 1; // Include newline character
+                                });
+                            } else {
+                                currentPos += valueAttr.value.length;
+                            }
+
+                            valueAttr.end = currentPos;
+                        }
+                    }
+
+                    // Traverse children
+                    if (node.children && Array.isArray(node.children)) {
+                        traverse(node.children);
+                    }
+
+                    node.end = currentPos;
+                } else if (node.type === "widget" || node.type === "element") {
+                    currentPos += node.tag.length + 2; // <$widget> or <element>
+
+                    if (node.attributes) {
+                        Object.keys(node.attributes).forEach(function (attr) {
+                            currentPos = assignAttributePositions(node.attributes[attr], attr, currentPos);
                         });
                     }
-                    break;
 
-                case "variable":
-                    tokens.push({
-                        type: "tw-filter-variable",
-                        value: node.name,
-                        start: node.start,
-                        end: node.end
-                    });
-                    break;
-
-                case "literal":
-                    tokens.push({
-                        type: "tw-filter-literal",
-                        value: node.value,
-                        start: node.start,
-                        end: node.end
-                    });
-                    break;
-
-                case "subfilter":
-                    tokens.push({
-                        type: "tw-filter-subfilter",
-                        value: node.filter,
-                        start: node.start,
-                        end: node.end
-                    });
-                    // Recursively traverse the subfilter
-                    if (node.filter && node.filter.length > 0) {
-                        node.filter.forEach(function(subNode) {
-                            traverse(subNode);
-                        });
+                    if (node.children && Array.isArray(node.children)) {
+                        traverse(node.children);
                     }
-                    break;
 
-                case "boolean":
-                    tokens.push({
-                        type: "tw-filter-boolean",
-                        value: node.value,
-                        start: node.start,
-                        end: node.end
-                    });
-                    break;
-
-                case "number":
-                    tokens.push({
-                        type: "tw-filter-number",
-                        value: node.value,
-                        start: node.start,
-                        end: node.end
-                    });
-                    break;
-
-                case "string":
-                    tokens.push({
-                        type: "tw-filter-string",
-                        value: node.value,
-                        start: node.start,
-                        end: node.end
-                    });
-                    break;
-
-                case "regex":
-                    tokens.push({
-                        type: "tw-filter-regex",
-                        value: node.value,
-                        start: node.start,
-                        end: node.end
-                    });
-                    break;
-
-                case "pipe":
-                    tokens.push({
-                        type: "tw-filter-pipe",
-                        value: "|",
-                        start: node.start,
-                        end: node.end
-                    });
-                    break;
-
-                case "bang":
-                    tokens.push({
-                        type: "tw-filter-bang",
-                        value: "!",
-                        start: node.start,
-                        end: node.end
-                    });
-                    break;
-
-                case "parenthesis":
-                    tokens.push({
-                        type: "tw-filter-parenthesis",
-                        value: node.value,
-                        start: node.start,
-                        end: node.end
-                    });
-                    break;
-
-                default:
-                    console.warn("Unhandled filter node type:", node.type);
-                    break;
-            }
-        }
-
-        // Start traversing from the root of the filter parse tree
-        filterParseTree.forEach(function(node) {
-            traverse(node);
-        });
-    }
-
-    /**
-     * Parses definitions such as procedures, functions, and macros.
-     * It handles both single-line and multi-line definitions.
-     * @param {String} text - The input TW5 text.
-     * @returns {Array} - An array of definition objects.
-     */
-    function parseDefinitions(text) {
-        let lines = text.split('\n');
-        let definitions = [];
-        let currentDef = null;
-
-        lines.forEach(function(line, index) {
-            let procedureMatch = line.match(/^\\procedure\s+(\w+)\(([^)]*)\)/);
-            let functionMatch = line.match(/^\\function\s+(\w+)\(([^)]*)\)/);
-            let macroMatch = line.match(/^\\define\s+(\w+)\(([^)]*)\)/);
-            let endMatch = line.match(/^\\end/);
-
-            if (procedureMatch || functionMatch || macroMatch) {
-                if (currentDef) {
-                    // Handle nested definitions or log a warning
-                    console.warn("Nested definitions are not supported.");
-                    return;
-                }
-                currentDef = {
-                    type: procedureMatch ? 'procedureDefinition' :
-                          functionMatch ? 'functionDefinition' :
-                          'macroDefinition',
-                    name: procedureMatch ? procedureMatch[1] :
-                          functionMatch ? functionMatch[1] :
-                          macroMatch[1],
-                    params: procedureMatch ? procedureMatch[2].split(',').map(p => p.trim()) :
-                            functionMatch ? functionMatch[2].split(',').map(p => p.trim()) :
-                            macroMatch[2].split(',').map(p => p.trim()),
-                    content: '',
-                    start: index,
-                    end: null,
-                    isMultiLine: false
-                };
-            } else if (endMatch && currentDef) {
-                currentDef.end = index;
-                currentDef.isMultiLine = true;
-                definitions.push(currentDef);
-                currentDef = null;
-            } else if (currentDef) {
-                currentDef.content += line + '\n';
-            }
-        });
-
-        // Handle single-line definitions (without \end)
-        lines.forEach(function(line, index) {
-            let singleLineProcedureMatch = line.match(/^\\procedure\s+(\w+)\(([^)]*)\)$/);
-            let singleLineFunctionMatch = line.match(/^\\function\s+(\w+)\(([^)]*)\)$/);
-            let singleLineMacroMatch = line.match(/^\\define\s+(\w+)\(([^)]*)\)$/);
-
-            if (singleLineProcedureMatch || singleLineFunctionMatch || singleLineMacroMatch) {
-                definitions.push({
-                    type: singleLineProcedureMatch ? 'procedureDefinition' :
-                          singleLineFunctionMatch ? 'functionDefinition' :
-                          singleLineMacroMatch ? 'macroDefinition' : null,
-                    name: singleLineProcedureMatch ? singleLineProcedureMatch[1] :
-                          singleLineFunctionMatch ? singleLineFunctionMatch[1] :
-                          singleLineMacroMatch ? singleLineMacroMatch[1] : null,
-                    params: singleLineProcedureMatch ? singleLineProcedureMatch[2].split(',').map(p => p.trim()) :
-                            singleLineFunctionMatch ? singleLineFunctionMatch[2].split(',').map(p => p.trim()) :
-                            singleLineMacroMatch ? singleLineMacroMatch[2].split(',').map(p => p.trim()) : [],
-                    content: '',
-                    start: index,
-                    end: index,
-                    isMultiLine: false
-                });
-            }
-        });
-
-        return definitions;
-    }
-
-    /**
-     * Extracts widgets from the parse tree.
-     * @param {Array} parseTree - The syntax tree.
-     * @returns {Array} - An array of widget objects.
-     */
-    function extractWidgets(parseTree) {
-        var widgets = [];
-
-        /**
-         * Traverses the parse tree to find widget nodes.
-         * @param {Object} node - The current node in the syntax tree.
-         */
-        function traverse(node) {
-            if (!node) return;
-
-            if (node.type === "widget") {
-                widgets.push({
-                    name: node.widgetName || "unknown_widget",
-                    params: node.attributes || {},
-                    start: node.start,
-                    end: node.end
-                });
-            }
-
-            if (node.children && node.children.length > 0) {
-                node.children.forEach(function(child) {
-                    traverse(child);
-                });
-            }
-        }
-
-        parseTree.forEach(function(node) {
-            traverse(node);
-        });
-
-        return widgets;
-    }
-
-    /**
-     * Extracts transclusions from the parse tree.
-     * @param {Array} parseTree - The syntax tree.
-     * @returns {Array} - An array of transclusion objects.
-     */
-    function extractTransclusions(parseTree) {
-        var transclusions = [];
-
-        /**
-         * Traverses the parse tree to find transclusion nodes.
-         * @param {Object} node - The current node in the syntax tree.
-         */
-        function traverse(node) {
-            if (!node) return;
-
-            if (node.type === "transclusion") {
-                transclusions.push({
-                    title: node.title || "unknown_tiddler",
-                    start: node.start,
-                    end: node.end
-                });
-            }
-
-            if (node.children && node.children.length > 0) {
-                node.children.forEach(function(child) {
-                    traverse(child);
-                });
-            }
-        }
-
-        parseTree.forEach(function(node) {
-            traverse(node);
-        });
-
-        return transclusions;
-    }
-
-    /**
-     * Extracts media elements (images, videos, iframes) from the parse tree.
-     * @param {Array} parseTree - The syntax tree.
-     * @returns {Array} - An array of media element objects.
-     */
-    function extractMediaElements(parseTree) {
-        var mediaElements = [];
-
-        /**
-         * Traverses the parse tree to find media nodes.
-         * @param {Object} node - The current node in the syntax tree.
-         */
-        function traverse(node) {
-            if (!node) return;
-
-            if (node.type === "image" || node.type === "video" || node.type === "iframe") {
-                mediaElements.push({
-                    type: node.type,
-                    src: node.attributes && node.attributes.src ? node.attributes.src.value : "",
-                    alt: node.attributes && node.attributes.alt ? node.attributes.alt.value : "",
-                    title: node.attributes && node.attributes.title ? node.attributes.title.value : "",
-                    start: node.start,
-                    end: node.end
-                });
-            }
-
-            if (node.children && node.children.length > 0) {
-                node.children.forEach(function(child) {
-                    traverse(child);
-                });
-            }
-        }
-
-        parseTree.forEach(function(node) {
-            traverse(node);
-        });
-
-        return mediaElements;
-    }
-
-    /**
-     * Extracts all relevant information from the parse tree.
-     * This function serves as a bridge between parsing and tokenization.
-     * @param {Array} parseTree - The syntax tree generated by $tw.wiki.parseText().
-     * @returns {Object} - An object containing tokens, definitions, filters, widgets, transclusions, media elements, etc.
-     */
-    function extractAllInfo(parseTree) {
-        var tokens = [];
-        var definitions = [];
-        var filters = [];
-        var widgets = [];
-        var transclusions = [];
-        var mediaElements = [];
-
-        // Extract tokens using the tokenizer
-        Tokenizer.extractTokens(parseTree, tokens);
-
-        // Parse definitions
-        definitions = parseDefinitions($tw.utils.stringifyTree(parseTree));
-
-        // Extract widgets
-        widgets = extractWidgets(parseTree);
-
-        // Extract transclusions
-        transclusions = extractTransclusions(parseTree);
-
-        // Extract media elements
-        mediaElements = extractMediaElements(parseTree);
-
-        // Extract filters from tokens
-        tokens.forEach(function(token) {
-            if (token.type === "tw-set" || token.type === "tw-function-definition" || token.type === "tw-element") {
-                if (token.value && typeof token.value === "string") {
-                    // Detect if the value contains a filter
-                    // TW5 filters are typically enclosed in square brackets []
-                    var filterRegex = /\[([^\]]+)\]/g;
-                    var match;
-                    while ((match = filterRegex.exec(token.value)) !== null) {
-                        var filterText = match[1];
-                        parseAndTokenizeFilter(filterText, tokens);
+                    currentPos += node.tag.length + 3; // </$widget> or </element>
+                    node.end = currentPos;
+                } else {
+                    if (node.length) {
+                        currentPos += node.length;
                     }
                 }
+
+                node.end = currentPos;
             }
-        });
+        }
 
-        // Extract filters from tokens after processing
-        filters = tokens.filter(token => token.type.startsWith("tw-filter"));
-
-        return {
-            tokens: tokens,
-            definitions: definitions,
-            filters: filters,
-            widgets: widgets,
-            transclusions: transclusions,
-            mediaElements: mediaElements
-        };
+        traverse(tree);
     }
 
-    // Export parser functions
-    exports.parseAndSanitize = parseAndSanitize;
+    // Export functions for external use
     exports.replaceControlChars = replaceControlChars;
+    exports.parseAndSanitize = parseAndSanitize;
+    exports.preprocessParseTree = preprocessParseTree;
     exports.accumulatePositions = accumulatePositions;
-    exports.parseAndTokenizeFilter = parseAndTokenizeFilter;
-    exports.extractFilterTokens = extractFilterTokens;
-    exports.parseDefinitions = parseDefinitions;
-    exports.extractWidgets = extractWidgets;
-    exports.extractTransclusions = extractTransclusions;
-    exports.extractMediaElements = extractMediaElements;
-    exports.extractAllInfo = extractAllInfo;
 
 })();

@@ -218,6 +218,27 @@
 				"module-type": "library"
 			}
 		},{
+			"file": "modules/parser/widgetTagMap.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/widgetTagMap.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "modules/parser/elementTagMap.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/elementTagMap.js",
+				"module-type": "library"
+			}
+		},{
+			"file": "modules/parser/tokenizerConfig.js",
+			"fields": {
+				"type": "application/javascript",
+				"title": "$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/tokenizerConfig.js",
+				"module-type": "library"
+			}
+		},{
 			"file": "lib/codemirror-dependencies.js",
 			"fields": {
 				"type": "application/javascript",
