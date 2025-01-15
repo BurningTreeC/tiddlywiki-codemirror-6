@@ -229,8 +229,11 @@ function CodeMirrorEngine(options) {
 	this.solarizedLightHighlightStyle = $tw.utils.codemirror.getSolarizedLightHighlightStyle(HighlightStyle,tags);
 	this.solarizedDarkHighlightStyle = $tw.utils.codemirror.getSolarizedDarkHighlightStyle(HighlightStyle,tags);
 
-	var solarizedTheme = this.widget.wiki.getTiddler(this.widget.wiki.getTiddlerText("$:/palette")).fields["color-scheme"] === "light" ? this.solarizedLightTheme : this.solarizedDarkTheme;
-	var solarizedHighlightStyle = this.widget.wiki.getTiddler(this.widget.wiki.getTiddlerText("$:/palette")).fields["color-scheme"] === "light" ? this.solarizedLightHighlightStyle : this.solarizedDarkHighlightStyle;
+	var palette = this.widget.wiki.getTiddlerText("$:/palette");
+	var paletteTiddler = palette && this.widget.wiki.getTiddler(palette);
+	
+	var solarizedTheme = !paletteTiddler || paletteTiddler.fields["color-scheme"] === "light" ? this.solarizedLightTheme : this.solarizedDarkTheme;
+	var solarizedHighlightStyle = !paletteTiddler || paletteTiddler.fields["color-scheme"] === "light" ? this.solarizedLightHighlightStyle : this.solarizedDarkHighlightStyle;
 
 	var autoCloseBrackets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/closeBrackets") === "yes";
 
