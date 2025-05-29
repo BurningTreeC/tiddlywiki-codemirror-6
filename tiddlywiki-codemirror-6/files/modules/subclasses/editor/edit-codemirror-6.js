@@ -30,10 +30,10 @@ exports.prototype.render = function(parent,nextSibling) {
 	this.updateShortcutLists(this.getShortcutTiddlerList());
 	this.hasStylesheetTag = this.wiki.getTiddler(this.editTitle).hasTag("$:/tags/Stylesheet");
 	//this.engine.updateKeymaps();
-	var lineNumbers = this.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes" && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
+	var lineNumbers = this.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes" && this.editClass && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
 	this.engine.toggleLineNumbers(lineNumbers);
 	this.engine.toggleFoldGutter(lineNumbers);
-	var highlightActiveLine = this.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLine") === "yes" && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
+	var highlightActiveLine = this.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLine") === "yes" && this.editClass && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
 	this.engine.toggleHighlightActiveLine(highlightActiveLine);
 	this.engine.toggleHighlightActiveLineGutter(highlightActiveLine);
 	var autocorrect = this.wiki.getTiddlerText("$:/config/codemirror-6/autocorrect") === "yes";
@@ -155,12 +155,12 @@ exports.prototype.refresh = function(changedTiddlers) {
 		this.engine.toggleSpellcheck(spellcheck);
 	}
 	if(changedTiddlers["$:/config/codemirror-6/lineNumbers"]) {
-		var lineNumbers = this.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes" && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
+		var lineNumbers = this.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes" && this.editClass && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
 		this.engine.toggleLineNumbers(lineNumbers);
 		this.engine.toggleFoldGutter(lineNumbers);
 	}
 	if(changedTiddlers["$:/config/codemirror-6/highlightActiveLine"]) {
-		var highlightActiveLine = this.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLine") === "yes" && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
+		var highlightActiveLine = this.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLine") === "yes" && this.editClass && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
 		this.engine.toggleHighlightActiveLine(highlightActiveLine);
 		this.engine.toggleHighlightActiveLineGutter(highlightActiveLine);
 	}
