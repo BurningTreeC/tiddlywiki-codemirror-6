@@ -108,16 +108,11 @@ function CodeMirrorEngine(options) {
 	var acceptCompletion = CodeMirrorDependencies.autocomplete.acceptCompletion;
 	var completeAnyWord = CodeMirrorDependencies.autocomplete.completeAnyWord;
 
-	// Lint-related dependencies
-	var lintKeymap = CodeMirrorDependencies.lint.lintKeymap;
-	var linter = CodeMirrorDependencies.lint.linter;
-
 	this.EditorView = EditorView;
 	this.EditorState = EditorState;
 	this.Prec = Prec;
 	this.keymap = keymap;
 	this.autocompletion = autocompletion;
-	this.linter = linter;
     this.syntaxTree = syntaxTree;
 
 	var keymapCompartment = new Compartment();
@@ -187,8 +182,7 @@ function CodeMirrorEngine(options) {
 		cmSearchKeymap = searchKeymap,
 		cmHistoryKeymap = historyKeymap,
 		cmFoldKeymap = foldKeymap,
-		cmCompletionKeymap = completionKeymap,
-		cmLintKeymap = lintKeymap;
+		cmCompletionKeymap = completionKeymap;
 
 	this.originalKeymap = [
 		...closeBracketsKeymap,
@@ -196,8 +190,7 @@ function CodeMirrorEngine(options) {
 		...searchKeymap,
 		...historyKeymap,
 		...foldKeymap,
-		...completionKeymap,
-		...lintKeymap
+		...completionKeymap
 	];
 
 	this.currentKeymap = [];
@@ -519,8 +512,7 @@ function CodeMirrorEngine(options) {
 
 			var runCommand =
 				CM["@codemirror/search"][commandName] ||
-				CM["@codemirror/commands"][commandName] ||
-				CM["@codemirror/lint"][commandName];
+				CM["@codemirror/commands"][commandName];
 
 			if (!runCommand) {
 				console.warn('Command "' + commandName + '" does not exist.');
@@ -712,14 +704,12 @@ CodeMirrorEngine.prototype.updateAutocompletion = function(selectOnOpen,autocomp
 	});
 };
 
-CodeMirrorEngine.prototype.reconfigureLanguage = function (lang, language, options, keymap, source, linter) {
+CodeMirrorEngine.prototype.reconfigureLanguage = function (lang, language, options, keymap, source) {
     var self = this;
     var languageExtension;
 
     // Configure language with options and linter if provided
-    if (linter) {
-        languageExtension = [lang(options), this.linter(linter)];
-    } else if (options) {
+    if (options) {
         languageExtension = lang(options);
     } else {
         languageExtension = lang();
@@ -776,10 +766,14 @@ CodeMirrorEngine.prototype.updateTiddlerType = function() {
 		case "text/vnd.tiddlywiki-multiple":
 		case "text/plain":
 		case "application/x-tiddler-dictionary":
-			var viewPlugin = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/main.js").TiddlyWikiViewPlugin;
+			/*var viewPlugin = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/main.js").TiddlyWikiViewPlugin;
 			var highlightPlugin = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/main.js").TiddlyWikiHighlightPlugin;
 			var autocompletePlugin = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/main.js").TiddlyWikiAutocompletePlugin;
-			this.setTWLanguageSupport(viewPlugin,highlightPlugin,autocompletePlugin);
+			this.setTWLanguageSupport(viewPlugin,highlightPlugin,autocompletePlugin);*/
+			var {tiddlywiki,TiddlyWikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
+			console.log(tiddlywiki);
+			this.reconfigureLanguage(tiddlywiki,TiddlyWikiLanguage);
+			break;
 			break;
 		case "text/html":
 			var {html,htmlLanguage} = CM["@codemirror/lang-html"];

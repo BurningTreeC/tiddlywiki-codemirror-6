@@ -2,10 +2,12 @@ title: $:/core/ui/EditTemplate/body/editor
 
 \whitespace trim
 
+\whitespace trim
+
 <$edit
 
   field="text"
-  class={{{ [<get.tc-edit-texteditor.class>!is[blank]] :else[[tc-edit-texteditor tc-edit-texteditor-body]] }}}
+  class=<<get.tc-editor.class>>
   placeholder={{$:/language/EditTemplate/Body/Placeholder}}
   tabindex={{$:/config/EditTabIndex}}
   focus={{{ [{$:/config/AutoFocus}match[text]then[true]] ~[[false]] }}}
@@ -39,7 +41,7 @@ title: $:/core/ui/EditTemplate/body/editor
   filter="[all[shadows+tiddlers]tag[$:/tags/EditorTools]!has[draft.of]]"
 
 ><$list
-	filter={{!!condition}}
-	variable="list-condition"
+  filter={{!!condition}}
+  variable="list-condition"
 ><$transclude/>
 </$list></$list></$set></$edit>

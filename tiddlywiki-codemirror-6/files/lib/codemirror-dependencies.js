@@ -91,10 +91,6 @@ var CodeMirrorDependencies = {
         acceptCompletion: CM["@codemirror/autocomplete"].acceptCompletion,
         completeAnyWord: CM["@codemirror/autocomplete"].completeAnyWord
     },
-    lint: {
-        lintKeymap: CM["@codemirror/lint"].lintKeymap,
-        linter: CM["@codemirror/lint"].linter
-    },
     lezerHighlight: {
         Tag: CM["@lezer/highlight"].Tag,
         tags: CM["@lezer/highlight"].tags
