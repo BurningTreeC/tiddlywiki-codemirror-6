@@ -1,4 +1,5 @@
 title: $:/core/ui/EditTemplate/body/editor
+code-body: yes
 
 \whitespace trim
 
