@@ -113,7 +113,7 @@ function CodeMirrorEngine(options) {
 	this.Prec = Prec;
 	this.keymap = keymap;
 	this.autocompletion = autocompletion;
-    this.syntaxTree = syntaxTree;
+	this.syntaxTree = syntaxTree;
 
 	var keymapCompartment = new Compartment();
 	this.languageCompartment = new Compartment();
@@ -357,13 +357,17 @@ function CodeMirrorEngine(options) {
 		this.currentKeymap.push(indentWithTab);
 	};
 
+	this.autocompletionExtension = autocompletion({
+	    override: [this.combinedCompletionSource]
+	});
+
 	var editorExtensions = [
 		self.languageCompartment.of([]),
 		self.tiddlyWikiHiglightCompartment.of([]),
 		self.tiddlyWikiAutocompleteCompartment.of([]),
 		self.generalUpdateListenerCompartment.of(createGeneralUpdateListener()),
 		self.tiddlyWikiViewPluginCompartment.of([]),
-		self.autocompleteCompartment.of(autocompletion()),
+		self.autocompleteCompartment.of(self.autocompletionExtension),
 		dropCursor(),
 		solarizedTheme,
 		Prec.high(syntaxHighlighting(solarizedHighlightStyle)),
