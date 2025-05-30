@@ -83,7 +83,7 @@ $:/config/EditorToolbarButtons/Visibility/$(currentTiddler)$
 					sliderWidth=<<get.theme.metric previewsliderwidth>>
 				/>
 			<% else %>
-				<div class={{{ [<edit-preview-state>match[yes]then[tc-tiddler-preview]else[tc-tiddler-preview-hidden]] [[tc-tiddler-editor]] +[join[ ]] }}}>
+				<div class={{{ [<get.edit-preview-state>match[yes]then[tc-tiddler-preview]else[tc-tiddler-preview-hidden]] [[tc-tiddler-editor]] +[join[ ]] }}}>
 				
 				<$transclude tiddler="$:/core/ui/EditTemplate/body/editor" mode="inline"/>
 				
