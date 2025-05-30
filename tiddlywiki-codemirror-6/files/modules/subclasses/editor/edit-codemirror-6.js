@@ -148,7 +148,7 @@ exports.prototype.refresh = function(changedTiddlers) {
 				this.engine.currentKeymap.splice(index,1);
 			}
 		}
-		this.engine.updateKeymap();
+		this.engine.updateKeymaps();
 	}
 	if(changedTiddlers["$:/config/codemirror-6/spellcheck"]) {
 		var spellcheck = this.wiki.getTiddlerText("$:/config/codemirror-6/spellcheck") === "yes";
