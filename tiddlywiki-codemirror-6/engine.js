@@ -1070,7 +1070,7 @@ CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 					index = i;
 				}
 			}
-			var editorChanges = [{from: operations[index].cutStart, to: operations[index].cutEnd, insert: operations[index].replacement}];
+			var editorChanges = {from: operations[index].cutStart, to: operations[index].cutEnd, insert: operations[index].replacement};
 			var selectionRange = self.editorSelection.range(operations[index].newSelStart,operations[index].newSelEnd);
 			return {
 				changes: editorChanges,
@@ -1079,12 +1079,12 @@ CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
 		}));
 	} else if(operations.type !== "focus-editor" && operations && operations.cutStart && operations.cutEnd && operations.newSelStart && operations.newSelEnd && operations.replacement) {
 		this.cm.dispatch(this.cm.state.changeByRange(function(range) {
-			var editorChanges = [{from: operations.cutStart, to: operations.cutEnd, insert: operations.replacement}];
+			var editorChanges = {from: operations.cutStart, to: operations.cutEnd, insert: operations.replacement};
 			var selectionRange = self.editorSelection.range(operations.newSelStart,operations.newSelEnd);
 			return {
 				changes: editorChanges,
 				range: selectionRange
-			}			
+			}
 		}));
 	}
 	this.cm.focus();

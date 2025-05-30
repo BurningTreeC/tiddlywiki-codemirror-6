@@ -16,7 +16,7 @@ exports["replace-selection"] = function(event,operation) {
 	if(operation instanceof Array) {
 		for(var i=0; i<operation.length; i++) {
 			var op = operation[i];
-			op.replacement = event.paramObject.text;
+			op.replacement = event.paramObject.text.replace(/\r\n/g, '\n');
 			op.cutStart = operation[i].selStart;
 			op.cutEnd = operation[i].selEnd;
 			op.newSelStart = operation[i].selStart;

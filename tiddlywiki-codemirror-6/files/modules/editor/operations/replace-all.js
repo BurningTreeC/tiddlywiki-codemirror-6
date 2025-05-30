@@ -18,7 +18,7 @@ exports["replace-all"] = function(event,operation) {
 			var op = operation[i];
 			op.cutStart = 0;
 			op.cutEnd = op.text.length;
-			op.replacement = event.paramObject.text;
+			op.replacement = event.paramObject.text.replace(/\r\n/g, '\n');
 			op.newSelStart = 0;
 			op.newSelEnd = op.replacement.length;
 		}
