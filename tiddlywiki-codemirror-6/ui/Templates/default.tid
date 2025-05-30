@@ -73,14 +73,36 @@ $:/config/EditorToolbarButtons/Visibility/$(currentTiddler)$
 		actions=<<importFileActions>>
 	>
 		<div>
-			<$transclude
-				$variable="editor-preview-slider"
-				class="tc-edit-texteditor-slider"
-				template="tp-tiddler-editor-preview"
-				mode="inline"
-				padding="0px"
-				sliderWidth=<<get.theme.metric previewsliderwidth>>
-			/>
+			<%if [[editor-preview-slider]is[variable]] %>
+				<$transclude
+					$variable="editor-preview-slider"
+					class="tc-edit-texteditor-slider"
+					template="tp-tiddler-editor-preview"
+					mode="inline"
+					padding="0px"
+					sliderWidth=<<get.theme.metric previewsliderwidth>>
+				/>
+			<% else %>
+				<div class={{{ [<edit-preview-state>match[yes]then[tc-tiddler-preview]else[tc-tiddler-preview-hidden]] [[tc-tiddler-editor]] +[join[ ]] }}}>
+				
+				<$transclude tiddler="$:/core/ui/EditTemplate/body/editor" mode="inline"/>
+				
+				<$list filter="[<editPreviewStateTiddler>get[text]match[yes]]" variable="ignore">
+				
+				<div class="tc-tiddler-preview-preview" data-tiddler-title={{!!draft.title}} data-tags={{!!tags}}>
+				
+				<$transclude tiddler={{$:/state/editpreviewtype}} mode="inline">
+				
+				<$transclude tiddler="$:/core/ui/EditTemplate/body/preview/output" mode="inline"/>
+				
+				</$transclude>
+				
+				</div>
+				
+				</$list>
+				
+				</div>
+			<% endif %>
 		</div>
 	</$dropzone>
 </$let>
