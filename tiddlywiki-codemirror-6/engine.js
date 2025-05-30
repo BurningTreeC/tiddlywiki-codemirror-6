@@ -137,7 +137,7 @@ function CodeMirrorEngine(options) {
 
 	// Create a general updateListener for other languages
 	function createGeneralUpdateListener() {
-	    return EditorView.updateListener.of(function(update) {
+		return EditorView.updateListener.of(function(update) {
 			if(update.docChanged) {
 				var text = update.state.doc.toString();
 				self.widget.saveChanges(text);
@@ -157,7 +157,7 @@ function CodeMirrorEngine(options) {
 				self.editorCanBeClosed = false;
 				self.widget.wiki.deleteTiddler(self.cancelEditTiddlerStateTiddler);
 			}
-	    });
+		});
 	}
 
 	this.editorSelection = EditorSelection;
@@ -184,7 +184,7 @@ function CodeMirrorEngine(options) {
 		cmFoldKeymap = foldKeymap,
 		cmCompletionKeymap = completionKeymap;
 
-	this.originalKeymap = [
+	this.currentKeymap = [
 		...closeBracketsKeymap,
 		...defaultKeymap,
 		...searchKeymap,
@@ -193,7 +193,6 @@ function CodeMirrorEngine(options) {
 		...completionKeymap
 	];
 
-	this.currentKeymap = [];
 	this.additionalKeymap = [];
 
 	var oSP = function() {
@@ -359,7 +358,7 @@ function CodeMirrorEngine(options) {
 	};
 
 	this.autocompletionExtension = autocompletion({
-	    override: [self.combinedCompletionSource]
+		override: [self.combinedCompletionSource]
 	});
 
 	var editorExtensions = [
@@ -447,7 +446,7 @@ function CodeMirrorEngine(options) {
 		rectangularSelection(),
 		crosshairCursor(),
 		highlightSelectionMatches(),
-		keymapCompartment.of(keymap.of(self.originalKeymap)),
+		keymapCompartment.of(keymap.of(self.currentKeymap)),
 		Prec.high(keymap.of({key: "Tab", run: acceptCompletion})),
 		EditorView.lineWrapping,
 		closeBracketsCompartment.of([]),
@@ -476,101 +475,75 @@ function CodeMirrorEngine(options) {
 	this.cm = new EditorView(editorOptions);
 
 	this.setTWLanguageSupport = function(viewPlugin,highlightPlugin,autocompletePlugin) {
-	    self.cm.dispatch({
-	        effects: [
-	        	//self.generalUpdateListenerCompartment.reconfigure([]),
-	        	self.autocompleteCompartment.reconfigure([]),
-	        	self.languageCompartment.reconfigure([]),
-	        	self.tiddlyWikiViewPluginCompartment.reconfigure(viewPlugin),
-	        	self.tiddlyWikiHiglightCompartment.reconfigure(highlightPlugin),
-	        	self.tiddlyWikiAutocompleteCompartment.reconfigure(autocompletePlugin)
-	        ]
-	    });
+		self.cm.dispatch({
+			effects: [
+				//self.generalUpdateListenerCompartment.reconfigure([]),
+				self.autocompleteCompartment.reconfigure([]),
+				self.languageCompartment.reconfigure([]),
+				self.tiddlyWikiViewPluginCompartment.reconfigure(viewPlugin),
+				self.tiddlyWikiHiglightCompartment.reconfigure(highlightPlugin),
+				self.tiddlyWikiAutocompleteCompartment.reconfigure(autocompletePlugin)
+			]
+		});
 	};
 
-	this.updateKeymaps = function () {
-		console.log("Updating keymaps...");
+this.updateKeymaps = function () {
+	console.log("Updating keymaps...");
 
-		var commands = self.widget.shortcutActionList;
+	// 1. Standard-Keymap zusammensetzen
+	var newKeymap = [
+		...closeBracketsKeymap,
+		...defaultKeymap,
+		...searchKeymap,
+		...historyKeymap,
+		...foldKeymap,
+		...completionKeymap
+	];
 
-		if (!commands || commands.length === 0) {
-			console.warn("No commands to process.");
-			return;
+	// 2. Optional: indentWithTab aktivieren?
+	if (self.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes") {
+		newKeymap.push(indentWithTab);
+	}
+
+	// 3. User-Shortcuts sammeln
+	var commands = self.widget.shortcutActionList || [];
+	var parsedList = self.widget.shortcutParsedList || [];
+	for (var i = 0; i < commands.length; i++) {
+		var commandName = commands[i];
+		var runCommand =
+			CM["@codemirror/search"][commandName] ||
+			CM["@codemirror/commands"][commandName];
+
+		if (!runCommand) {
+			console.warn('Command "' + commandName + '" does not exist.');
+			continue;
 		}
-
-		if (!self.widget.shortcutParsedList || self.widget.shortcutParsedList.length !== commands.length) {
-			console.warn("shortcutParsedList is not defined or does not match the length of commands.");
-			return;
-		}
-
-		var activeShortcuts = {};
-		var originalBindingsMap = {};
-		for (var i = 0; i < self.originalKeymap.length; i++) {
-			var binding = self.originalKeymap[i];
-			originalBindingsMap[binding.run] = binding;
-		}
-
-		for (var i = 0; i < commands.length; i++) {
-			var commandName = commands[i];
-
-			var runCommand =
-				CM["@codemirror/search"][commandName] ||
-				CM["@codemirror/commands"][commandName];
-
-			if (!runCommand) {
-				console.warn('Command "' + commandName + '" does not exist.');
-				continue;
-			}
-
-			var keyInfoArray = self.widget.shortcutParsedList[i];
-			if (keyInfoArray && keyInfoArray.length > 0) {
-				var kbShortcutArray = self.getPrintableShortcuts(keyInfoArray);
-				for (var j = 0; j < kbShortcutArray.length; j++) {
-					var kbShortcut = kbShortcutArray[j];
-					if (kbShortcut) {
-						activeShortcuts[kbShortcut] = runCommand;
-					}
+		var keyInfoArray = parsedList[i];
+		if (keyInfoArray && keyInfoArray.length > 0) {
+			var kbShortcutArray = self.getPrintableShortcuts(keyInfoArray);
+			for (var j = 0; j < kbShortcutArray.length; j++) {
+				var kbShortcut = kbShortcutArray[j];
+				if (kbShortcut) {
+					newKeymap.push({ key: kbShortcut, run: runCommand });
 				}
 			}
 		}
+	}
 
-		self.currentKeymap = self.currentKeymap.filter(function (keybinding) {
-			if (activeShortcuts[keybinding.key]) {
-				keybinding.run = activeShortcuts[keybinding.key];
-				delete activeShortcuts[keybinding.key];
-				return true;
-			}
+	// 4. Weitere dynamische oder zusätzliche Keymaps einfügen (z.B. Language-Keymaps)
+	if (self.additionalKeymap && Array.isArray(self.additionalKeymap)) {
+		newKeymap = newKeymap.concat(self.additionalKeymap);
+	}
 
-			var originalBinding = originalBindingsMap[keybinding.run];
-			if (originalBinding) {
-				keybinding.key = originalBinding.key;
-				keybinding.run = originalBinding.run;
-				return true;
-			}
+	// 5. Speichern & ins Compartment laden
+	self.currentKeymap = newKeymap;
+	self.cm.dispatch({
+		effects: keymapCompartment.reconfigure(keymap.of(self.currentKeymap)),
+	});
 
-			// Entferne nicht mehr gültige Shortcuts
-			return false;
-		});
+	console.log("Keymaps successfully updated:", JSON.stringify(self.currentKeymap, null, 2));
+};
 
-		for (var kbShortcut in activeShortcuts) {
-			if (activeShortcuts.hasOwnProperty(kbShortcut)) {
-				self.currentKeymap.push({
-					key: kbShortcut,
-					run: activeShortcuts[kbShortcut],
-				});
-			}
-		}
-
-		// Füge die zusätzliche Keymap hinzu
-		self.currentKeymap = self.currentKeymap.concat(self.additionalKeymap || []);
-
-		// Aktualisiere die Keymap des Editors
-		self.cm.dispatch({
-			effects: keymapCompartment.reconfigure(keymap.of(self.currentKeymap)),
-		});
-
-		console.log("Keymaps successfully updated:", JSON.stringify(self.currentKeymap, null, 2));
-	};
 
 	this.toggleSpellcheck = function(enable) {
 		this.cm.dispatch({
@@ -708,45 +681,45 @@ CodeMirrorEngine.prototype.updateAutocompletion = function(selectOnOpen,autocomp
 };
 
 CodeMirrorEngine.prototype.reconfigureLanguage = function (lang, language, options, keymap, source) {
-    var self = this;
-    var languageExtension;
+	var self = this;
+	var languageExtension;
 
-    // Configure language with options and linter if provided
-    if (options) {
-        languageExtension = lang(options);
-    } else {
-        languageExtension = lang();
-    }
+	// Configure language with options and linter if provided
+	if (options) {
+		languageExtension = lang(options);
+	} else {
+		languageExtension = lang();
+	}
 
-    // Validate languageExtension
-    if (!languageExtension || typeof languageExtension !== "object") {
-        console.error("Invalid language extension provided:", languageExtension);
-        throw new Error("Cannot reconfigure language: Invalid languageExtension.");
-    }
+	// Validate languageExtension
+	if (!languageExtension || typeof languageExtension !== "object") {
+		console.error("Invalid language extension provided:", languageExtension);
+		throw new Error("Cannot reconfigure language: Invalid languageExtension.");
+	}
 
-    console.log("Reconfiguring language with:", languageExtension);
+	console.log("Reconfiguring language with:", languageExtension);
 
-    // Reconfigure compartments
-    this.autocompletionSource = source;
+	// Reconfigure compartments
+	this.autocompletionSource = source;
 
-    this.cm.dispatch({
-        effects: self.languageCompartment.reconfigure([languageExtension])
-    });
+	this.cm.dispatch({
+		effects: self.languageCompartment.reconfigure([languageExtension])
+	});
 
-    this.cm.dispatch({
-    	effects: self.autocompleteCompartment.reconfigure(self.autocompletion({
-            override: [self.combinedCompletionSource]
-        }))
-    });
+	this.cm.dispatch({
+		effects: self.autocompleteCompartment.reconfigure(self.autocompletion({
+			override: [self.combinedCompletionSource]
+		}))
+	});
 
-    // Update additional keymaps
-    this.additionalKeymap = keymap || [];
-    console.log("Additional keymap updated:", this.additionalKeymap);
+	// Update additional keymaps
+	this.additionalKeymap = keymap || [];
+	console.log("Additional keymap updated:", this.additionalKeymap);
 
-    // Debugging: Log current state
-    console.log("Editor state after reconfiguring language:", this.cm.state);
+	// Debugging: Log current state
+	console.log("Editor state after reconfiguring language:", this.cm.state);
 
-    //this.updateKeymaps();
+	//this.updateKeymaps();
 };
 
 CodeMirrorEngine.prototype.updateTiddlerType = function() {

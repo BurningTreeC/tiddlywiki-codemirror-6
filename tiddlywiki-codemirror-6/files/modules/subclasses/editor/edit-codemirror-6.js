@@ -29,7 +29,6 @@ exports.prototype.render = function(parent,nextSibling) {
 	this.shortcutPriorityList = []; // Stores the parsed shortcut priority
 	this.updateShortcutLists(this.getShortcutTiddlerList());
 	this.hasStylesheetTag = this.wiki.getTiddler(this.editTitle).hasTag("$:/tags/Stylesheet");
-	//this.engine.updateKeymaps();
 	var lineNumbers = this.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes" && this.editClass && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
 	this.engine.toggleLineNumbers(lineNumbers);
 	this.engine.toggleFoldGutter(lineNumbers);
@@ -57,6 +56,7 @@ exports.prototype.render = function(parent,nextSibling) {
 	var spellcheck = this.wiki.getTiddlerText("$:/config/codemirror-6/spellcheck") === "yes";
 	this.engine.toggleSpellcheck(spellcheck);
 	this.engine.updateTiddlerType();
+	this.engine.updateKeymaps();
 };
 
 exports.prototype.getShortcutTiddlerList = function() {
@@ -202,7 +202,7 @@ exports.prototype.refresh = function(changedTiddlers) {
 	// Re-cache shortcuts if something changed
 	if(hasChanged) {
 		this.updateShortcutLists(newList);
-		//this.engine.updateKeymaps();
+		this.engine.updateKeymaps();
 	}
 	if(changedAttributes.type || changedTiddlers["$:/config/codemirror-6/sqlDialect"]) {
 		this.engine.updateTiddlerType();
