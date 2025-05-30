@@ -1,4 +1,5 @@
 title: $:/core/ui/EditTemplate/body/default
+code-body: yes
 
 \import $:/plugins/BTC/SidebarSlider/procedures/sliders
 
