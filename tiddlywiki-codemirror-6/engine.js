@@ -303,7 +303,7 @@ function CodeMirrorEngine(options) {
 	this.combinedCompletionSource = function(context) {
 		var options = [];
 		var from;
-		console.log("CombinedCompletionSource called", context);
+
 		$tw.utils.each(self.customCompletionSources,function(source) {
 			var intermediateResult = source(context);
 			if(intermediateResult && intermediateResult.options.length > 0) {
@@ -488,7 +488,6 @@ function CodeMirrorEngine(options) {
 	};
 
 this.updateKeymaps = function () {
-	console.log("Updating keymaps...");
 
 	// 1. Standard-Keymap zusammensetzen
 	var newKeymap = [
@@ -515,7 +514,6 @@ this.updateKeymaps = function () {
 			CM["@codemirror/commands"][commandName];
 
 		if (!runCommand) {
-			console.warn('Command "' + commandName + '" does not exist.');
 			continue;
 		}
 		var keyInfoArray = parsedList[i];
@@ -540,8 +538,6 @@ this.updateKeymaps = function () {
 	self.cm.dispatch({
 		effects: keymapCompartment.reconfigure(keymap.of(self.currentKeymap)),
 	});
-
-	console.log("Keymaps successfully updated:", JSON.stringify(self.currentKeymap, null, 2));
 };
 
 
@@ -691,14 +687,6 @@ CodeMirrorEngine.prototype.reconfigureLanguage = function (lang, language, optio
 		languageExtension = lang();
 	}
 
-	// Validate languageExtension
-	if (!languageExtension || typeof languageExtension !== "object") {
-		console.error("Invalid language extension provided:", languageExtension);
-		throw new Error("Cannot reconfigure language: Invalid languageExtension.");
-	}
-
-	console.log("Reconfiguring language with:", languageExtension);
-
 	// Reconfigure compartments
 	this.autocompletionSource = source;
 
@@ -714,10 +702,6 @@ CodeMirrorEngine.prototype.reconfigureLanguage = function (lang, language, optio
 
 	// Update additional keymaps
 	this.additionalKeymap = keymap || [];
-	console.log("Additional keymap updated:", this.additionalKeymap);
-
-	// Debugging: Log current state
-	console.log("Editor state after reconfiguring language:", this.cm.state);
 
 	//this.updateKeymaps();
 };
@@ -741,7 +725,6 @@ CodeMirrorEngine.prototype.updateTiddlerType = function() {
 			var autocompletePlugin = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/main.js").TiddlyWikiAutocompletePlugin;
 			this.setTWLanguageSupport(viewPlugin,highlightPlugin,autocompletePlugin);*/
 			var {tiddlywiki,TiddlyWikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
-			console.log(tiddlywiki);
 			this.reconfigureLanguage(tiddlywiki,TiddlyWikiLanguage);
 			break;
 			break;

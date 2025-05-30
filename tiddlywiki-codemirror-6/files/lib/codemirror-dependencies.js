@@ -43,7 +43,6 @@ var CodeMirrorDependencies = {
         showPanel: CM["@codemirror/view"].showPanel,
         getPanel: CM["@codemirror/view"].getPanel,
         Decoration: CM["@codemirror/view"].Decoration,
-        DecorationSet: CM["@codemirror/view"].DecorationSet,
         WidgetType: CM["@codemirror/view"].WidgetType
     },
     commands: {
