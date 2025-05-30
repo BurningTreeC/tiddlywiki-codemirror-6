@@ -304,6 +304,7 @@ function CodeMirrorEngine(options) {
 	this.combinedCompletionSource = function(context) {
 		var options = [];
 		var from;
+		console.log("CombinedCompletionSource called", context);
 		$tw.utils.each(self.customCompletionSources,function(source) {
 			var intermediateResult = source(context);
 			if(intermediateResult && intermediateResult.options.length > 0) {
@@ -358,15 +359,13 @@ function CodeMirrorEngine(options) {
 	};
 
 	this.autocompletionExtension = autocompletion({
-	    override: [this.combinedCompletionSource]
+	    override: [self.combinedCompletionSource]
 	});
 
 	var editorExtensions = [
 		self.languageCompartment.of([]),
 		self.tiddlyWikiHiglightCompartment.of([]),
-		self.tiddlyWikiAutocompleteCompartment.of([]),
 		self.generalUpdateListenerCompartment.of(createGeneralUpdateListener()),
-		self.tiddlyWikiViewPluginCompartment.of([]),
 		self.autocompleteCompartment.of(self.autocompletionExtension),
 		dropCursor(),
 		solarizedTheme,
@@ -735,15 +734,9 @@ CodeMirrorEngine.prototype.reconfigureLanguage = function (lang, language, optio
     });
 
     this.cm.dispatch({
-    	effects: [
-            self.tiddlyWikiViewPluginCompartment.reconfigure([]),
-            self.tiddlyWikiHiglightCompartment.reconfigure([]),
-            self.tiddlyWikiAutocompleteCompartment.reconfigure([])
-    	]
-    })
-
-    this.cm.dispatch({
-    	effects: self.autocompleteCompartment.reconfigure(self.autocompletion())
+    	effects: self.autocompleteCompartment.reconfigure(self.autocompletion({
+            override: [self.combinedCompletionSource]
+        }))
     });
 
     // Update additional keymaps
