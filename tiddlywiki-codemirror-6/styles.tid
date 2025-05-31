@@ -114,7 +114,7 @@ body {
 	color: <<colour foreground>> !important;
 }
 
-.cm-panels button[name="close"] {
+.cm-panels button[name="close"], .cm-panels button.cm-dialog-close {
 	font-size: 25px !important;
 	cursor: pointer !important;
 }
