@@ -1043,7 +1043,8 @@ CodeMirrorEngine.prototype.createTextOperation = function(type) {
 			cutEnd: null,
 			replacement: null,
 			newSelStart: null,
-			newSelEnd: null
+			newSelEnd: null,
+			selection: this.cm.state.sliceDoc(selections[0].from,selections[0].to)
 		}
 		break;
 	}
