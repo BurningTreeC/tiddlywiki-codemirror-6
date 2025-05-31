@@ -5,6 +5,7 @@ caption: Spellcheck
 description: toggle spellchecking on and off
 condition: [<targetTiddler>!has[type]] [<targetTiddler>get[type]!prefix[image/]] [<targetTiddler>get[type]match[image/svg+xml]]
 shortcuts: ((spellcheck))
+button-classes: {{{ [{$:/config/codemirror-6/spellcheck}match[yes]then[tc-btn-selected]] }}}
 
 <%if [{$:/config/codemirror-6/spellcheck}match[no]] %>
 	<$action-setfield $tiddler="$:/config/codemirror-6/spellcheck" text="yes"/>

@@ -414,6 +414,10 @@ color: #495057;
 	box-shadow: inset 0 0 1px <<colour foreground>>;
 }
 
+.tc-tiddler-editor .tc-editor-toolbar .tc-text-editor-toolbar-item-wrapper button.tc-btn-selected {
+	border: 1px solid <<colour primary>>;
+}
+
 kbd svg.lucide {
 	vertical-align: inherit;
 }

@@ -5,9 +5,10 @@ caption: Fullscreen
 description: toggle the fullscreen view of the editor
 condition: [<targetTiddler>]
 shortcuts: ((editor-fullscreen))
+button-classes: {{{  [[$:/state/codemirror-6/fullscreen/]addsuffix<storyTiddler>!is[missing]then[tc-btn-selected]] }}}
 
 <$list filter="[[$:/state/codemirror-6/fullscreen/]addsuffix<targetTiddler>is[missing]] [[$:/state/codemirror-6/fullscreen/]addsuffix<targetTiddler>get[text]match[no]]" emptyMessage="""
-<$action-setfield $tiddler={{{ [[$:/state/codemirror-6/fullscreen/]addsuffix<storyTiddler>] }}} text="no"/>
+<$action-deletetiddler $tiddler={{{ [[$:/state/codemirror-6/fullscreen/]addsuffix<storyTiddler>] }}}/>
 """>
 <$action-setfield $tiddler={{{ [[$:/state/codemirror-6/fullscreen/]addsuffix<storyTiddler>] }}} text="yes"/>
 </$list>

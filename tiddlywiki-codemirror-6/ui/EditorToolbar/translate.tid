@@ -5,6 +5,7 @@ caption: Translate
 description: toggle the translate attribute on / off
 condition: [<targetTiddler>!has[type]] [<targetTiddler>get[type]!prefix[image/]] [<targetTiddler>get[type]match[image/svg+xml]]
 shortcuts: ((translate))
+button-classes: {{{ [[$:/state/codemirror-6/translate/]addsuffix<storyTiddler>get[text]match[yes]then[tc-btn-selected]] }}}
 
 <%if [[$:/state/codemirror-6/translate/]addsuffix<targetTiddler>get[text]match[yes]] %>
 	<$action-setfield $tiddler={{{ [[$:/state/codemirror-6/translate/]addsuffix<targetTiddler>] }}} text="no"/>

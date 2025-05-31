@@ -5,6 +5,7 @@ caption: LineNumbers
 description: toggle the line numbers off / on
 condition: [<targetTiddler>!has[type]] [<targetTiddler>get[type]!prefix[image/]] [<targetTiddler>get[type]match[image/svg+xml]]
 shortcuts: ((line-numbers))
+button-classes: {{{ [{$:/config/codemirror-6/lineNumbers}match[yes]then[tc-btn-selected]] }}}
 
 <%if [{$:/config/codemirror-6/lineNumbers}match[yes]] %>
 	<$action-setfield $tiddler="$:/config/codemirror-6/lineNumbers" text="no"/>

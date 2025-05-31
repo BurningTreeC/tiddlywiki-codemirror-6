@@ -5,7 +5,7 @@ custom-icon: yes
 caption: {{$:/language/Buttons/Preview/Caption}}
 description: {{$:/language/Buttons/Preview/Hint}}
 condition: [<targetTiddler>]
-button-classes: tc-text-editor-toolbar-item-start-group
+button-classes: tc-text-editor-toolbar-item-start-group {{{ [<get.edit-preview-state>match[yes]then[tc-btn-selected]] }}}
 shortcuts: ((preview))
 
 \whitespace trim
