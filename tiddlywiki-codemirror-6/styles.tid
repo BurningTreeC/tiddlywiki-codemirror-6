@@ -415,7 +415,7 @@ color: #495057;
 }
 
 .tc-tiddler-editor .tc-editor-toolbar .tc-text-editor-toolbar-item-wrapper button.tc-btn-selected {
-	border: 1px solid <<colour primary>>;
+	outline: 2px solid <<colour primary>>;
 }
 
 .tc-tiddler-preview-preview > .tc-copy-to-clipboard-wrapper > div {
