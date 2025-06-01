@@ -418,6 +418,10 @@ color: #495057;
 	border: 1px solid <<colour primary>>;
 }
 
+.tc-tiddler-preview-preview > .tc-copy-to-clipboard-wrapper > div {
+	bottom: inherit !important;
+}
+
 kbd svg.lucide {
 	vertical-align: inherit;
 }
