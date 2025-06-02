@@ -3,6 +3,6 @@
 	"name": "CodeMirror",
 	"author": "Simon Huber",
 	"description": "CodeMirror 6 editor",
-	"version": "0.10.6",
+	"version": "0.10.7",
 	"list": "readme usage license"
 }

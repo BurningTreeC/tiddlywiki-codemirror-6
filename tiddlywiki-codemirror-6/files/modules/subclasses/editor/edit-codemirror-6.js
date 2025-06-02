@@ -28,7 +28,11 @@ exports.prototype.render = function(parent,nextSibling) {
 	this.shortcutParsedList = []; // Stores the parsed key descriptors
 	this.shortcutPriorityList = []; // Stores the parsed shortcut priority
 	this.updateShortcutLists(this.getShortcutTiddlerList());
-	this.hasStylesheetTag = this.wiki.getTiddler(this.editTitle).hasTag("$:/tags/Stylesheet");
+	var editTiddler = this.wiki.getTiddler(this.editTitle);
+	this.hasStylesheetTag = false;
+	if(editTiddler) {
+		this.hasStylesheetTag = editTiddler.hasTag("$:/tags/Stylesheet");
+	}
 	var lineNumbers = this.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes" && this.editClass && this.editClass.indexOf("tc-edit-texteditor-body") !== -1;
 	this.engine.toggleLineNumbers(lineNumbers);
 	this.engine.toggleFoldGutter(lineNumbers);
@@ -133,11 +137,14 @@ exports.prototype.refresh = function(changedTiddlers) {
 	if(changedAttributes["class"]) {
 		this.engine.assignDomNodeClasses();
 	}
-	var hasStylesheetTag = this.wiki.getTiddler(this.editTitle).hasTag("$:/tags/Stylesheet");
-	if(hasStylesheetTag !== this.hasStylesheetTag) {
-		this.hasStylesheetTag = hasStylesheetTag;
-		this.engine.updateTiddlerType();
-	}
+	var editTiddler = this.wiki.getTiddler(this.editTitle);
+	if(editTiddler) {
+		var hasStylesheetTag = editTiddler.hasTag("$:/tags/Stylesheet");
+		if(hasStylesheetTag !== this.hasStylesheetTag) {
+			this.hasStylesheetTag = hasStylesheetTag;
+			this.engine.updateTiddlerType();
+		}		
+}
 	if(changedTiddlers["$:/config/codemirror-6/indentWithTab"]) {
 		var indentWithTab = this.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes";
 		if(indentWithTab && this.engine.currentKeymap.indexOf(this.engine.indentWithTab) === -1) {
