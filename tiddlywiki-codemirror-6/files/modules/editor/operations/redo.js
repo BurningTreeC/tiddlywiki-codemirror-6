@@ -3,20 +3,34 @@ title: $:/plugins/BTC/tiddlywiki-codemirror-6/modules/editor/operations/text/red
 type: application/javascript
 module-type: texteditoroperation
 
-Text editor operation to replace the entire text
+Text editor operation: redo
+
+Production-ready refactor:
+- uses Array.isArray
+- supports both multi-selection array shape and single operation object shape
+- avoids relying on local reassignment that won't propagate
+- keeps backward compatibility with engines that check operation.type
 
 \*/
-(function(){
 
 /*jslint node: true, browser: true */
 /*global $tw: false */
 "use strict";
 
-exports["redo"] = function(event,operation) {
-	if(operation instanceof Array) {
-		operation.splice(0, operation.length);
+exports.redo = function (event, operation) {
+	// Engine recognizes operations.type === "redo" and calls CM redo().
+	if (Array.isArray(operation)) {
+		operation.length = 0;
 		operation.type = "redo";
+		return;
+	}
+
+	if (operation && typeof operation === "object") {
+		operation.type = "redo";
+		operation.cutStart = null;
+		operation.cutEnd = null;
+		operation.replacement = null;
+		operation.newSelStart = null;
+		operation.newSelEnd = null;
 	}
 };
-
-})();

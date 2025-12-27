@@ -1,8 +1,8 @@
 {
 	"title": "$:/plugins/BTC/tiddlywiki-codemirror-6",
-	"name": "CodeMirror",
+	"name": "CodeMirror 6",
 	"author": "Simon Huber",
-	"description": "CodeMirror 6 editor",
-	"version": "0.10.8",
+	"description": "CodeMirror 6 editor for TiddlyWiki5",
+	"version": "0.11.0",
 	"list": "readme usage license"
 }

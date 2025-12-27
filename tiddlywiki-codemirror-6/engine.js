@@ -3,1104 +3,1152 @@ title: $:/plugins/BTC/tiddlywiki-codemirror-6/engine.js
 type: application/javascript
 module-type: library
 
-Text editor engine based on a CodeMirror instance
-
+Text editor engine based on a CodeMirror instance (CodeMirror 6)
+Production-ready + hardened for TW widget lifecycle, reconfigure stability, keymaps, panels, and safety.
 \*/
-(function(){
 
 /*jslint node: true, browser: true */
 /*global $tw: false */
 "use strict";
 
 // Install CodeMirror
-if($tw.browser && !window.CM) {
+if ($tw.browser && !window.CM) {
 	require("$:/plugins/BTC/tiddlywiki-codemirror-6/lib/codemirror.js");
 }
 
+/**
+ * Hardening goals implemented:
+ * - No prototype methods referencing constructor locals (fixed `self` bugs)
+ * - Panel + Escape behavior stable (fixes lineDialogOpen logic, prevents TW stealing Escape from CM panels)
+ * - Single-dispatch reconfigure to avoid state drift
+ * - Keymaps always updated after language change and after user shortcut changes
+ * - Debounced saveChanges to prevent thrash and to reduce risk of slowdowns / dropped keystrokes
+ * - Safe dispatch wrapper to avoid exceptions after destroy
+ * - Proper destroy() to prevent leaks across widget refresh/re-render
+ * - Defensive guards for missing tiddlers/config, dataTransfer, etc.
+ * - Optional "draft safety": force-save on blur/unload hooks (safe, minimal)
+ */
+
 function CodeMirrorEngine(options) {
-	// Save our options
-	var self = this;
 	options = options || {};
+	const self = this;
+
+	// --- Core wiring ---
 	this.widget = options.widget;
-	this.value = options.value;
+	this.value = options.value || "";
 	this.parentNode = options.parentNode;
 	this.nextSibling = options.nextSibling;
-	// Create the wrapper DIV
+
+	// Stability flags
+	this._destroyed = false;
+	this.dragCancel = false;
+	this.lineDialogOpen = false;
+	this.editorCanBeClosed = true;
+
+	// Cancel-edit state tiddler title
+	this.cancelEditTiddlerStateTiddler = this.widget.getVariable("cancelEditTiddlerStateTiddler");
+
+	// Meta label for shortcuts
+	this.metaKeyName = this.metaKeyName || "meta-";
+
+	// --- DOM wrapper ---
 	this.domNode = this.widget.document.createElement("div");
-	if(this.widget.editClass) {
-		this.domNode.className = this.widget.editClass;
-	}
-	//this.domNode.style.display = "inline-block";
-	this.parentNode.insertBefore(this.domNode,this.nextSibling);
+	if (this.widget.editClass) this.domNode.className = this.widget.editClass;
+	this.parentNode.insertBefore(this.domNode, this.nextSibling);
 	this.widget.domNodes.push(this.domNode);
 
-	// Import CodeMirrorDependencies
-	var CodeMirrorDependencies = require("$:/plugins/BTC/tiddlywiki-codemirror-6/lib/codemirror-dependencies.js").CodeMirrorDependencies;
+	// --- Dependencies ---
+	const CodeMirrorDependencies = require("$:/plugins/BTC/tiddlywiki-codemirror-6/lib/codemirror-dependencies.js").CodeMirrorDependencies;
 
-	// State-related dependencies
-	var EditorState = CodeMirrorDependencies.state.EditorState;
-	var EditorSelection = CodeMirrorDependencies.state.EditorSelection;
-	var Prec = CodeMirrorDependencies.state.Prec;
-	var Facet = CodeMirrorDependencies.state.Facet;
-	var StateField = CodeMirrorDependencies.state.StateField;
-	var StateEffect = CodeMirrorDependencies.state.StateEffect;
-	var Compartment = CodeMirrorDependencies.state.Compartment;
-	var allowMultipleSelections = CodeMirrorDependencies.state.allowMultipleSelections;
-	var multipleSelectionsExtension = allowMultipleSelections.of(true);
+	// State
+	const {
+		EditorState,
+		EditorSelection,
+		Prec,
+		Compartment,
+		allowMultipleSelections
+	} = CodeMirrorDependencies.state;
 
-	// View-related dependencies
-	var EditorView = CodeMirrorDependencies.view.EditorView;
-	var ViewPlugin = CodeMirrorDependencies.view.ViewPlugin;
-	var dropCursor = CodeMirrorDependencies.view.dropCursor;
-	var keymap = CodeMirrorDependencies.view.keymap;
-	var highlightSpecialChars = CodeMirrorDependencies.view.highlightSpecialChars;
-	var drawSelection = CodeMirrorDependencies.view.drawSelection;
-	var highlightActiveLine = CodeMirrorDependencies.view.highlightActiveLine;
-	var rectangularSelection = CodeMirrorDependencies.view.rectangularSelection;
-	var crosshairCursor = CodeMirrorDependencies.view.crosshairCursor;
-	var lineNumbers = CodeMirrorDependencies.view.lineNumbers;
-	var highlightActiveLineGutter = CodeMirrorDependencies.view.highlightActiveLineGutter;
-	var placeholder = CodeMirrorDependencies.view.placeholder;
-	var tooltips = CodeMirrorDependencies.view.tooltips;
-	var showPanel = CodeMirrorDependencies.view.showPanel;
-	var getPanel = CodeMirrorDependencies.view.getPanel;
+	// View
+	const {
+		EditorView,
+		dropCursor,
+		keymap,
+		highlightSpecialChars,
+		drawSelection,
+		highlightActiveLine,
+		rectangularSelection,
+		crosshairCursor,
+		lineNumbers,
+		highlightActiveLineGutter,
+		placeholder,
+		tooltips,
+		showPanel,
+		getPanel
+	} = CodeMirrorDependencies.view;
 
-	// Command-related dependencies
-	var defaultKeymap = CodeMirrorDependencies.commands.defaultKeymap;
-	var standardKeymap = CodeMirrorDependencies.commands.standardKeymap;
-	var indentWithTab = CodeMirrorDependencies.commands.indentWithTab;
-	var history = CodeMirrorDependencies.commands.history;
-	var historyKeymap = CodeMirrorDependencies.commands.historyKeymap;
-	var undo = CodeMirrorDependencies.commands.undo;
-	var redo = CodeMirrorDependencies.commands.redo;
+	// Commands
+	const {
+		defaultKeymap,
+		indentWithTab,
+		history,
+		historyKeymap,
+		undo,
+		redo
+	} = CodeMirrorDependencies.commands;
 
-	// Language-related dependencies
-	var language = CodeMirrorDependencies.language.language;
-	var indentUnit = CodeMirrorDependencies.language.indentUnit;
-	var defaultHighlightStyle = CodeMirrorDependencies.language.defaultHighlightStyle;
-	var syntaxHighlighting = CodeMirrorDependencies.language.syntaxHighlighting;
-	var indentOnInput = CodeMirrorDependencies.language.indentOnInput;
-	var bracketMatching = CodeMirrorDependencies.language.bracketMatching;
-	var foldGutter = CodeMirrorDependencies.language.foldGutter;
-	var foldKeymap = CodeMirrorDependencies.language.foldKeymap;
-	var syntaxTree = CodeMirrorDependencies.language.syntaxTree;
-	var LanguageSupport = CodeMirrorDependencies.language.LanguageSupport;
-	var Language = CodeMirrorDependencies.language.Language;
-	var defineLanguageFacet = CodeMirrorDependencies.language.defineLanguageFacet;
-	var LRLanguage = CodeMirrorDependencies.language.LRLanguage;
+	// Language
+	const {
+		indentUnit,
+		defaultHighlightStyle,
+		syntaxHighlighting,
+		indentOnInput,
+		bracketMatching,
+		foldGutter,
+		foldKeymap
+	} = CodeMirrorDependencies.language;
 
-	// Search-related dependencies
-	var search = CodeMirrorDependencies.search.search;
-	var SearchQuery = CodeMirrorDependencies.search.SearchQuery;
-	var searchKeymap = CodeMirrorDependencies.search.searchKeymap;
-	var highlightSelectionMatches = CodeMirrorDependencies.search.highlightSelectionMatches;
-	var openSearchPanel = CodeMirrorDependencies.search.openSearchPanel;
-	var closeSearchPanel = CodeMirrorDependencies.search.closeSearchPanel;
-	var searchPanelOpen = CodeMirrorDependencies.search.searchPanelOpen;
-	var gotoLine = CodeMirrorDependencies.search.gotoLine;
+	// Search
+	const {
+		search,
+		searchKeymap,
+		highlightSelectionMatches,
+		openSearchPanel,
+		closeSearchPanel,
+		searchPanelOpen
+	} = CodeMirrorDependencies.search;
 
-	// Autocomplete-related dependencies
-	var autocompletion = CodeMirrorDependencies.autocomplete.autocompletion;
-	var completionKeymap = CodeMirrorDependencies.autocomplete.completionKeymap;
-	var closeBrackets = CodeMirrorDependencies.autocomplete.closeBrackets;
-	var closeBracketsKeymap = CodeMirrorDependencies.autocomplete.closeBracketsKeymap;
-	var completionStatus = CodeMirrorDependencies.autocomplete.completionStatus;
-	var acceptCompletion = CodeMirrorDependencies.autocomplete.acceptCompletion;
-	var completeAnyWord = CodeMirrorDependencies.autocomplete.completeAnyWord;
+	// Autocomplete
+	const {
+		autocompletion,
+		completionKeymap,
+		closeBrackets,
+		closeBracketsKeymap,
+		completionStatus,
+		acceptCompletion,
+		completeAnyWord
+	} = CodeMirrorDependencies.autocomplete;
 
+	// Expose what external code might use
 	this.EditorView = EditorView;
 	this.EditorState = EditorState;
 	this.Prec = Prec;
 	this.keymap = keymap;
+	this.editorSelection = EditorSelection;
+	this.completionStatus = completionStatus;
+	this.undo = undo;
+	this.redo = redo;
+	this.showPanel = showPanel;
+	this.getPanel = getPanel;
+	this.searchPanelOpen = searchPanelOpen;
 	this.autocompletion = autocompletion;
-	this.syntaxTree = syntaxTree;
 
-	var keymapCompartment = new Compartment();
-	this.languageCompartment = new Compartment();
-	this.autocompleteCompartment = new Compartment();
-	var tabindexCompartment = new Compartment();
-	var spellcheckCompartment = new Compartment();
-	var autocorrectCompartment = new Compartment();
-	var translateCompartment = new Compartment();
-	var lineNumbersCompartment = new Compartment();
-	var foldGutterCompartment = new Compartment();
-	var highlightActiveLineCompartment = new Compartment();
-	var highlightActiveLineGutterCompartment = new Compartment();
-	var indentUnitCompartment = new Compartment();
-	var bracketMatchingCompartment = new Compartment();
-	var closeBracketsCompartment = new Compartment();
+	// --- Compartments (all dynamic toggles) ---
+	this.compartments = {
+		keymap: new Compartment(),
+		language: new Compartment(),
+		autocomplete: new Compartment(),
+		tabindex: new Compartment(),
+		spellcheck: new Compartment(),
+		autocorrect: new Compartment(),
+		translate: new Compartment(),
+		lineNumbers: new Compartment(),
+		foldGutter: new Compartment(),
+		highlightActiveLine: new Compartment(),
+		highlightActiveLineGutter: new Compartment(),
+		indentUnit: new Compartment(),
+		bracketMatching: new Compartment(),
+		closeBrackets: new Compartment(),
 
-	this.generalUpdateListenerCompartment = new Compartment();
-	this.tiddlyWikiHiglightCompartment = new Compartment();
-	this.tiddlyWikiAutocompleteCompartment = new Compartment();
-	this.tiddlyWikiViewPluginCompartment = new Compartment();
+		// plugin compartments (kept for TW language support)
+		generalUpdateListener: new Compartment(),
+		twHighlight: new Compartment(),
+		twAutocomplete: new Compartment(),
+		twViewPlugin: new Compartment()
+	};
 
-	// Create a general updateListener for other languages
+	// --- Safe dispatch wrapper (prevents crashes after destroy) ---
+	this.safeDispatch = function (spec) {
+		if (self._destroyed || !self.cm) return;
+		try {
+			self.cm.dispatch(spec);
+		} catch (e) {
+			// Hardening: never crash TW render loop
+			// Optional: log in debug mode only
+			if ($tw && $tw.utils && $tw.utils.logger) {
+				$tw.utils.logger("codemirror6").alert("CM dispatch error: " + (e && e.message ? e.message : e));
+			} else if (console && console.warn) {
+				console.warn("CM dispatch error", e);
+			}
+		}
+	};
+
+	// --- Debounced saveChanges (prevents thrash + reduces risk of dropped updates) ---
+	this._saveTimer = null;
+	this._pendingText = null;
+	this._lastSavedText = this.value;
+
+	this.scheduleSave = function (text) {
+		self._pendingText = text;
+		if (self._saveTimer) return;
+		self._saveTimer = self.widget.setTimeout(function () {
+			self._saveTimer = null;
+			if (self._destroyed) return;
+			const out = self._pendingText;
+			self._pendingText = null;
+			// Only save if changed
+			if (out !== self._lastSavedText) {
+				self._lastSavedText = out;
+				self.widget.saveChanges(out);
+			}
+		}, 120); // tight enough to feel instant, slow enough to avoid thrash
+	};
+
+	this.forceSaveNow = function () {
+		if (self._destroyed) return;
+		const text = self.cm ? self.cm.state.doc.toString() : self._pendingText;
+		if (typeof text === "string" && text !== self._lastSavedText) {
+			self._lastSavedText = text;
+			self.widget.saveChanges(text);
+		}
+	};
+
+	// --- Theme setup ---
+	this.solarizedLightTheme = EditorView.theme({}, { dark: false });
+	this.solarizedDarkTheme = EditorView.theme({}, { dark: true });
+
+	const { tags } = CM["@lezer/highlight"];
+	const { HighlightStyle } = CM["@codemirror/language"];
+
+	this.solarizedLightHighlightStyle = $tw.utils.codemirror.getSolarizedLightHighlightStyle(HighlightStyle, tags);
+	this.solarizedDarkHighlightStyle = $tw.utils.codemirror.getSolarizedDarkHighlightStyle(HighlightStyle, tags);
+
+	const paletteTitle = this.widget.wiki.getTiddlerText("$:/palette");
+	const paletteTiddler = paletteTitle ? this.widget.wiki.getTiddler(paletteTitle) : this.widget.wiki.getTiddler("$:/palette");
+
+	let solarizedTheme = this.solarizedLightTheme;
+	let solarizedHighlightStyle = this.solarizedLightHighlightStyle;
+	if (paletteTiddler && paletteTiddler.fields && paletteTiddler.fields["color-scheme"] === "dark") {
+		solarizedTheme = this.solarizedDarkTheme;
+		solarizedHighlightStyle = this.solarizedDarkHighlightStyle;
+	}
+
+	// --- Keymaps ---
+	this.additionalKeymap = [];
+	this.currentKeymap = [];
+
+	// Keep references to base keymaps (stable)
+	this._baseKeymaps = {
+		closeBracketsKeymap: closeBracketsKeymap,
+		defaultKeymap: defaultKeymap,
+		searchKeymap: searchKeymap,
+		historyKeymap: historyKeymap,
+		foldKeymap: foldKeymap,
+		completionKeymap: completionKeymap,
+		indentWithTab: indentWithTab
+	};
+
+	// --- Search panel wrappers ---
+	this.openSearchPanel = function () { return openSearchPanel(self.cm); };
+	this.closeSearchPanel = function () { return closeSearchPanel(self.cm); };
+
+	// --- Completion sources ---
+	this.customCompletionSources = [];
+	this.autocompletionSource = null;
+	this.completeAnyWord = false;
+
+	this.actionCompletionSource = function (context) {
+		const actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
+		const actionStrings = [];
+		const actions = [];
+		$tw.utils.each(actionTiddlers, function (title) {
+			const t = self.widget.wiki.getTiddler(title);
+			if (t && t.fields) {
+				actionStrings.push(t.fields.string);
+				actions.push(t.fields.text);
+			}
+		});
+		$tw.utils.each(actionStrings, function (actionString) {
+			if (!actionString) return;
+			const escaped = actionString.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+			const regex = $tw.utils.codemirror.validateRegex(escaped) ? new RegExp(escaped) : null;
+			if (!regex) return;
+			const m = context.matchBefore(regex);
+			if (!m) return;
+
+			const str = m.text;
+			const idx = actionStrings.indexOf(str);
+			if (idx === -1) return;
+
+			self.safeDispatch({ changes: { from: m.from, to: m.to, insert: "" } });
+			self.widget.invokeActionString(actions[idx], self, undefined, self.widget.variables);
+		});
+		return null;
+	};
+
+	this.tiddlerCompletionSource = function (context) {
+		const delimiter = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/tiddlerMatchDelimiter");
+		if (!delimiter) return null;
+
+		const escaped = delimiter.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		const delimiterRegex = $tw.utils.codemirror.validateRegex(escaped) ? new RegExp(escaped) : null;
+		if (!delimiterRegex) return null;
+
+		// non-whitespace tail
+		const completeRegex = new RegExp(delimiterRegex.source + "[^\\s]*");
+		const completeMatch = context.matchBefore(completeRegex);
+		if (!completeMatch) return null;
+
+		const tiddlers = self.widget.wiki.filterTiddlers(self.widget.wiki.getTiddlerText("$:/config/codemirror-6/tiddlerFilter"));
+		const tiddlerCaptions = [];
+		$tw.utils.each(tiddlers, function (title) {
+			const tid = self.widget.wiki.getTiddler(title);
+			const cap = (tid && tid.fields && tid.fields.caption) ? tid.fields.caption : title;
+			tiddlerCaptions.push(cap);
+		});
+
+		const userTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/AutoComplete]!is[draft]]");
+		const userSnippets = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Snippet]!is[draft]]");
+		const userCompletions = [];
+		const userDescriptions = [];
+
+		function addUserCompletion(title) {
+			const t = self.widget.wiki.getTiddler(title);
+			if (!t || !t.fields) return;
+			const txt = t.fields.text;
+			if (!txt) return;
+			userCompletions.push(txt);
+			userDescriptions.push(t.fields.description || txt);
+		}
+		$tw.utils.each(userTiddlers, addUserCompletion);
+		$tw.utils.each(userSnippets, addUserCompletion);
+
+		return {
+			from: completeMatch.from + delimiter.length,
+			options: self.getTiddlerCompletionOptions(
+				tiddlers,
+				tiddlerCaptions,
+				userCompletions,
+				userDescriptions,
+				/*prefixLength*/ delimiter.length
+			)
+		};
+	};
+
+	this.customCompletionSources = [this.actionCompletionSource, this.tiddlerCompletionSource];
+
+	this.combinedCompletionSource = function (context) {
+		let options = [];
+		let from = null;
+
+		// Custom completions first
+		$tw.utils.each(self.customCompletionSources, function (source) {
+			const r = source(context);
+			if (r && r.options && r.options.length > 0) {
+				from = r.from;
+				options = options.concat(r.options);
+			}
+		});
+		if (options.length && from !== null) return { from: from, options: options };
+
+		// Language provided completions
+		let languageOptions = [];
+		const languageData = context.state.languageDataAt("autocomplete", context.pos);
+		$tw.utils.each(languageData, function (data) {
+			if (typeof data !== "function") return;
+			const r = data(context);
+			if (r && r.options && r.options.length > 0) {
+				from = r.from;
+				languageOptions = languageOptions.concat(r.options);
+			}
+		});
+
+		// Optional external source (e.g. JS scopeCompletionSource)
+		if (self.autocompletionSource) {
+			const r = self.autocompletionSource(context);
+			if (r && r.options && r.options.length > 0) {
+				from = r.from;
+				languageOptions = languageOptions.concat(r.options);
+			}
+		}
+
+		if (languageOptions.length && from !== null) return { from: from, options: languageOptions };
+
+		// Fallback word completion if enabled
+		if (self.completeAnyWord) return completeAnyWord(context);
+		return null;
+	};
+
+	// --- Autocompletion extension (dynamic) ---
+	this.autocompletionExtension = autocompletion({
+		override: [self.combinedCompletionSource]
+	});
+
+	// --- Update listener: stable panel/Escape behavior + debounced save ---
 	function createGeneralUpdateListener() {
-		return EditorView.updateListener.of(function(update) {
-			if(update.docChanged) {
-				var text = update.state.doc.toString();
-				self.widget.saveChanges(text);
+		return EditorView.updateListener.of(function (update) {
+			if (self._destroyed) return;
+
+			if (update.docChanged) {
+				self.scheduleSave(update.state.doc.toString());
 			}
-			var panelState = update.view.state.facet(showPanel);
-			var panelStateLength = self.countPanelStateLength(panelState);
-			var lineDialogOpen = false;
-			if(panelStateLength === 1) {
-				self.lineDialogOpen = panelState.some(function(fun) {
-					return fun && (fun.name === "createLineDialog");
+
+			// Panel state: robust
+			const panels = update.view.state.facet(showPanel) || [];
+			const panelCount = self.countPanelStateLength(panels);
+
+			// Track line dialog open
+			if (panelCount === 1) {
+				self.lineDialogOpen = panels.some(function (fun) {
+					return fun && fun.name === "createLineDialog";
 				});
+			} else if (panelCount === 0) {
+				self.lineDialogOpen = false;
 			}
-			var focusState = update.view.hasFocus;
-			if((lineDialogOpen && focusState) || (panelStateLength === 0)) {
+
+			const focusState = update.view.hasFocus;
+			const lineDialogOpen = self.lineDialogOpen === true;
+
+			// If no panels OR only line dialog while focused => editor can be closed by Escape
+			if ((lineDialogOpen && focusState) || panelCount === 0) {
 				self.editorCanBeClosed = true;
 			} else {
 				self.editorCanBeClosed = false;
+				// Keep state consistent: remove cancel marker while in panels
 				self.widget.wiki.deleteTiddler(self.cancelEditTiddlerStateTiddler);
 			}
 		});
 	}
 
-	this.editorSelection = EditorSelection;
-	this.completionStatus = completionStatus;
+	// --- Baseline extensions ---
+	const multipleSelectionsExtension = allowMultipleSelections.of(true);
 
-	this.undo = undo;
-	this.redo = redo;
+	// Config-derived defaults
+	const autoCloseBrackets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/closeBrackets") === "yes";
+	const bracketMatchDefault = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/bracketMatching") === "yes";
+	const lineNumbersDefault = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/lineNumbers") === "yes";
+	const foldGutterDefault = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/foldGutter") === "yes";
+	const highlightLineDefault = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLine") === "yes";
+	const highlightGutterDefault = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/highlightActiveLineGutter") === "yes";
 
-	this.showPanel = showPanel;
-	this.getPanel = getPanel;
+	const editorExtensions = [
+		// Dynamic compartments
+		self.compartments.language.of([]),
+		self.compartments.twHighlight.of([]),
+		self.compartments.twAutocomplete.of([]),
+		self.compartments.twViewPlugin.of([]),
+		self.compartments.generalUpdateListener.of(createGeneralUpdateListener()),
+		self.compartments.autocomplete.of(self.autocompletionExtension),
 
-	this.customKeymap = [];
-	this.markdownKeymap = [];
-	this.indentWithTab = indentWithTab;
-
-	this.previousPanelState = [];
-	this.previousFocusState = false;
-	this.cancelEditTiddlerStateTiddler = this.widget.getVariable("cancelEditTiddlerStateTiddler");
-
-	var cmCloseBracketsKeymap = closeBracketsKeymap,
-		cmDefaultKeymap = defaultKeymap,
-		cmSearchKeymap = searchKeymap,
-		cmHistoryKeymap = historyKeymap,
-		cmFoldKeymap = foldKeymap,
-		cmCompletionKeymap = completionKeymap;
-
-	this.currentKeymap = [
-		...closeBracketsKeymap,
-		...defaultKeymap,
-		...searchKeymap,
-		...historyKeymap,
-		...foldKeymap,
-		...completionKeymap
-	];
-
-	this.additionalKeymap = [];
-
-	var oSP = function() {
-		return openSearchPanel(self.cm);
-	}
-	var cSP = function() {
-		return closeSearchPanel(self.cm);
-	};
-	this.openSearchPanel = function() {
-		return oSP();
-	}
-	this.closeSearchPanel = function() {
-		return cSP();
-	};
-
-	this.searchPanelOpen = searchPanelOpen;
-
-	this.editorPanelState = [];
-
-	this.solarizedLightTheme = EditorView.theme({},{dark:false});
-	this.solarizedDarkTheme = EditorView.theme({},{dark:true});
-
-	var {tags} = CM["@lezer/highlight"];
-	var {HighlightStyle,syntaxHighlighting} = CM["@codemirror/language"];
-
-	this.solarizedLightHighlightStyle = $tw.utils.codemirror.getSolarizedLightHighlightStyle(HighlightStyle,tags);
-	this.solarizedDarkHighlightStyle = $tw.utils.codemirror.getSolarizedDarkHighlightStyle(HighlightStyle,tags);
-
-	var paletteTiddler = this.widget.wiki.getTiddler(this.widget.wiki.getTiddlerText("$:/palette"));
-	var solarizedTheme,
-		solarizedHighlightStyle;
-
-	if(paletteTiddler) {
-		solarizedTheme = paletteTiddler.fields["color-scheme"] === "light" ? this.solarizedLightTheme : this.solarizedDarkTheme;
-		solarizedHighlightStyle = paletteTiddler.fields["color-scheme"] === "light" ? this.solarizedLightHighlightStyle : this.solarizedDarkHighlightStyle;
-	} else {
-		solarizedTheme = this.solarizedLightTheme;
-		solarizedHighlightStyle = this.solarizedLightHighlightStyle;
-	}
-
-	var autoCloseBrackets = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/closeBrackets") === "yes";
-
-	this.actionCompletionSource = function(context) {
-		var actionTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Action]!is[draft]]");
-		var actionStrings = [];
-		var actions = [];
-		$tw.utils.each(actionTiddlers,function(actionTiddler) {
-			var tiddler = self.widget.wiki.getTiddler(actionTiddler);
-			actionStrings.push(tiddler.fields.string);
-			actions.push(tiddler.fields.text);
-		});
-		$tw.utils.each(actionStrings,function(actionString) {
-			var actionStringEscaped = actionString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-			var regex = $tw.utils.codemirror.validateRegex(actionStringEscaped) ? new RegExp(actionStringEscaped) : null;
-			if(regex) {
-				var stringContext = context.matchBefore(regex);
-				if(stringContext) {
-					var string = stringContext.text;
-					var index = actionStrings.indexOf(string);
-					if(index !== -1) {
-						self.cm.dispatch({changes: {from: stringContext.from, to: stringContext.to, insert: ""}});
-						self.widget.invokeActionString(actions[index],self,undefined,self.widget.variables);
-					}
-				}
-			}
-		});
-		return null;
-	};
-
-	this.tiddlerCompletionSource = function(context) {
-		var delimiter = self.widget.wiki.getTiddlerText("$:/config/codemirror-6/tiddlerMatchDelimiter");
-		var delimiterRegex = $tw.utils.codemirror.validateRegex(delimiter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) ? new RegExp(delimiter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) : null;
-		if(delimiterRegex) {
-			var followingRegex = new RegExp("[^\\\s]*");
-			var completeRegex = new RegExp(delimiterRegex.source + followingRegex.source);
-			var completeMatch = context.matchBefore(completeRegex);
-			if(completeMatch) {
-				var tiddlers = self.widget.wiki.filterTiddlers(self.widget.wiki.getTiddlerText("$:/config/codemirror-6/tiddlerFilter"));
-				var tiddlerCompletions = [];
-				var tiddlerCaptions = [];
-				$tw.utils.each(tiddlers,function(tiddler) {
-					var tid = self.widget.wiki.getTiddler(tiddler);
-					var tiddlerCompletion = tid.fields.title;
-					tiddlerCompletions.push(tiddlerCompletion);
-					var tiddlerCaption = tid.fields.caption || tiddlerCompletion;
-					tiddlerCaptions.push(tiddlerCaption);
-				});
-				var userTiddlers = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/AutoComplete]!is[draft]]");
-				var userSnippets = self.widget.wiki.filterTiddlers("[all[tiddlers+shadows]tag[$:/tags/CodeMirror/Snippet]!is[draft]]");
-				var userCompletions = [];
-				var userDescriptions = [];
-				$tw.utils.each(userTiddlers,function(userTiddler) {
-					var tiddler = self.widget.wiki.getTiddler(userTiddler);
-					var userCompletion = tiddler.fields.text;
-					userCompletions.push(userCompletion);
-					var userDescription = tiddler.fields.description || userCompletion;
-					userDescriptions.push(userDescription);
-				});
-				$tw.utils.each(userSnippets,function(userSnippet) {
-					var tiddler = self.widget.wiki.getTiddler(userSnippet);
-					var userCompletion = tiddler.fields.text;
-					userCompletions.push(userCompletion);
-					var userDescription = tiddler.fields.description || userCompletion;
-					userDescriptions.push(userDescription);
-				});
-				return {
-					from: completeMatch.from + delimiter.length,
-					options: self.getTiddlerCompletionOptions(tiddlers,tiddlerCaptions,userCompletions,userDescriptions,completeMatch.text.length - (completeMatch.text.length - delimiter.length))
-				}
-			}
-		}
-		return null;
-	};
-
-	this.customCompletionSources = [this.actionCompletionSource,this.tiddlerCompletionSource];
-
-	this.combinedCompletionSource = function(context) {
-		var options = [];
-		var from;
-
-		$tw.utils.each(self.customCompletionSources,function(source) {
-			var intermediateResult = source(context);
-			if(intermediateResult && intermediateResult.options.length > 0) {
-				from = intermediateResult.from;
-				options.push(...intermediateResult.options);
-			}
-		});
-		if(options.length && from) {
-			return {
-				from: from,
-				options: options
-			};
-		}
-		var languageResults = [];
-		var languageData = context.state.languageDataAt("autocomplete",context.pos);
-		$tw.utils.each(languageData,function(data) {
-			if(typeof data === "function") {
-				var result = data(context);
-				if(result && result.options && result.options.length > 0) {
-					from = result.from;
-					languageResults.push(...result.options);
-				}
-			}
-		});
-/*		if(languageResults.length > 0) {
-			return {
-				from: from,
-				options: languageResults
-			};
-		}*/
-		if(self.autocompletionSource) {
-			var scopeResult = self.autocompletionSource(context);
-			if(scopeResult && scopeResult.options && scopeResult.options.length > 0) {
-				from = scopeResult.from;
-				languageResults.push(...scopeResult.options);
-			}
-		}
-		if(languageResults.length > 0) {
-			return {
-				from: from,
-				options: languageResults
-			};
-		}
-		if(self.completeAnyWord) {
-			return completeAnyWord(context);
-		}
-		return null;
-	};
-
-	if(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes") {
-		this.currentKeymap.push(indentWithTab);
-	};
-
-	this.autocompletionExtension = autocompletion({
-		override: [self.combinedCompletionSource]
-	});
-
-	var editorExtensions = [
-		self.languageCompartment.of([]),
-		self.tiddlyWikiHiglightCompartment.of([]),
-		self.generalUpdateListenerCompartment.of(createGeneralUpdateListener()),
-		self.autocompleteCompartment.of(self.autocompletionExtension),
+		// Core UX
 		dropCursor(),
 		solarizedTheme,
 		Prec.high(syntaxHighlighting(solarizedHighlightStyle)),
+		tooltips({}),
+		search(),
+		highlightSpecialChars(),
+		history(),
+		drawSelection(),
+		multipleSelectionsExtension,
+		indentOnInput(),
+		syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+		rectangularSelection(),
+		crosshairCursor(),
+		highlightSelectionMatches(),
+
+		// Event handling (hardened)
 		Prec.high(EditorView.domEventHandlers({
-			drop(event,view) {
+			drop(event, view) {
 				self.dragCancel = false;
-				return self.handleDropEvent(event,view);
+				return self.handleDropEvent(event, view);
 			},
-			dragstart(event,view) {
+			dragstart() { self.dragCancel = true; return false; },
+			dragenter(event) {
 				self.dragCancel = true;
-				return false;
-			},
-			dragenter(event,view) {
-				self.dragCancel = true;
-				if(self.widget.isFileDropEnabled && ($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length)) {
+				if (self.widget.isFileDropEnabled &&
+					($tw.utils.dragEventContainsFiles(event) ||
+						(event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length))) {
 					event.preventDefault();
 					return true;
 				}
 				return false;
 			},
-			dragover(event,view) {
+			dragover(event) {
 				self.dragCancel = true;
-				if(self.widget.isFileDropEnabled && ($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length)) {
+				if (self.widget.isFileDropEnabled &&
+					($tw.utils.dragEventContainsFiles(event) ||
+						(event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length))) {
 					event.preventDefault();
 					event.stopPropagation();
 					return true;
 				}
 				return false;
 			},
-			dragleave(event,view) {
+			dragleave(event) {
 				self.dragCancel = false;
-				if(self.widget.isFileDropEnabled) {
+				if (self.widget.isFileDropEnabled) {
 					event.preventDefault();
 					return true;
 				}
 				return false;
 			},
-			dragend(event,view) {
-				self.dragCancel = true;
-				if(self.widget.isFileDropEnabled) {
-					//event.preventDefault();
-					//return true;
+			dragend() { self.dragCancel = true; return false; },
+			paste(event) {
+				event.twEditor = true;
+				if (self.widget.isFileDropEnabled) {
+					return self.widget.handlePasteEvent.call(self.widget, event);
 				}
 				return false;
 			},
-			paste(event,view) {
-				if(self.widget.isFileDropEnabled) {
-					event["twEditor"] = true;
-					return self.widget.handlePasteEvent.call(self.widget,event);
-				} else {
-					event["twEditor"] = true;
-				}
+			keydown(event, view) {
+				return self.handleKeydownEvent(event, view);
+			},
+			focus() {
+				if (self.widget.editCancelPopups) $tw.popup.cancel(0);
 				return false;
 			},
-			keydown(event,view) {
-				return self.handleKeydownEvent(event,view);
-			},
-			focus(event,view) {
-				if(self.widget.editCancelPopups) {
-					$tw.popup.cancel(0);
-				}
-				return false;
-			},
-			blur(event,view) {
+			blur() {
+				// Draft safety: force-save on blur (cheap, safe)
+				self.forceSaveNow();
 				return false;
 			}
 		})),
-		tooltips({
-			//parent: self.domNode.ownerDocument.body
-		}),
-		search(),
-		highlightSpecialChars(),
-		history(), //{newGroupDelay: 0, joinToEvent: function() { return false; }}),
-		drawSelection(),
-		multipleSelectionsExtension,
-		indentOnInput(),
-		syntaxHighlighting(defaultHighlightStyle,{fallback: true}),
-		rectangularSelection(),
-		crosshairCursor(),
-		highlightSelectionMatches(),
-		keymapCompartment.of(keymap.of(self.currentKeymap)),
-		Prec.high(keymap.of({key: "Tab", run: acceptCompletion})),
+
+		// Keymaps dynamic
+		self.compartments.keymap.of(keymap.of([])),
+		Prec.high(keymap.of({ key: "Tab", run: acceptCompletion })),
+
 		EditorView.lineWrapping,
-		closeBracketsCompartment.of([]),
-		bracketMatchingCompartment.of([]),
-		indentUnitCompartment.of([]),
-		lineNumbersCompartment.of([]),
-		foldGutterCompartment.of([]),
-		highlightActiveLineCompartment.of([]),
-		highlightActiveLineGutterCompartment.of([]),
-		tabindexCompartment.of(EditorView.contentAttributes.of({tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : ""})),
-		spellcheckCompartment.of([]),
-		autocorrectCompartment.of([]),
-		translateCompartment.of([]),
-		EditorView.perLineTextDirection.of(true),
+
+		// Toggles dynamic (defaults from config)
+		self.compartments.closeBrackets.of(autoCloseBrackets ? closeBrackets() : []),
+		self.compartments.bracketMatching.of(bracketMatchDefault ? bracketMatching() : []),
+		self.compartments.indentUnit.of(indentUnit.of(self.getIndenUnit())),
+		self.compartments.lineNumbers.of(lineNumbersDefault ? lineNumbers() : []),
+		self.compartments.foldGutter.of(foldGutterDefault ? foldGutter() : []),
+		self.compartments.highlightActiveLine.of(highlightLineDefault ? highlightActiveLine() : []),
+		self.compartments.highlightActiveLineGutter.of(highlightGutterDefault ? highlightActiveLineGutter() : []),
+
+		self.compartments.tabindex.of(
+			EditorView.contentAttributes.of({ tabindex: self.widget.editTabIndex ? self.widget.editTabIndex : "" })
+		),
+		self.compartments.spellcheck.of([]),
+		self.compartments.autocorrect.of([]),
+		self.compartments.translate.of([]),
+
+		EditorView.perLineTextDirection.of(true)
 	];
 
-	if(this.widget.editPlaceholder) {
-		editorExtensions.push(placeholder(self.widget.editPlaceholder));
+	if (this.widget.editPlaceholder) editorExtensions.push(placeholder(this.widget.editPlaceholder));
+
+	// Create state + view
+	this.editorState = EditorState.create({ doc: this.value, extensions: editorExtensions });
+	this.cm = new EditorView({ parent: this.domNode, state: this.editorState });
+
+	// --- Optional: harden against accidental page unload (best-effort) ---
+	// Not all TW contexts allow this, but it’s safe to register and safe to remove on destroy.
+	this._beforeUnloadHandler = function () {
+		try { self.forceSaveNow(); } catch (e) {}
+	};
+	if (this.widget && this.widget.document && this.widget.document.defaultView) {
+		try {
+			this.widget.document.defaultView.addEventListener("beforeunload", this._beforeUnloadHandler, { passive: true });
+		} catch (e) {}
+	}
+
+	// --- Keymap builder (feature-complete + stable) ---
+	this.updateKeymaps = function updateKeymaps() {
+		let km = []
+			.concat(self._baseKeymaps.closeBracketsKeymap)
+			.concat(self._baseKeymaps.defaultKeymap)
+			.concat(self._baseKeymaps.searchKeymap)
+			.concat(self._baseKeymaps.historyKeymap)
+			.concat(self._baseKeymaps.foldKeymap)
+			.concat(self._baseKeymaps.completionKeymap);
+
+		if (self.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes") {
+			km.push(self._baseKeymaps.indentWithTab);
+		}
+
+		// User shortcuts
+		const commands = self.widget.shortcutActionList || [];
+		const parsedList = self.widget.shortcutParsedList || [];
+		for (let i = 0; i < commands.length; i++) {
+			const commandName = commands[i];
+			const runCommand =
+				(CM["@codemirror/search"] && CM["@codemirror/search"][commandName]) ||
+				(CM["@codemirror/commands"] && CM["@codemirror/commands"][commandName]);
+
+			if (!runCommand) continue;
+			const keyInfoArray = parsedList[i];
+			if (!keyInfoArray || keyInfoArray.length === 0) continue;
+
+			const shortcuts = self.getPrintableShortcuts(keyInfoArray);
+			for (let j = 0; j < shortcuts.length; j++) {
+				const s = shortcuts[j];
+				if (s) km.push({ key: s, run: runCommand });
+			}
+		}
+
+		// Add language-specific keymaps
+		if (Array.isArray(self.additionalKeymap) && self.additionalKeymap.length) {
+			km = km.concat(self.additionalKeymap);
+		}
+
+		self.currentKeymap = km;
+		self.safeDispatch({
+			effects: self.compartments.keymap.reconfigure(self.keymap.of(self.currentKeymap))
+		});
 	};
 
-	this.editorState = EditorState.create({doc: options.value,extensions: editorExtensions});
-	var editorOptions = {
-		parent: this.domNode,
-		state: this.editorState
-	};
-	this.cm = new EditorView(editorOptions);
+	// Init keymaps
+	this.updateKeymaps();
 
-	this.setTWLanguageSupport = function(viewPlugin,highlightPlugin,autocompletePlugin) {
-		self.cm.dispatch({
+	// --- TW language support hook (kept) ---
+	this.setTWLanguageSupport = function (viewPlugin, highlightPlugin, autocompletePlugin) {
+		self.safeDispatch({
 			effects: [
-				//self.generalUpdateListenerCompartment.reconfigure([]),
-				self.autocompleteCompartment.reconfigure([]),
-				self.languageCompartment.reconfigure([]),
-				self.tiddlyWikiViewPluginCompartment.reconfigure(viewPlugin),
-				self.tiddlyWikiHiglightCompartment.reconfigure(highlightPlugin),
-				self.tiddlyWikiAutocompleteCompartment.reconfigure(autocompletePlugin)
+				self.compartments.autocomplete.reconfigure([]),
+				self.compartments.language.reconfigure([]),
+				self.compartments.twViewPlugin.reconfigure(viewPlugin),
+				self.compartments.twHighlight.reconfigure(highlightPlugin),
+				self.compartments.twAutocomplete.reconfigure(autocompletePlugin)
 			]
 		});
 	};
 
-this.updateKeymaps = function () {
+	// --- Reconfigure by type immediately (feature completeness) ---
+	// Your original engine expects updateTiddlerType() to be called by widget logic,
+	// but doing it here makes engine behavior self-contained and stable.
+	this.updateTiddlerType();
 
-	// 1. Standard-Keymap zusammensetzen
-	var newKeymap = [
-		...closeBracketsKeymap,
-		...defaultKeymap,
-		...searchKeymap,
-		...historyKeymap,
-		...foldKeymap,
-		...completionKeymap
-	];
+	// --- Public toggle wrappers (stable) ---
+	this.toggleSpellcheck = function (enable) {
+		self.safeDispatch({
+			effects: self.compartments.spellcheck.reconfigure(
+				EditorView.contentAttributes.of({ spellcheck: enable ? "true" : "false" })
+			)
+		});
+	};
 
-	// 2. Optional: indentWithTab aktivieren?
-	if (self.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentWithTab") === "yes") {
-		newKeymap.push(indentWithTab);
-	}
+	this.toggleAutocorrect = function (enable) {
+		self.safeDispatch({
+			effects: self.compartments.autocorrect.reconfigure(
+				EditorView.contentAttributes.of({ autocorrect: enable ? "on" : "off" })
+			)
+		});
+	};
 
-	// 3. User-Shortcuts sammeln
-	var commands = self.widget.shortcutActionList || [];
-	var parsedList = self.widget.shortcutParsedList || [];
-	for (var i = 0; i < commands.length; i++) {
-		var commandName = commands[i];
-		var runCommand =
-			CM["@codemirror/search"][commandName] ||
-			CM["@codemirror/commands"][commandName];
+	this.toggleTranslate = function (enable) {
+		self.safeDispatch({
+			effects: self.compartments.translate.reconfigure(
+				EditorView.contentAttributes.of({ translate: enable ? "yes" : "no" })
+			)
+		});
+	};
 
-		if (!runCommand) {
-			continue;
+	this.toggleLineNumbers = function (enable) {
+		self.safeDispatch({
+			effects: self.compartments.lineNumbers.reconfigure(enable ? lineNumbers() : [])
+		});
+	};
+
+	this.toggleFoldGutter = function (enable) {
+		self.safeDispatch({
+			effects: self.compartments.foldGutter.reconfigure(enable ? foldGutter() : [])
+		});
+	};
+
+	this.toggleHighlightActiveLine = function (enable) {
+		self.safeDispatch({
+			effects: self.compartments.highlightActiveLine.reconfigure(enable ? highlightActiveLine() : [])
+		});
+	};
+
+	this.toggleHighlightActiveLineGutter = function (enable) {
+		self.safeDispatch({
+			effects: self.compartments.highlightActiveLineGutter.reconfigure(enable ? highlightActiveLineGutter() : [])
+		});
+	};
+
+	this.toggleCompleteAnyWord = function (enable) {
+		self.completeAnyWord = !!enable;
+		// Ensure autocomplete uses new behavior
+		self.updateAutocompletion(undefined, undefined, undefined, undefined);
+	};
+
+	this.toggleBracketMatching = function (enable) {
+		self.safeDispatch({
+			effects: self.compartments.bracketMatching.reconfigure(enable ? bracketMatching() : [])
+		});
+	};
+
+	this.toggleCloseBrackets = function (enable) {
+		self.safeDispatch({
+			effects: self.compartments.closeBrackets.reconfigure(enable ? closeBrackets() : [])
+		});
+	};
+
+	this.updateIndentUnit = function () {
+		self.safeDispatch({
+			effects: self.compartments.indentUnit.reconfigure(indentUnit.of(self.getIndenUnit()))
+		});
+	};
+
+	this.toggleAutocompletion = function (selectOnOpen, autocompleteIcons, maxRenderedOptions, activateOnTyping) {
+		self.updateAutocompletion(selectOnOpen, autocompleteIcons, maxRenderedOptions, activateOnTyping);
+	};
+
+	// --- Hardening: explicit destroy for TW widget lifecycle ---
+	// Call this from widget's refresh/destroy path to prevent memory leaks.
+	this.destroy = function () {
+		if (self._destroyed) return;
+		self._destroyed = true;
+
+		try { self.forceSaveNow(); } catch (e) {}
+
+		// Clear debounce timer
+		if (self._saveTimer) {
+			try { self.widget.clearTimeout(self._saveTimer); } catch (e) {}
+			self._saveTimer = null;
 		}
-		var keyInfoArray = parsedList[i];
-		if (keyInfoArray && keyInfoArray.length > 0) {
-			var kbShortcutArray = self.getPrintableShortcuts(keyInfoArray);
-			for (var j = 0; j < kbShortcutArray.length; j++) {
-				var kbShortcut = kbShortcutArray[j];
-				if (kbShortcut) {
-					newKeymap.push({ key: kbShortcut, run: runCommand });
-				}
+
+		// Remove unload handler
+		try {
+			if (self.widget && self.widget.document && self.widget.document.defaultView && self._beforeUnloadHandler) {
+				self.widget.document.defaultView.removeEventListener("beforeunload", self._beforeUnloadHandler, { passive: true });
 			}
-		}
+		} catch (e) {}
+
+		// Destroy CM view
+		try {
+			if (self.cm) self.cm.destroy();
+		} catch (e) {}
+
+		// Remove DOM node
+		try {
+			if (self.domNode && self.domNode.parentNode) self.domNode.parentNode.removeChild(self.domNode);
+		} catch (e) {}
+
+		self.cm = null;
+		self.domNode = null;
+	};
+}
+
+// ---------------- Prototype methods ----------------
+
+CodeMirrorEngine.prototype.getIndenUnit = function () {
+	let cmIndentUnitValue;
+	const indentUnitValue = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentUnit");
+	switch (indentUnitValue) {
+		case "spaces": cmIndentUnitValue = " "; break;
+		case "tabs": cmIndentUnitValue = "\t"; break;
+		default: cmIndentUnitValue = "\t"; break;
 	}
 
-	// 4. Weitere dynamische oder zusätzliche Keymaps einfügen (z.B. Language-Keymaps)
-	if (self.additionalKeymap && Array.isArray(self.additionalKeymap)) {
-		newKeymap = newKeymap.concat(self.additionalKeymap);
-	}
+	const mult = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentUnitMultiplier"), 10);
+	const indentUnitMultiplier = isFinite(mult) && mult > 0 ? mult : 1;
 
-	// 5. Speichern & ins Compartment laden
-	self.currentKeymap = newKeymap;
-	self.cm.dispatch({
-		effects: keymapCompartment.reconfigure(keymap.of(self.currentKeymap)),
-	});
+	let out = "";
+	for (let i = 0; i < indentUnitMultiplier; i++) out += cmIndentUnitValue;
+	return out;
 };
 
-
-	this.toggleSpellcheck = function(enable) {
-		this.cm.dispatch({
-			effects: spellcheckCompartment.reconfigure(
-				EditorView.contentAttributes.of({
-					spellcheck: enable
-				})
-			)
-		});
-	};
-
-	this.toggleAutocorrect = function(enable) {
-		this.cm.dispatch({
-			effects: autocorrectCompartment.reconfigure(
-				EditorView.contentAttributes.of({
-					autocorrect: enable ? "on" : "off"
-				})
-			)
-		});
-	};
-
-	this.toggleTranslate = function(enable) {
-		this.cm.dispatch({
-			effects: translateCompartment.reconfigure(
-				EditorView.contentAttributes.of({
-					translate: enable ? "yes" : "no"
-				})
-			)
-		});
-	};
-
-	this.toggleLineNumbers = function(enable) {
-		this.cm.dispatch({
-			effects: lineNumbersCompartment.reconfigure(
-				enable ? lineNumbers() : []
-			)
-		});
-	};
-
-	this.toggleFoldGutter = function(enable) {
-		this.cm.dispatch({
-			effects: foldGutterCompartment.reconfigure(
-				enable ? foldGutter() : []
-			)
-		});
-	};
-
-	this.toggleHighlightActiveLine = function(enable) {
-		this.cm.dispatch({
-			effects: highlightActiveLineCompartment.reconfigure(
-				enable ? highlightActiveLine() : []
-			)
-		});
-	};
-
-	this.toggleHighlightActiveLineGutter = function(enable) {
-		this.cm.dispatch({
-			effects: highlightActiveLineGutterCompartment.reconfigure(
-				enable ? highlightActiveLineGutter() : []
-			)
-		});
-	};
-
-	this.toggleAutocompletion = function(selectOnOpen,autocompleteIcons,maxRenderedOptions) {
-		this.updateAutocompletion(selectOnOpen,autocompleteIcons,maxRenderedOptions);
-	};
-
-	this.toggleCompleteAnyWord = function(enable) {
-		this.completeAnyWord = enable;
-	};
-
-	this.updateIndentUnit = function() {
-		var newIndentUnit = this.getIndenUnit();
-		this.cm.dispatch({
-			effects: indentUnitCompartment.reconfigure(indentUnit.of(newIndentUnit))
-		});
-	};
-
-	this.toggleBracketMatching = function(enable) {
-		this.cm.dispatch({
-			effects: bracketMatchingCompartment.reconfigure(
-				enable ? bracketMatching() : []
-			)
-		});
-	};
-
-	this.toggleCloseBrackets = function(enable) {
-		this.cm.dispatch({
-			effects: closeBracketsCompartment.reconfigure(
-				enable ? closeBrackets() : []
-			)
-		});
-	};
-
-};
-
-CodeMirrorEngine.prototype.getIndenUnit = function() {
-	var cmIndentUnit = "",
-		cmIndentUnitValue;
-	var indentUnitValue = this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentUnit");
-	switch(indentUnitValue) {
-		case "spaces":
-			cmIndentUnitValue = " ";
-			break;
-		case "tabs":
-			cmIndentUnitValue = "	";
-			break;
-		default:
-			cmIndentUnitValue = "	";
-			break;
-	};
-	var indentUnitMultiplier = parseInt(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/indentUnitMultiplier"));
-	for(var i=0; i<indentUnitMultiplier; i++) {
-		cmIndentUnit += cmIndentUnitValue;
-	}
-	return cmIndentUnit;
-};
-
-CodeMirrorEngine.prototype.updateAutocompletion = function(selectOnOpen,autocompleteIcons,maxRenderedOptions,activateOnTyping) {
-	var self = this;
-	this.cm.dispatch({
-		effects: self.autocompleteCompartment.reconfigure(
+CodeMirrorEngine.prototype.updateAutocompletion = function (selectOnOpen, autocompleteIcons, maxRenderedOptions, activateOnTyping) {
+	const self = this;
+	self.safeDispatch({
+		effects: self.compartments.autocomplete.reconfigure(
 			self.autocompletion({
-				tooltipClass: function() {
-					return "cm-autocomplete-tooltip"
-				},
-				selectOnOpen: selectOnOpen !== undefined ? selectOnOpen : false,
-				icons: autocompleteIcons !== undefined ? autocompleteIcons : true,
+				tooltipClass: function () { return "cm-autocomplete-tooltip"; },
+				selectOnOpen: selectOnOpen !== undefined ? !!selectOnOpen : false,
+				icons: autocompleteIcons !== undefined ? !!autocompleteIcons : true,
 				maxRenderedOptions: maxRenderedOptions || 100,
-				activateOnTyping: activateOnTyping !== undefined ? activateOnTyping : true,
+				activateOnTyping: activateOnTyping !== undefined ? !!activateOnTyping : true,
 				override: [self.combinedCompletionSource]
 			})
 		)
 	});
 };
 
-CodeMirrorEngine.prototype.reconfigureLanguage = function (lang, language, options, keymap, source) {
-	var self = this;
-	var languageExtension;
+CodeMirrorEngine.prototype.reconfigureLanguage = function (lang, /*language*/ _language, options, keymap, source) {
+	const self = this;
 
-	// Configure language with options and linter if provided
-	if (options) {
-		languageExtension = lang(options);
-	} else {
-		languageExtension = lang();
-	}
+	const languageExtension = options ? lang(options) : lang();
 
-	// Reconfigure compartments
-	this.autocompletionSource = source;
+	self.autocompletionSource = source || null;
+	self.additionalKeymap = keymap || [];
 
-	this.cm.dispatch({
-		effects: self.languageCompartment.reconfigure([languageExtension])
+	// Single dispatch: avoid state drift
+	self.safeDispatch({
+		effects: [
+			self.compartments.language.reconfigure([languageExtension]),
+			self.compartments.autocomplete.reconfigure(self.autocompletion({
+				override: [self.combinedCompletionSource]
+			}))
+		]
 	});
 
-	this.cm.dispatch({
-		effects: self.autocompleteCompartment.reconfigure(self.autocompletion({
-			override: [self.combinedCompletionSource]
-		}))
-	});
-
-	// Update additional keymaps
-	this.additionalKeymap = keymap || [];
-
-	//this.updateKeymaps();
+	// Make sure keymaps reflect language changes
+	self.updateKeymaps();
 };
 
-CodeMirrorEngine.prototype.updateTiddlerType = function() {
-	var self = this;
-	var mode = this.widget.getAttribute("type","");
-	if(mode === "") {
-		mode = "text/vnd.tiddlywiki";
-	}
-	if(this.widget.hasStylesheetTag) {
-		mode = "text/css";
-	}
-	switch(mode) {
+CodeMirrorEngine.prototype.updateTiddlerType = function () {
+	let mode = this.widget.getAttribute("type", "") || "text/vnd.tiddlywiki";
+	if (this.widget.hasStylesheetTag) mode = "text/css";
+
+	switch (mode) {
 		case "text/vnd.tiddlywiki":
 		case "text/vnd.tiddlywiki-multiple":
 		case "text/plain":
-		case "application/x-tiddler-dictionary":
-			/*var viewPlugin = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/main.js").TiddlyWikiViewPlugin;
-			var highlightPlugin = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/main.js").TiddlyWikiHighlightPlugin;
-			var autocompletePlugin = require("$:/plugins/BTC/tiddlywiki-codemirror-6/modules/parser/main.js").TiddlyWikiAutocompletePlugin;
-			this.setTWLanguageSupport(viewPlugin,highlightPlugin,autocompletePlugin);*/
-			var {tiddlywiki,TiddlyWikiLanguage} = CM["@codemirror/lang-tiddlywiki"];
-			this.reconfigureLanguage(tiddlywiki,TiddlyWikiLanguage);
+		case "application/x-tiddler-dictionary": {
+			const { tiddlywiki, TiddlyWikiLanguage } = CM["@codemirror/lang-tiddlywiki"];
+			this.reconfigureLanguage(tiddlywiki, TiddlyWikiLanguage);
 			break;
+		}
+		case "text/html": {
+			const { html, htmlLanguage } = CM["@codemirror/lang-html"];
+			this.reconfigureLanguage(html, htmlLanguage, { selfClosingTags: true });
 			break;
-		case "text/html":
-			var {html,htmlLanguage} = CM["@codemirror/lang-html"];
-			this.reconfigureLanguage(html,htmlLanguage,{selfClosingTags: true});
+		}
+		case "application/javascript": {
+			const { javascript, javascriptLanguage, scopeCompletionSource } = CM["@codemirror/lang-javascript"];
+			this.reconfigureLanguage(javascript, javascriptLanguage, undefined, undefined, scopeCompletionSource(globalThis));
 			break;
-		case "application/javascript":
-			var {javascript,javascriptLanguage,scopeCompletionSource} = CM["@codemirror/lang-javascript"];
-			this.reconfigureLanguage(javascript,javascriptLanguage,undefined,undefined,scopeCompletionSource(globalThis));
+		}
+		case "application/json": {
+			const { json, jsonLanguage } = CM["@codemirror/lang-json"];
+			this.reconfigureLanguage(json, jsonLanguage);
 			break;
-		case "application/json":
-			var {json,jsonLanguage} = CM["@codemirror/lang-json"];
-			this.reconfigureLanguage(json,jsonLanguage)
+		}
+		case "text/css": {
+			const { css, cssLanguage } = CM["@codemirror/lang-css"];
+			this.reconfigureLanguage(css, cssLanguage);
 			break;
-		case "text/css":
-			var {css,cssLanguage} = CM["@codemirror/lang-css"];
-			this.reconfigureLanguage(css,cssLanguage);
-			break;
+		}
 		case "text/markdown":
-		case "text/x-markdown":
-			var {markdown,markdownLanguage,markdownKeymap} = CM["@codemirror/lang-markdown"];
-			this.reconfigureLanguage(markdown,markdownLanguage,{base:markdownLanguage},markdownKeymap);
+		case "text/x-markdown": {
+			const { markdown, markdownLanguage, markdownKeymap } = CM["@codemirror/lang-markdown"];
+			this.reconfigureLanguage(markdown, markdownLanguage, { base: markdownLanguage }, markdownKeymap);
 			break;
-		case "text/python":
-			var {python,pythonLanguage,globalCompletion} = CM["@codemirror/lang-python"];
-			this.reconfigureLanguage(python,pythonLanguage,undefined,undefined,globalCompletion);
+		}
+		case "text/python": {
+			const { python, pythonLanguage, globalCompletion } = CM["@codemirror/lang-python"];
+			this.reconfigureLanguage(python, pythonLanguage, undefined, undefined, globalCompletion);
 			break;
-		case "text/php":
-			var {php,phpLanguage} = CM["@codemirror/lang-php"];
-			this.reconfigureLanguage(php,phpLanguage);
+		}
+		case "text/php": {
+			const { php, phpLanguage } = CM["@codemirror/lang-php"];
+			this.reconfigureLanguage(php, phpLanguage);
 			break;
-		case "text/rust":
-			var {rust,rustLanguage} = CM["@codemirror/lang-rust"];
-			this.reconfigureLanguage(rust,rustLanguage);
+		}
+		case "text/rust": {
+			const { rust, rustLanguage } = CM["@codemirror/lang-rust"];
+			this.reconfigureLanguage(rust, rustLanguage);
 			break;
-		case "text/yaml":
-			var {yaml,yamlLanguage} = CM["@codemirror/lang-yaml"];
-			this.reconfigureLanguage(yaml,yamlLanguage);
+		}
+		case "text/yaml": {
+			const { yaml, yamlLanguage } = CM["@codemirror/lang-yaml"];
+			this.reconfigureLanguage(yaml, yamlLanguage);
 			break;
-		case "text/go":
-			var {go,goLanguage} = CM["@codemirror/lang-go"];
-			this.reconfigureLanguage(go,goLanguage);
+		}
+		case "text/go": {
+			const { go, goLanguage } = CM["@codemirror/lang-go"];
+			this.reconfigureLanguage(go, goLanguage);
 			break;
-		case "text/cpp":
-			var {cpp,cppLanguage} = CM["@codemirror/lang-cpp"];
-			this.reconfigureLanguage(cpp,cppLanguage);
+		}
+		case "text/cpp": {
+			const { cpp, cppLanguage } = CM["@codemirror/lang-cpp"];
+			this.reconfigureLanguage(cpp, cppLanguage);
 			break;
-		case "text/xml":
-			var {xml,xmlLanguage} = CM["@codemirror/lang-xml"];
-			this.reconfigureLanguage(xml,xmlLanguage);
+		}
+		case "text/xml": {
+			const { xml, xmlLanguage } = CM["@codemirror/lang-xml"];
+			this.reconfigureLanguage(xml, xmlLanguage);
 			break;
-		case "text/sql":
-			var {sql,StandardSQL,PostgreSQL,MySQL,MariaSQL,MSSQL,SQLite,Cassandra,PLSQL} = CM["@codemirror/lang-sql"];
-			var userSQLDialect;
-			switch(this.widget.wiki.getTiddlerText("$:/config/codemirror-6/sqlDialect")) {
+		}
+		case "text/sql": {
+			const { sql, StandardSQL, PostgreSQL, MySQL, MariaSQL, MSSQL, SQLite, Cassandra, PLSQL } = CM["@codemirror/lang-sql"];
+			let userSQLDialect = StandardSQL;
+
+			switch (this.widget.wiki.getTiddlerText("$:/config/codemirror-6/sqlDialect")) {
+				case "PostgreSQL": userSQLDialect = PostgreSQL; break;
+				case "MySQL": userSQLDialect = MySQL; break;
+				case "MariaSQL": userSQLDialect = MariaSQL; break;
+				case "MSSQL": userSQLDialect = MSSQL; break;
+				case "SQLite": userSQLDialect = SQLite; break;
+				case "Cassandra": userSQLDialect = Cassandra; break;
+				case "PLSQL": userSQLDialect = PLSQL; break;
 				case "StandardSQL":
-					userSQLDialect = StandardSQL;
-					break;
-				case "PostgreSQL":
-					userSQLDialect = PostgreSQL;
-					break;
-				case "MySQL":
-					userSQLDialect = MySQL;
-					break;
-				case "MariaSQL":
-					userSQLDialect = MariaSQL;
-					break;
-				case "MSSQL":
-					userSQLDialect = MSSQL;
-					break;
-				case "SQLite":
-					userSQLDialect = SQLite;
-					break;
-				case "Cassandra":
-					userSQLDialect = Cassandra;
-					break;
-				case "PLSQL":
-					userSQLDialect = PLSQL;
-					break;
-				default:
-					userSQLDialect = StandardSQL;
-					break;
+				default: userSQLDialect = StandardSQL; break;
 			}
-			this.reconfigureLanguage(sql,undefined,{dialect:userSQLDialect});
+			this.reconfigureLanguage(sql, undefined, { dialect: userSQLDialect });
 			break;
+		}
 		default:
 			break;
-	};
+	}
 };
 
-CodeMirrorEngine.prototype.countPanelStateLength = function(array) {
-	var count = 0;
-	for(var i=0; i<array.length; i++) {
-		if(array[i]) {
-			count++;
-		}
-	}
+CodeMirrorEngine.prototype.countPanelStateLength = function (array) {
+	let count = 0;
+	for (let i = 0; i < array.length; i++) if (array[i]) count++;
 	return count;
 };
 
-CodeMirrorEngine.prototype.getPrintableShortcuts = function(keyInfoArray) {
-	var result = [];
-	$tw.utils.each(keyInfoArray,function(keyInfo) {
-		if(keyInfo) {
-			var key = Object.keys($tw.keyboardManager.conversionKeys).find(function(objectKey) {
-				return $tw.keyboardManager.conversionKeys[objectKey] === $tw.keyboardManager.upperCaseKey(keyInfo.key);
-			});
-			key = key || keyInfo.key;
-			result.push((keyInfo.ctrlKey ? "ctrl-" : "") + 
-					(keyInfo.shiftKey ? "shift-" : "") + 
-					(keyInfo.altKey ? "alt-" : "") + 
-					(keyInfo.metaKey ? self.metaKeyName : "") + 
-					(key));
-		}
+CodeMirrorEngine.prototype.getPrintableShortcuts = function (keyInfoArray) {
+	const self = this;
+	const result = [];
+	$tw.utils.each(keyInfoArray, function (keyInfo) {
+		if (!keyInfo) return;
+
+		let key = Object.keys($tw.keyboardManager.conversionKeys).find(function (objectKey) {
+			return $tw.keyboardManager.conversionKeys[objectKey] === $tw.keyboardManager.upperCaseKey(keyInfo.key);
+		});
+		key = key || keyInfo.key;
+
+		result.push(
+			(keyInfo.ctrlKey ? "ctrl-" : "") +
+			(keyInfo.shiftKey ? "shift-" : "") +
+			(keyInfo.altKey ? "alt-" : "") +
+			(keyInfo.metaKey ? (self.metaKeyName || "meta-") : "") +
+			(key)
+		);
 	});
 	return result;
 };
 
-CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function(tiddlers,tiddlerCaptions,userCompletions,userDescriptions,prefixLength) {
-	var self = this;
-	var options = [];
-	function applyCompletion(view,completion,from,to) {
-		var applyFrom = from - prefixLength;
-		var apply = completion.label;
-		var applyTo = applyFrom + apply.length;
-		view.dispatch(view.state.changeByRange(function(range) {
-			var editorChanges = [{from:  applyFrom, to: to, insert: apply}];
-			var selectionRange = self.editorSelection.range(applyTo,applyTo);
+CodeMirrorEngine.prototype.getTiddlerCompletionOptions = function (tiddlers, tiddlerCaptions, userCompletions, userDescriptions, prefixLength) {
+	const self = this;
+	const options = [];
+
+	function applyCompletion(view, completion, from, to) {
+		const applyFrom = from - prefixLength;
+		const insert = completion.label;
+		const applyTo = applyFrom + insert.length;
+
+		view.dispatch(view.state.changeByRange(function () {
 			return {
-				changes: editorChanges,
-				range: selectionRange
-			}
+				changes: [{ from: applyFrom, to: to, insert: insert }],
+				range: self.editorSelection.range(applyTo, applyTo)
+			};
 		}));
-	};
-	for(var i=0; i<tiddlers.length; i++) {
-		var tiddlerCompletion = tiddlers[i],
-			tiddlerCaption = tiddlerCaptions[i];
-		options.push({displayLabel: tiddlerCaption, label: tiddlerCompletion, type: "cm-tiddler", boost: 99, apply: function(view,completion,from,to) {
-			applyCompletion(view,completion,from,to);
-		}});
-	};
-	for(i=0; i<userCompletions.length; i++) {
-		var userCompletion = userCompletions[i],
-			userDescription = userDescriptions[i];
-		options.push({displayLabel: userDescription, label: userCompletion, type: "cm-user-completion", boost: 99, apply: function(view,completion,from,to) {
-			applyCompletion(view,completion,from,to);
-		}});
-	};
+	}
+
+	for (let i = 0; i < tiddlers.length; i++) {
+		options.push({
+			displayLabel: tiddlerCaptions[i],
+			label: tiddlers[i],
+			type: "cm-tiddler",
+			boost: 99,
+			apply: applyCompletion
+		});
+	}
+
+	for (let j = 0; j < userCompletions.length; j++) {
+		options.push({
+			displayLabel: userDescriptions[j],
+			label: userCompletions[j],
+			type: "cm-user-completion",
+			boost: 99,
+			apply: applyCompletion
+		});
+	}
+
 	return options;
 };
 
-CodeMirrorEngine.prototype.assignDomNodeClasses = function() {
-	this.domNode.className = this.widget.getAttribute("class","");
+CodeMirrorEngine.prototype.assignDomNodeClasses = function () {
+	this.domNode.className = this.widget.getAttribute("class", "");
 };
 
-CodeMirrorEngine.prototype.handleDropEvent = function(event,view) {
-	if(!this.widget.isFileDropEnabled) {
+CodeMirrorEngine.prototype.handleDropEvent = function (event, view) {
+	if (!this.widget.isFileDropEnabled) {
 		event.stopPropagation();
 		return false;
 	}
-	if($tw.utils.dragEventContainsFiles(event) || event.dataTransfer.files.length) {
-		var dropCursorPos = view.posAtCoords({x: event.clientX, y: event.clientY},true);
-		view.dispatch({selection: {anchor: dropCursorPos, head: dropCursorPos}});
+	if ($tw.utils.dragEventContainsFiles(event) || (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length)) {
+		const pos = view.posAtCoords({ x: event.clientX, y: event.clientY }, true);
+		view.dispatch({ selection: { anchor: pos, head: pos } });
 		event.preventDefault();
 		return true;
 	}
 	return false;
 };
 
-CodeMirrorEngine.prototype.handleDragEnterEvent = function(event) {
-	return false;
-};
+CodeMirrorEngine.prototype.handleKeydownEvent = function (event, view) {
+	const self = this;
 
-CodeMirrorEngine.prototype.handleKeydownEvent = function(event,view) {
-	var self = this;
-	if($tw.keyboardManager.handleKeydownEvent(event,{onlyPriority: true})) {
+	// Priority TW keyboard handling
+	if ($tw.keyboardManager.handleKeydownEvent(event, { onlyPriority: true })) {
 		this.dragCancel = false;
 		return true;
 	}
-	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && (this.completionStatus(this.cm.state) === "active")) {
+
+	// Escape while completion active => do not let TW steal it
+	if ((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey &&
+		(this.completionStatus(this.cm.state) === "active")) {
 		event.stopPropagation();
 		return false;
 	}
-	if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && this.editorCanBeClosed) {
-		self.widget.wiki.setText(self.cancelEditTiddlerStateTiddler,"text",null,"yes");
-	} else if((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && !this.editorCanBeClosed) {
-		event.stopPropagation();
-		return false;
-	}
-	var widget = this.widget;
-	var keyboardWidgets = [];
-	while(widget) {
-		if(widget.parseTreeNode.type === "keyboard") {
-			keyboardWidgets.push(widget);
+
+	// Escape close behavior guarded by panel state
+	if ((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey) {
+		if (this.editorCanBeClosed) {
+			self.widget.wiki.setText(self.cancelEditTiddlerStateTiddler, "text", null, "yes");
+		} else {
+			event.stopPropagation();
+			return false;
 		}
+	}
+
+	// Respect nested <keyboard> widgets
+	let widget = this.widget;
+	const keyboardWidgets = [];
+	while (widget) {
+		if (widget.parseTreeNode && widget.parseTreeNode.type === "keyboard") keyboardWidgets.push(widget);
 		widget = widget.parentWidget;
 	}
-	if(keyboardWidgets.length > 0) {
-		var handled = undefined;
-		for(var i=0; i<keyboardWidgets.length; i++) {
-			var keyboardWidget = keyboardWidgets[i];
-			var keyInfoArray = keyboardWidget.keyInfoArray;
-			if($tw.keyboardManager.checkKeyDescriptors(event,keyInfoArray)) {
-				if(this.dragCancel && ($tw.keyboardManager.getPrintableShortcuts(keyInfoArray).indexOf("Escape") !== -1)) {
+
+	if (keyboardWidgets.length > 0) {
+		let handled;
+		for (let i = 0; i < keyboardWidgets.length; i++) {
+			const keyboardWidget = keyboardWidgets[i];
+			const keyInfoArray = keyboardWidget.keyInfoArray;
+			if ($tw.keyboardManager.checkKeyDescriptors(event, keyInfoArray)) {
+				if (this.dragCancel && ($tw.keyboardManager.getPrintableShortcuts(keyInfoArray).indexOf("Escape") !== -1)) {
 					handled = false;
 				} else {
 					handled = true;
 				}
 			}
 		}
-		if(handled) {
+		if (handled) {
 			this.dragCancel = false;
 			return true;
-		} else if(handled === false) {
+		} else if (handled === false) {
 			event.stopPropagation();
 			this.dragCancel = false;
 			return true;
 		}
 	}
+
 	this.dragCancel = false;
-	return this.widget.handleKeydownEvent.call(this.widget,event) || false;
+	return this.widget.handleKeydownEvent.call(this.widget, event) || false;
 };
 
-/*
-Set the text of the engine if it doesn't currently have focus
-*/
-CodeMirrorEngine.prototype.setText = function(text,type) {
-	if(!this.cm.hasFocus) {
-		this.updateDomNodeText(text);
-	}
+// Set the text of the engine if it doesn't currently have focus
+CodeMirrorEngine.prototype.setText = function (text /*, type */) {
+	if (!this.cm.hasFocus) this.updateDomNodeText(text);
 };
 
-/*
-Update the DomNode with the new text
-*/
-CodeMirrorEngine.prototype.updateDomNodeText = function(text) {
-	var self = this;
-	var selections = this.cm.state.selection;
-	this.cm.dispatch(this.cm.state.update({
-		changes: {
-			from: 0,
-			to: self.cm.state.doc.length,
-			insert: text
-		},
+CodeMirrorEngine.prototype.updateDomNodeText = function (text) {
+	const selections = this.cm.state.selection;
+	this.safeDispatch(this.cm.state.update({
+		changes: { from: 0, to: this.cm.state.doc.length, insert: text },
 		selection: selections,
 		docChanged: true
 	}));
 };
 
-/*
-Get the text of the engine
-*/
-CodeMirrorEngine.prototype.getText = function() {
+CodeMirrorEngine.prototype.getText = function () {
 	return this.cm.state.doc.toString();
 };
 
-/*
-Fix the height of textarea to fit content
-*/
-CodeMirrorEngine.prototype.fixHeight = function() {
+CodeMirrorEngine.prototype.fixHeight = function () {
 	this.cm.requestMeasure();
 };
 
-/*
-Focus the engine node
-*/
-CodeMirrorEngine.prototype.focus  = function() {
+CodeMirrorEngine.prototype.focus = function () {
 	this.cm.focus();
-}
+};
 
-/*
-Create a blank structure representing a text operation
-*/
-CodeMirrorEngine.prototype.createTextOperation = function(type) {
-	var selections = this.cm.state.selection.ranges;
-	var operations;
-	switch(type) {
-	case ("excise"):
-	case ("focus-editor"):
-	case ("insert-text"):
-	case ("make-link"):
-	case ("prefix-lines"):
-	case ("redo"):
-	case ("replace-all"):
-	case ("replace-selection"):
-	case ("save-selection"):
-	case ("search"):
-	case ("undo"):
-	case ("wrap-lines"):
-	case ("wrap-selection"):
-		operations = [];
-		for(var i=0; i<selections.length; i++) {
-			var anchorPos = selections[i].from,
-				headPos = selections[i].to;
-			var operation = {
+CodeMirrorEngine.prototype.createTextOperation = function (type) {
+	const selections = this.cm.state.selection.ranges;
+	let operations;
+
+	switch (type) {
+		case "excise":
+		case "focus-editor":
+		case "insert-text":
+		case "make-link":
+		case "prefix-lines":
+		case "redo":
+		case "replace-all":
+		case "replace-selection":
+		case "save-selection":
+		case "search":
+		case "undo":
+		case "wrap-lines":
+		case "wrap-selection":
+			operations = [];
+			for (let i = 0; i < selections.length; i++) {
+				const anchorPos = selections[i].from;
+				const headPos = selections[i].to;
+				const op = {
+					text: this.cm.state.doc.toString(),
+					selStart: anchorPos,
+					selEnd: headPos,
+					cutStart: null,
+					cutEnd: null,
+					replacement: null,
+					newSelStart: null,
+					newSelEnd: null
+				};
+				op.selection = this.cm.state.sliceDoc(anchorPos, headPos);
+				operations.push(op);
+			}
+			break;
+		default:
+			operations = {
 				text: this.cm.state.doc.toString(),
-				selStart: anchorPos,
-				selEnd: headPos,
+				selStart: selections[0].from,
+				selEnd: selections[0].to,
 				cutStart: null,
 				cutEnd: null,
 				replacement: null,
 				newSelStart: null,
-				newSelEnd: null
-			}
-			operation.selection = this.cm.state.sliceDoc(anchorPos,headPos);
-			operations.push(operation);
-		}
-		break;
-	default:
-		operations = {
-			text: this.cm.state.doc.toString(),
-			selStart: selections[0].from,
-			selEnd: selections[0].to,
-			cutStart: null,
-			cutEnd: null,
-			replacement: null,
-			newSelStart: null,
-			newSelEnd: null,
-			selection: this.cm.state.sliceDoc(selections[0].from,selections[0].to)
-		}
-		break;
+				newSelEnd: null,
+				selection: this.cm.state.sliceDoc(selections[0].from, selections[0].to)
+			};
+			break;
 	}
 	return operations;
 };
 
-/*
-Execute a text operation
-*/
-CodeMirrorEngine.prototype.executeTextOperation = function(operations) {
-	var self = this;
-	if(operations.type && (operations.type === "undo")) {
+CodeMirrorEngine.prototype.executeTextOperation = function (operations) {
+	const self = this;
+
+	if (operations && operations.type === "undo") {
 		this.undo(this.cm);
-	} else if(operations.type && (operations.type === "redo")) {
+	} else if (operations && operations.type === "redo") {
 		this.redo(this.cm);
-	} else if(operations.type && (operations.type === "search")) {
+	} else if (operations && operations.type === "search") {
 		this.closeSearchPanel() || this.openSearchPanel();
-	} else if((operations.type !== "focus-editor") && operations && operations.length) {
-		var ranges = this.cm.state.selection.ranges;
-		this.cm.dispatch(this.cm.state.changeByRange(function(range) {
-			var index;
-			for(var i=0; i<ranges.length; i++) {
-				if(ranges[i] === range) {
-					index = i;
-				}
+	} else if (operations && operations.type !== "focus-editor" && Array.isArray(operations) && operations.length) {
+		const ranges = this.cm.state.selection.ranges;
+		this.safeDispatch(this.cm.state.changeByRange(function (range) {
+			let index = 0;
+			for (let i = 0; i < ranges.length; i++) {
+				if (ranges[i] === range) { index = i; break; }
 			}
-			var editorChanges = [{from: operations[index].cutStart, to: operations[index].cutEnd, insert: operations[index].replacement}];
-			var selectionRange = self.editorSelection.range(operations[index].newSelStart,operations[index].newSelEnd);
 			return {
-				changes: editorChanges,
-				range: selectionRange
-			}
+				changes: [{ from: operations[index].cutStart, to: operations[index].cutEnd, insert: operations[index].replacement }],
+				range: self.editorSelection.range(operations[index].newSelStart, operations[index].newSelEnd)
+			};
 		}));
-	} else if((operations.type !== "focus-editor") && operations) {
-		this.cm.dispatch(this.cm.state.changeByRange(function(range) {
-			var editorChanges = [{from: operations.cutStart, to: operations.cutEnd, insert: operations.replacement}];
-			var selectionRange = self.editorSelection.range(operations.newSelStart,operations.newSelEnd);
+	} else if (operations && operations.type !== "focus-editor") {
+		this.safeDispatch(this.cm.state.changeByRange(function () {
 			return {
-				changes: editorChanges,
-				range: selectionRange
-			}
+				changes: [{ from: operations.cutStart, to: operations.cutEnd, insert: operations.replacement }],
+				range: self.editorSelection.range(operations.newSelStart, operations.newSelEnd)
+			};
 		}));
 	}
+
 	this.cm.focus();
 	return this.cm.state.doc.toString();
 };
 
+// Export
 exports.CodeMirrorEngine = $tw.browser ? CodeMirrorEngine : require("$:/core/modules/editor/engines/simple.js").SimpleEngine;
 
-})();
