@@ -27,6 +27,9 @@ if ($tw.browser && !window.CM) {
  * - Proper destroy() to prevent leaks across widget refresh/re-render
  * - Defensive guards for missing tiddlers/config, dataTransfer, etc.
  * - Optional "draft safety": force-save on blur/unload hooks (safe, minimal)
+ *
+ * Patch applied (critical):
+ * - Replaced invalid self.widget.setTimeout/clearTimeout with robust window/document.defaultView timer backend
  */
 
 function CodeMirrorEngine(options) {
@@ -173,11 +176,9 @@ function CodeMirrorEngine(options) {
 		try {
 			self.cm.dispatch(spec);
 		} catch (e) {
-			// Hardening: never crash TW render loop
-			// Optional: log in debug mode only
 			if ($tw && $tw.utils && $tw.utils.logger) {
 				$tw.utils.logger("codemirror6").alert("CM dispatch error: " + (e && e.message ? e.message : e));
-			} else if (console && console.warn) {
+			} else if (typeof console !== "undefined" && console && console.warn) {
 				console.warn("CM dispatch error", e);
 			}
 		}
@@ -188,20 +189,49 @@ function CodeMirrorEngine(options) {
 	this._pendingText = null;
 	this._lastSavedText = this.value;
 
+	// Stable timer backend (TW widgets don't guarantee setTimeout/clearTimeout)
+	this._getTimerWindow = function () {
+		try {
+			if (self.widget && self.widget.document && self.widget.document.defaultView) {
+				return self.widget.document.defaultView;
+			}
+		} catch (e) {}
+		return (typeof window !== "undefined") ? window : null;
+	};
+
+	this._setTimeout = function (fn, ms) {
+		const w = self._getTimerWindow();
+		if (w && typeof w.setTimeout === "function") {
+			return w.setTimeout(fn, ms);
+		}
+		// Last resort: synchronous
+		try { fn(); } catch (e) {}
+		return null;
+	};
+
+	this._clearTimeout = function (id) {
+		const w = self._getTimerWindow();
+		if (w && typeof w.clearTimeout === "function" && id !== null && id !== undefined) {
+			w.clearTimeout(id);
+		}
+	};
+
 	this.scheduleSave = function (text) {
 		self._pendingText = text;
 		if (self._saveTimer) return;
-		self._saveTimer = self.widget.setTimeout(function () {
+
+		self._saveTimer = self._setTimeout(function () {
 			self._saveTimer = null;
 			if (self._destroyed) return;
+
 			const out = self._pendingText;
 			self._pendingText = null;
-			// Only save if changed
-			if (out !== self._lastSavedText) {
+
+			if (typeof out === "string" && out !== self._lastSavedText) {
 				self._lastSavedText = out;
 				self.widget.saveChanges(out);
 			}
-		}, 120); // tight enough to feel instant, slow enough to avoid thrash
+		}, 120);
 	};
 
 	this.forceSaveNow = function () {
@@ -237,7 +267,6 @@ function CodeMirrorEngine(options) {
 	this.additionalKeymap = [];
 	this.currentKeymap = [];
 
-	// Keep references to base keymaps (stable)
 	this._baseKeymaps = {
 		closeBracketsKeymap: closeBracketsKeymap,
 		defaultKeymap: defaultKeymap,
@@ -294,7 +323,6 @@ function CodeMirrorEngine(options) {
 		const delimiterRegex = $tw.utils.codemirror.validateRegex(escaped) ? new RegExp(escaped) : null;
 		if (!delimiterRegex) return null;
 
-		// non-whitespace tail
 		const completeRegex = new RegExp(delimiterRegex.source + "[^\\s]*");
 		const completeMatch = context.matchBefore(completeRegex);
 		if (!completeMatch) return null;
@@ -341,7 +369,6 @@ function CodeMirrorEngine(options) {
 		let options = [];
 		let from = null;
 
-		// Custom completions first
 		$tw.utils.each(self.customCompletionSources, function (source) {
 			const r = source(context);
 			if (r && r.options && r.options.length > 0) {
@@ -351,7 +378,6 @@ function CodeMirrorEngine(options) {
 		});
 		if (options.length && from !== null) return { from: from, options: options };
 
-		// Language provided completions
 		let languageOptions = [];
 		const languageData = context.state.languageDataAt("autocomplete", context.pos);
 		$tw.utils.each(languageData, function (data) {
@@ -363,7 +389,6 @@ function CodeMirrorEngine(options) {
 			}
 		});
 
-		// Optional external source (e.g. JS scopeCompletionSource)
 		if (self.autocompletionSource) {
 			const r = self.autocompletionSource(context);
 			if (r && r.options && r.options.length > 0) {
@@ -374,7 +399,6 @@ function CodeMirrorEngine(options) {
 
 		if (languageOptions.length && from !== null) return { from: from, options: languageOptions };
 
-		// Fallback word completion if enabled
 		if (self.completeAnyWord) return completeAnyWord(context);
 		return null;
 	};
@@ -393,11 +417,9 @@ function CodeMirrorEngine(options) {
 				self.scheduleSave(update.state.doc.toString());
 			}
 
-			// Panel state: robust
 			const panels = update.view.state.facet(showPanel) || [];
 			const panelCount = self.countPanelStateLength(panels);
 
-			// Track line dialog open
 			if (panelCount === 1) {
 				self.lineDialogOpen = panels.some(function (fun) {
 					return fun && fun.name === "createLineDialog";
@@ -409,12 +431,10 @@ function CodeMirrorEngine(options) {
 			const focusState = update.view.hasFocus;
 			const lineDialogOpen = self.lineDialogOpen === true;
 
-			// If no panels OR only line dialog while focused => editor can be closed by Escape
 			if ((lineDialogOpen && focusState) || panelCount === 0) {
 				self.editorCanBeClosed = true;
 			} else {
 				self.editorCanBeClosed = false;
-				// Keep state consistent: remove cancel marker while in panels
 				self.widget.wiki.deleteTiddler(self.cancelEditTiddlerStateTiddler);
 			}
 		});
@@ -508,7 +528,6 @@ function CodeMirrorEngine(options) {
 				return false;
 			},
 			blur() {
-				// Draft safety: force-save on blur (cheap, safe)
 				self.forceSaveNow();
 				return false;
 			}
@@ -546,7 +565,6 @@ function CodeMirrorEngine(options) {
 	this.cm = new EditorView({ parent: this.domNode, state: this.editorState });
 
 	// --- Optional: harden against accidental page unload (best-effort) ---
-	// Not all TW contexts allow this, but it’s safe to register and safe to remove on destroy.
 	this._beforeUnloadHandler = function () {
 		try { self.forceSaveNow(); } catch (e) {}
 	};
@@ -570,7 +588,6 @@ function CodeMirrorEngine(options) {
 			km.push(self._baseKeymaps.indentWithTab);
 		}
 
-		// User shortcuts
 		const commands = self.widget.shortcutActionList || [];
 		const parsedList = self.widget.shortcutParsedList || [];
 		for (let i = 0; i < commands.length; i++) {
@@ -590,7 +607,6 @@ function CodeMirrorEngine(options) {
 			}
 		}
 
-		// Add language-specific keymaps
 		if (Array.isArray(self.additionalKeymap) && self.additionalKeymap.length) {
 			km = km.concat(self.additionalKeymap);
 		}
@@ -617,9 +633,7 @@ function CodeMirrorEngine(options) {
 		});
 	};
 
-	// --- Reconfigure by type immediately (feature completeness) ---
-	// Your original engine expects updateTiddlerType() to be called by widget logic,
-	// but doing it here makes engine behavior self-contained and stable.
+	// --- Reconfigure by type immediately ---
 	this.updateTiddlerType();
 
 	// --- Public toggle wrappers (stable) ---
@@ -673,7 +687,6 @@ function CodeMirrorEngine(options) {
 
 	this.toggleCompleteAnyWord = function (enable) {
 		self.completeAnyWord = !!enable;
-		// Ensure autocomplete uses new behavior
 		self.updateAutocompletion(undefined, undefined, undefined, undefined);
 	};
 
@@ -700,7 +713,6 @@ function CodeMirrorEngine(options) {
 	};
 
 	// --- Hardening: explicit destroy for TW widget lifecycle ---
-	// Call this from widget's refresh/destroy path to prevent memory leaks.
 	this.destroy = function () {
 		if (self._destroyed) return;
 		self._destroyed = true;
@@ -709,7 +721,7 @@ function CodeMirrorEngine(options) {
 
 		// Clear debounce timer
 		if (self._saveTimer) {
-			try { self.widget.clearTimeout(self._saveTimer); } catch (e) {}
+			try { self._clearTimeout(self._saveTimer); } catch (e) {}
 			self._saveTimer = null;
 		}
 
@@ -778,7 +790,6 @@ CodeMirrorEngine.prototype.reconfigureLanguage = function (lang, /*language*/ _l
 	self.autocompletionSource = source || null;
 	self.additionalKeymap = keymap || [];
 
-	// Single dispatch: avoid state drift
 	self.safeDispatch({
 		effects: [
 			self.compartments.language.reconfigure([languageExtension]),
@@ -788,7 +799,6 @@ CodeMirrorEngine.prototype.reconfigureLanguage = function (lang, /*language*/ _l
 		]
 	});
 
-	// Make sure keymaps reflect language changes
 	self.updateKeymaps();
 };
 
@@ -978,20 +988,17 @@ CodeMirrorEngine.prototype.handleDropEvent = function (event, view) {
 CodeMirrorEngine.prototype.handleKeydownEvent = function (event, view) {
 	const self = this;
 
-	// Priority TW keyboard handling
 	if ($tw.keyboardManager.handleKeydownEvent(event, { onlyPriority: true })) {
 		this.dragCancel = false;
 		return true;
 	}
 
-	// Escape while completion active => do not let TW steal it
 	if ((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey &&
 		(this.completionStatus(this.cm.state) === "active")) {
 		event.stopPropagation();
 		return false;
 	}
 
-	// Escape close behavior guarded by panel state
 	if ((event.keyCode === 27) && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey) {
 		if (this.editorCanBeClosed) {
 			self.widget.wiki.setText(self.cancelEditTiddlerStateTiddler, "text", null, "yes");
@@ -1001,7 +1008,6 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function (event, view) {
 		}
 	}
 
-	// Respect nested <keyboard> widgets
 	let widget = this.widget;
 	const keyboardWidgets = [];
 	while (widget) {
@@ -1036,7 +1042,6 @@ CodeMirrorEngine.prototype.handleKeydownEvent = function (event, view) {
 	return this.widget.handleKeydownEvent.call(this.widget, event) || false;
 };
 
-// Set the text of the engine if it doesn't currently have focus
 CodeMirrorEngine.prototype.setText = function (text /*, type */) {
 	if (!this.cm.hasFocus) this.updateDomNodeText(text);
 };
@@ -1151,4 +1156,3 @@ CodeMirrorEngine.prototype.executeTextOperation = function (operations) {
 
 // Export
 exports.CodeMirrorEngine = $tw.browser ? CodeMirrorEngine : require("$:/core/modules/editor/engines/simple.js").SimpleEngine;
-
